@@ -1,0 +1,540 @@
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useOutletContext } from 'react-router-dom'
+import {
+  IconChevronDown,
+  IconChevronRight,
+  IconClock,
+  IconEmptyDoc,
+  IconLoading,
+  IconAlertTriangle,
+  IconClose,
+  IconFilter,
+  IconRefresh,
+  KpiViewIcon,
+} from '../components/dashboard/DashboardIcons'
+import type { AppShellOutletContext } from '../layouts/appShellContext'
+import { DashboardRightPanel } from '../components/dashboard/DashboardRightPanel'
+import { TicketRow } from '../components/dashboard/TicketRow'
+import { useDashboardData } from '../hooks/useDashboardData'
+import { KPI_COUNTS } from '../mocks/dashboardStats'
+import type { DashboardFilters, DashboardView } from '../types/ticket'
+import { dashBorderClass, dashSurfaceClass } from '../theme/themeMode'
+
+const VIEWS: {
+  id: DashboardView
+  label: string
+  kpiTitle: string
+  kpiSubtitle: string
+  adminOnly?: boolean
+}[] = [
+  {
+    id: 'my-tickets',
+    label: 'My Tickets',
+    kpiTitle: 'My Tickets',
+    kpiSubtitle: 'Open tickets assigned to you',
+  },
+  {
+    id: 'awaiting-review',
+    label: 'Awaiting My Review',
+    kpiTitle: 'Awaiting My Review',
+    kpiSubtitle: 'Tickets for your review',
+  },
+  {
+    id: 'awaiting-approval',
+    label: 'Awaiting My Approval',
+    kpiTitle: 'Awaiting My Approval',
+    kpiSubtitle: 'Final approval tasks',
+  },
+  {
+    id: 'delegated',
+    label: 'Delegated To Me',
+    kpiTitle: 'Delegated To Me',
+    kpiSubtitle: 'Tickets routed through delegation',
+  },
+  {
+    id: 'all-tenders',
+    label: 'All Tenders In Flight',
+    kpiTitle: 'All Tenders In Flight',
+    kpiSubtitle: 'Running workflows in your tenant',
+    adminOnly: true,
+  },
+]
+
+const CAN_SEE_ALL_TENDERS = true
+
+const KPI_CARD_STYLE: Record<DashboardView, { surface: string; active: string }> = {
+  'my-tickets': {
+    surface: 'border-aura-primary/35 bg-aura-primary-soft',
+    active: 'ring-2 ring-aura-primary/40 border-aura-primary/55',
+  },
+  'awaiting-review': {
+    surface: 'border-aura-secondary/35 bg-aura-secondary-soft',
+    active: 'ring-2 ring-aura-secondary/40 border-aura-secondary/55',
+  },
+  'awaiting-approval': {
+    surface: 'border-aura-tertiary/35 bg-aura-tertiary-soft',
+    active: 'ring-2 ring-aura-tertiary/40 border-aura-tertiary/55',
+  },
+  delegated: {
+    surface: 'border-aura-accent-coral/40 bg-aura-accent-coral-soft',
+    active: 'ring-2 ring-aura-accent-coral/45 border-aura-accent-coral/60',
+  },
+  'all-tenders': {
+    surface: 'border-aura-accent-amber/40 bg-aura-accent-amber-soft',
+    active: 'ring-2 ring-aura-accent-amber/45 border-aura-accent-amber/60',
+  },
+}
+
+const defaultFilters: DashboardFilters = {
+  status: 'all',
+  role: 'all',
+  department: 'all',
+  deadline: 'all',
+  tender: 'all',
+}
+
+function countActiveFilters(filters: DashboardFilters): number {
+  let count = 0
+  if (filters.status !== 'all') count += 1
+  if (filters.role !== 'all') count += 1
+  if (filters.department !== 'all') count += 1
+  if (filters.deadline !== 'all') count += 1
+  if (filters.tender !== 'all') count += 1
+  return count
+}
+
+function lastUpdatedLabel(cachedAt: number | null) {
+  if (!cachedAt) {
+    return 'Updating…'
+  }
+  const mins = Math.max(1, Math.floor((Date.now() - cachedAt) / 60000))
+  return `Last updated: ${mins} min${mins === 1 ? '' : 's'} ago`
+}
+
+export default function DashboardPage() {
+  const { search } = useOutletContext<AppShellOutletContext>()
+  const [view, setView] = useState<DashboardView>('my-tickets')
+  const [filters, setFilters] = useState<DashboardFilters>(defaultFilters)
+  const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false)
+
+  useEffect(() => {
+    if (!filtersDrawerOpen) {
+      return
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFiltersDrawerOpen(false)
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [filtersDrawerOpen])
+
+  const activeFilterCount = countActiveFilters(filters)
+
+  const visibleViews = useMemo(
+    () => VIEWS.filter((v) => !v.adminOnly || CAN_SEE_ALL_TENDERS),
+    [],
+  )
+
+  const { loadState, tickets, cachedAt, refreshing, refresh } = useDashboardData({
+    view,
+    filters,
+    canSeeAllTenders: CAN_SEE_ALL_TENDERS,
+  })
+
+  const visibleTickets = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) {
+      return tickets
+    }
+    return tickets.filter(
+      (t) =>
+        t.tenderTitle.toLowerCase().includes(q) ||
+        t.client.toLowerCase().includes(q) ||
+        t.department.toLowerCase().includes(q),
+    )
+  }, [tickets, search])
+
+  const activeViewMeta = VIEWS.find((v) => v.id === view)!
+  const showMfaBanner = view === 'awaiting-approval'
+  const showTenderError = tickets.some((t) => t.tenderDetailsUnavailable)
+  const unreadNotifications = 3
+
+  return (
+    <>
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="text-sm text-aura-muted">
+              Track your work, approvals and tenders — all in one place.
+            </p>
+          </div>
+
+          <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {visibleViews.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => setView(v.id)}
+                className={`cursor-pointer rounded-2xl border p-4 text-left shadow-sm transition-all hover:shadow-md ${
+                  KPI_CARD_STYLE[v.id].surface
+                } ${view === v.id ? KPI_CARD_STYLE[v.id].active : ''}`}
+              >
+                <div className="flex items-start justify-between">
+                  <KpiViewIcon view={v.id} />
+                  <IconChevronRight className="h-5 w-5 text-aura-muted" />
+                </div>
+                <p className="mt-3 text-xs font-medium text-aura-muted">{v.kpiTitle}</p>
+                <p className="text-2xl font-bold text-aura-text">{KPI_COUNTS[v.id]}</p>
+                <p className="mt-1 text-[0.65rem] text-aura-muted">{v.kpiSubtitle}</p>
+              </button>
+            ))}
+          </div>
+
+          <div
+            className="mb-4 flex flex-wrap items-center justify-between gap-3"
+          >
+            <div className="flex flex-wrap gap-2">
+              {visibleViews.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setView(v.id)}
+                  className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm transition-colors ${
+                    view === v.id
+                      ? 'bg-aura-secondary font-semibold text-white shadow-sm'
+                      : 'bg-aura-secondary-soft font-medium text-aura-secondary hover:bg-aura-secondary/15'
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setFiltersDrawerOpen(true)}
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium ${dashBorderClass} ${dashSurfaceClass} hover:bg-aura-hover`}
+              aria-expanded={filtersDrawerOpen}
+            >
+              <IconFilter className="h-4 w-4 text-aura-secondary" />
+              Filters
+              {activeFilterCount > 0 ? (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-aura-secondary px-1 text-[0.65rem] font-bold text-white dark:border dark:border-aura-secondary/60 dark:bg-transparent dark:text-aura-secondary">
+                  {activeFilterCount}
+                </span>
+              ) : null}
+            </button>
+          </div>
+
+          {filtersDrawerOpen ? (
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-40 cursor-default bg-black/30"
+                aria-label="Close filters"
+                onClick={() => setFiltersDrawerOpen(false)}
+              />
+              <aside
+                className="fixed inset-y-0 right-0 z-50 flex w-[min(100%,20rem)] flex-col border-l border-gray-200 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:border-aura-border dark:bg-aura-surface"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="dashboard-filters-title"
+              >
+                <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-aura-border">
+                  <h2
+                    id="dashboard-filters-title"
+                    className="text-lg font-bold tracking-tight text-aura-text"
+                  >
+                    Filters
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setFiltersDrawerOpen(false)}
+                    className="-mr-1 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-aura-muted dark:hover:bg-aura-hover"
+                    aria-label="Close filters panel"
+                  >
+                    <IconClose className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+                  <FilterSelect
+                    label="Status"
+                    value={filters.status}
+                    onChange={(status) => setFilters((f) => ({ ...f, status }))}
+                    options={[
+                      ['all', 'All Open'],
+                      ['open', 'Open'],
+                      ['review', 'In review'],
+                      ['approval', 'Approval'],
+                    ]}
+                    stacked
+                  />
+                  <FilterSelect
+                    label="Role"
+                    value={filters.role}
+                    onChange={(role) => setFilters((f) => ({ ...f, role }))}
+                    options={[
+                      ['all', 'All Roles'],
+                      ['Reviewer', 'Reviewer'],
+                      ['Approver', 'Approver'],
+                      ['Lead', 'Lead'],
+                    ]}
+                    stacked
+                  />
+                  <FilterSelect
+                    label="Department"
+                    value={filters.department}
+                    onChange={(department) => setFilters((f) => ({ ...f, department }))}
+                    options={[
+                      ['all', 'All Departments'],
+                      ['IT Department', 'IT Department'],
+                      ['Engineering', 'Engineering'],
+                      ['Operations', 'Operations'],
+                    ]}
+                    stacked
+                  />
+                  <FilterSelect
+                    label="Deadline"
+                    value={filters.deadline}
+                    onChange={(deadline) => setFilters((f) => ({ ...f, deadline }))}
+                    options={[
+                      ['all', 'All Deadlines'],
+                      ['week', 'This week'],
+                      ['overdue', 'Overdue'],
+                    ]}
+                    stacked
+                  />
+                  <FilterSelect
+                    label="Tender"
+                    value={filters.tender}
+                    onChange={(tender) => setFilters((f) => ({ ...f, tender }))}
+                    options={[
+                      ['all', 'All Tenders'],
+                      ['IT', 'IT Infrastructure'],
+                      ['Software', 'Software'],
+                      ['Hardware', 'Hardware'],
+                    ]}
+                    stacked
+                  />
+                </div>
+                <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-200 px-5 py-4 dark:border-aura-border">
+                  <button
+                    type="button"
+                    onClick={() => setFilters(defaultFilters)}
+                    className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-aura-input dark:text-aura-text dark:hover:bg-aura-hover"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFiltersDrawerOpen(false)}
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-aura-secondary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+                  >
+                    Apply
+                    <IconChevronRight className="h-4 w-4" aria-hidden />
+                  </button>
+                </div>
+              </aside>
+            </>
+          ) : null}
+
+          {showMfaBanner ? (
+            <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-950">
+              MFA re-authentication required before final approval.
+            </div>
+          ) : null}
+
+          <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
+            <section>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-aura-text">
+                  {activeViewMeta.label} ({KPI_COUNTS[view]})
+                </h2>
+                <div className="flex items-center gap-2 text-xs text-aura-muted">
+                  <span>{lastUpdatedLabel(cachedAt)}</span>
+                  <button
+                    type="button"
+                    onClick={refresh}
+                    disabled={refreshing}
+                    className="cursor-pointer text-aura-secondary hover:underline disabled:opacity-50"
+                    aria-label="Refresh"
+                  >
+                    <IconRefresh className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {loadState === 'partial_failure' ? (
+                <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                  Some tender details could not be loaded. Tickets are retained below.
+                </p>
+              ) : null}
+
+              {loadState === 'loading' ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="h-28 animate-pulse rounded-xl bg-aura-border/60"
+                    />
+                  ))}
+                </div>
+              ) : null}
+
+              {loadState === 'empty' ? (
+                <div
+                  className={`rounded-xl border border-dashed border-aura-border px-6 py-12 text-center ${dashSurfaceClass}`}
+                >
+                  <p className="text-sm font-medium text-aura-text">No tickets found</p>
+                  <p className="mt-1 text-xs text-aura-muted">Try adjusting your filters.</p>
+                  <button
+                    type="button"
+                    onClick={() => setFilters(defaultFilters)}
+                    className="mt-3 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
+                  >
+                    Clear Filters →
+                  </button>
+                </div>
+              ) : null}
+
+              {(loadState === 'ready' || loadState === 'partial_failure') && (
+                <div className="space-y-3">
+                  {visibleTickets.length === 0 ? (
+                    <div
+                      className={`rounded-xl border border-dashed border-aura-border px-6 py-8 text-center ${dashSurfaceClass}`}
+                    >
+                      <p className="text-sm font-medium text-aura-text">No matching tickets</p>
+                      <p className="mt-1 text-xs text-aura-muted">Try a different search term.</p>
+                    </div>
+                  ) : (
+                    visibleTickets.map((ticket) => (
+                      <TicketRow key={ticket.id} ticket={ticket} />
+                    ))
+                  )}
+                </div>
+              )}
+            </section>
+
+            <DashboardRightPanel unreadCount={unreadNotifications} showTenderError={showTenderError} />
+          </div>
+
+          <section className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StateCard
+              title="Empty State"
+              icon={<IconEmptyDoc className="h-4 w-4 text-aura-primary" />}
+            >
+              <p className="text-xs text-aura-muted">
+                No tickets found for the selected filters. Try adjusting your filters or check back
+                later.
+              </p>
+              <button
+                type="button"
+                onClick={() => setFilters(defaultFilters)}
+                className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary"
+              >
+                Clear Filters →
+              </button>
+            </StateCard>
+            <StateCard title="Loading State" icon={<IconLoading className="h-4 w-4 text-aura-primary" />}>
+              <p className="text-xs text-aura-muted">Loading your tickets…</p>
+            </StateCard>
+            <StateCard
+              title="Cached Data Freshness"
+              icon={<IconClock className="h-4 w-4 text-aura-secondary" />}
+            >
+              <p className="text-xs font-medium text-aura-text">{lastUpdatedLabel(cachedAt)}</p>
+              <p className="mt-0.5 text-xs text-aura-muted">Data is fresh and up to date.</p>
+            </StateCard>
+            <StateCard
+              title="Partial Failure"
+              icon={<IconAlertTriangle className="h-4 w-4 text-red-500" />}
+            >
+              <p className="text-xs text-aura-muted">
+                Some tender details could not be loaded. Ticket is retained.
+              </p>
+              <button type="button" className="mt-1.5 text-xs font-semibold text-aura-secondary">
+                View details →
+              </button>
+            </StateCard>
+          </section>
+    </>
+  )
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+  stacked = false,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  options: [string, string][]
+  stacked?: boolean
+}) {
+  if (stacked) {
+    return (
+      <label className="block w-full">
+        <span className="mb-1.5 block text-sm font-medium text-aura-text">{label}</span>
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full cursor-pointer appearance-none rounded-md border border-gray-200 bg-white py-2.5 pl-3 pr-9 text-sm text-gray-900 outline-none transition-[border-color,box-shadow] focus:border-aura-secondary/50 focus:ring-2 focus:ring-aura-secondary/15 dark:border-aura-border dark:bg-aura-input dark:text-aura-text"
+          >
+            {options.map(([val, text]) => (
+              <option key={val} value={val}>
+                {text}
+              </option>
+            ))}
+          </select>
+          <IconChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-aura-muted"
+            aria-hidden
+          />
+        </div>
+      </label>
+    )
+  }
+
+  return (
+    <label className="min-w-[8rem] flex-1 text-xs">
+      <span className="mb-1 block font-medium text-aura-muted">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full rounded-lg border px-2 py-2 text-sm text-aura-text ${dashBorderClass} bg-aura-input`}
+      >
+        {options.map(([val, text]) => (
+          <option key={val} value={val}>
+            {text}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function StateCard({
+  title,
+  icon,
+  children,
+}: {
+  title: string
+  icon: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div className={`rounded-xl border p-4 shadow-sm ${dashBorderClass} ${dashSurfaceClass}`}>
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 shrink-0">{icon}</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-aura-text">{title}</p>
+          <div className="mt-1.5">{children}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
