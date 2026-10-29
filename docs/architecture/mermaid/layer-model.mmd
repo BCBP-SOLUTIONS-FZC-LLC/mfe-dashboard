@@ -1,0 +1,13 @@
+flowchart TB
+    host["web-shell app1\nloads remoteEntry.js"]
+    app["src/App.tsx\nexpose ./App"]
+    shell["AppShellLayout\nsearch, theme, logout"]
+    pages["DashboardPage\nUserManagementPage"]
+    data["useDashboardData\nmock tickets"]
+    nginx["nginx :8080\n/healthz / remoteEntry.js"]
+
+    host --> app
+    app --> shell
+    shell --> pages
+    pages --> data
+    nginx --> app

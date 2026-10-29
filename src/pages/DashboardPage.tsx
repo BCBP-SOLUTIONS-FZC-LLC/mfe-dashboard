@@ -461,7 +461,7 @@ export default function DashboardPage() {
   )
 }
 
-function FilterSelect({
+export function FilterSelect({
   label,
   value,
   onChange,

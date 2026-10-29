@@ -1,0 +1,47 @@
+## Description
+Provide a clear description of the changes.
+
+---
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Refactor
+- [ ] Documentation
+- [ ] Test
+- [ ] Breaking change
+- [ ] Dependency update
+
+---
+
+## Testing
+- [ ] `npm run test:ci` passes (unit, integration, e2e, coverage ≥ 95%)
+- [ ] `npm run build` passes (typecheck and production bundle)
+- [ ] Manual testing performed (dashboard, user management, theme, logout)
+
+---
+
+## Checklist
+
+### Code Quality
+- [ ] No debug logs or commented-out code
+- [ ] No secrets, tokens, or `.env` values committed
+- [ ] `CHANGELOG.md` updated under `Unreleased` when this PR changes `src/`, dependencies, the Dockerfile, or nginx config
+
+### Remote contract
+- [ ] Module Federation name, expose, and shared dependency versions still match the shell (`module-federation.config.ts`)
+- [ ] New `VITE_*` variables documented and given a Dockerfile `ARG` default when the image build needs them
+
+### Security
+- [ ] `localStorage` is limited to the theme keys (`bcbp.themeMode`, `bcbp.appTheme`)
+- [ ] `VITE_APP1_URL` is not taken from the page URL
+
+---
+
+## Related Issue
+Closes #<issue-id>
+
+---
+
+## Deployment Notes
+Mention anything operators need when upgrading (new `VITE_*` build args, remote URL changes, nginx path changes).
