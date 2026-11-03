@@ -59,7 +59,7 @@ jobs:
         run: node .github/scripts/coverage-gate.mjs
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-report-${{ github.sha }}
