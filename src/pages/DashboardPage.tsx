@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { useHasPermission, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { APP_ID } from '../i18n'
 import {
   IconChevronDown,
   IconChevronRight,
@@ -60,7 +62,6 @@ const VIEWS: {
   },
 ]
 
-const CAN_SEE_ALL_TENDERS = true
 
 const KPI_CARD_STYLE: Record<DashboardView, { surface: string; active: string }> = {
   'my-tickets': {
@@ -103,12 +104,11 @@ function countActiveFilters(filters: DashboardFilters): number {
   return count
 }
 
-function lastUpdatedLabel(cachedAt: number | null) {
+function lastUpdatedLabel(t: (key: string, vars?: Record<string, number>) => string, cachedAt: number | null) {
   if (!cachedAt) {
-    return 'Updating…'
+    return t('lastUpdated.pending')
   }
-  const mins = Math.max(1, Math.floor((Date.now() - cachedAt) / 60000))
-  return `Last updated: ${mins} min${mins === 1 ? '' : 's'} ago`
+  return t('lastUpdated.ago', { mins: Math.max(1, Math.floor((Date.now() - cachedAt) / 60000)) })
 }
 
 export default function DashboardPage() {
@@ -116,6 +116,9 @@ export default function DashboardPage() {
   const [view, setView] = useState<DashboardView>('my-tickets')
   const [filters, setFilters] = useState<DashboardFilters>(defaultFilters)
   const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false)
+  const t = useT(APP_ID)
+  // "All Tenders In Flight" is for users who may read every tender (a UI hint; the API decides).
+  const canSeeAllTenders = useHasPermission('read', 'tender')
 
   useEffect(() => {
     if (!filtersDrawerOpen) {
@@ -133,14 +136,14 @@ export default function DashboardPage() {
   const activeFilterCount = countActiveFilters(filters)
 
   const visibleViews = useMemo(
-    () => VIEWS.filter((v) => !v.adminOnly || CAN_SEE_ALL_TENDERS),
-    [],
+    () => VIEWS.filter((v) => !v.adminOnly || canSeeAllTenders),
+    [canSeeAllTenders],
   )
 
   const { loadState, tickets, cachedAt, refreshing, refresh } = useDashboardData({
     view,
     filters,
-    canSeeAllTenders: CAN_SEE_ALL_TENDERS,
+    canSeeAllTenders,
   })
 
   const visibleTickets = useMemo(() => {
@@ -351,7 +354,7 @@ export default function DashboardPage() {
                   {activeViewMeta.label} ({KPI_COUNTS[view]})
                 </h2>
                 <div className="flex items-center gap-2 text-xs text-aura-muted">
-                  <span>{lastUpdatedLabel(cachedAt)}</span>
+                  <span>{lastUpdatedLabel(t, cachedAt)}</span>
                   <button
                     type="button"
                     onClick={refresh}
@@ -442,7 +445,7 @@ export default function DashboardPage() {
               title="Cached Data Freshness"
               icon={<IconClock className="h-4 w-4 text-aura-secondary" />}
             >
-              <p className="text-xs font-medium text-aura-text">{lastUpdatedLabel(cachedAt)}</p>
+              <p className="text-xs font-medium text-aura-text">{lastUpdatedLabel(t, cachedAt)}</p>
               <p className="mt-0.5 text-xs text-aura-muted">Data is fresh and up to date.</p>
             </StateCard>
             <StateCard

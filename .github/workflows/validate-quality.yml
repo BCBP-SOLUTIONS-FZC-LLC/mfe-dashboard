@@ -45,6 +45,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # The platform's rules (@bcbp-solutions-fzc-llc/eslint-plugin: SDK storage, no unsafe HTML, public
+      # SDK subpaths, …) and the React hooks rules, as in web-shell.
+      - name: Lint
+        run: npm run lint
+
       # Workflow files must use literal operators, not HTML entity encodings.
       - name: Reject HTML-escaped operators in workflow files
         run: |

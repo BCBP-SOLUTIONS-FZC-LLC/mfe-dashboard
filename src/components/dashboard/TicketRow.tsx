@@ -1,3 +1,4 @@
+import { formatDate } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import {
   IconBuilding,
   IconCalendar,
@@ -23,11 +24,7 @@ const slaText = {
 } as const
 
 function formatDue(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+  return formatDate(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export function TicketRow({ ticket }: { ticket: TicketItem }) {

@@ -22,15 +22,15 @@ The hook rejects:
 - CRLF in `.github/scripts`, workflows, `Dockerfile`, `nginx/`, or `.githooks`
 - a `FROM` line that is not `image:tag@sha256:…`
 - a missing `.dockerignore`
-- `npx tsc --noEmit` when `node_modules/typescript` is present
+- `npx tsc --noEmit` (TypeScript 7) when `node_modules/typescript` is present
 
 ## What a change has to keep true
 
 - Federation name stays `app2`, the expose stays `./App`, and the shared map comes from `@bcbp-solutions-fzc-llc/webpack-preset` (`rsbuild.config.ts`). Keep its version the same as, or older than, web-shell's SDK. Do not set Rsbuild's `moduleFederation` option, and keep `splitChunks` on async chunks only.
 - `./App` keeps optional `userLabel` and `onLogout`. New required props are a breaking change ([VERSIONING.md](VERSIONING.md)).
-- Import `@bcbp-solutions-fzc-llc/frontend-sdk` only from `src/App.tsx` and modules it alone imports, never from `DashboardApp` or `main.tsx`: the SDK is never bundled, and standalone there is no shell to provide it. Keep the dev dependency on the same version as web-shell.
+- Do not reimplement what `@bcbp-solutions-fzc-llc/frontend-sdk` (platform-reactcommon) provides: storage, locale-aware dates and numbers, messages and plurals, permissions, data loading (`useApi`), navigation, sign-out. Import it through its public subpaths only. Keep the dev dependency on the same version as web-shell. `npm run lint` enforces the platform rules.
 - A new `VITE_*` variable is documented in [README.md](README.md) and given a Dockerfile `ARG` default when the image needs it.
-- `localStorage` stays limited to `bcbp.appTheme` and `bcbp.themeMode`.
+- No raw `localStorage` or `sessionStorage`: use `storage('app2')` from the SDK (the lint rule `no-raw-storage`).
 - nginx keeps `/healthz`, port 8080, and no-cache and CORS on `remoteEntry.js`, CORS on the hashed chunks.
 
 ## Tests

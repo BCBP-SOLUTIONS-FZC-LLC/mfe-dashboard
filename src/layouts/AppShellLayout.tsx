@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useLocale } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { BrandLogo } from '../components/BrandLogo'
 import {
   IconBell,
@@ -31,10 +32,9 @@ import {
 } from '../theme/themeMode'
 import type { AppShellOutletContext } from './appShellContext'
 
-type AppLanguage = 'en'
-
-const LANGUAGE_LABELS: Record<AppLanguage, string> = {
-  en: 'English',
+/** The page locale's name in that language, e.g. 'English' or 'العربية'. */
+function languageLabel(locale: string): string {
+  return new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale
 }
 
 type AppShellLayoutProps = {
@@ -104,7 +104,7 @@ export default function AppShellLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [appTheme, setAppTheme] = useState<AppThemeId>(() => readStoredAppTheme())
   const [themePickerOpen, setThemePickerOpen] = useState(false)
-  const [language] = useState<AppLanguage>('en')
+  const { locale } = useLocale()
   const userMenuPanelRef = useRef<HTMLDivElement>(null)
   const themeMode: ThemeMode = auraModeFromAppTheme(appTheme)
 
@@ -151,7 +151,7 @@ export default function AppShellLayout({
       <UserMenuItem
         icon={<IconGlobe className="h-4 w-4" />}
         label="Language"
-        hint={LANGUAGE_LABELS[language]}
+        hint={languageLabel(locale)}
         onClick={() => setUserMenuOpen(false)}
       />
       <UserMenuItem

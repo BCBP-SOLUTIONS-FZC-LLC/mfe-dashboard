@@ -1,0 +1,4 @@
+{
+  "lastUpdated.pending": "Updating…",
+  "lastUpdated.ago": "Last updated: {mins, plural, one {# min} other {# mins}} ago"
+}
