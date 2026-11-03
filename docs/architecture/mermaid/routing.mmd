@@ -1,0 +1,14 @@
+flowchart TD
+    start["App props\nuserLabel, onLogout"]
+    embedded{"Already inside\na router?"}
+    relative["Index: DashboardPage\nuser-management: UserManagementPage"]
+    browser["BrowserRouter"]
+    dash["/dashboard/* → same pages"]
+    root["/ and * → /dashboard"]
+
+    start --> embedded
+    embedded -->|yes| relative
+    embedded -->|no| browser
+    browser --> dash
+    browser --> root
+    root --> dash

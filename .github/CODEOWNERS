@@ -1,0 +1,10 @@
+# Default: every file requires review from the mfe-dashboard team.
+* @BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard
+
+# Workflow and release automation changes require explicit sign-off.
+.github/workflows/ @BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard
+.github/dependabot.yml @BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard
+
+# Image and static-host config.
+Dockerfile @BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard
+nginx/ @BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard

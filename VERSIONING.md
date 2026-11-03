@@ -1,0 +1,107 @@
+# Versioning and releases
+
+This repository is a **deployed micro-frontend remote**, not an npm library other apps install — `package.json` is `"private": true` and its `name` (`mfe-dashboard`) is the package identity, not something another app `npm install`s. What gets versioned here is the **container image** (`ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard`) and the **static bundle** attached to the GitHub Release, plus the runtime contract the shell (`app1`) and operators depend on. Versions are published with **Git tags** and described in [CHANGELOG.md](./CHANGELOG.md).
+
+This document follows the same SemVer / image-tag / maintainer-process layout as [`iam-org-membership/VERSIONING.md`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/iam-org-membership/blob/main/VERSIONING.md). There is no Helm chart in this repo, so that service's deploy step is not part of this one.
+
+## Semantic versioning (SemVer)
+
+We use [SemVer 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH` (e.g. `v1.2.3`).
+
+| Bump | When you change | Examples |
+|------|-----------------|----------|
+| **MAJOR** | Breaking change in the runtime contract (§ below) | Renaming the federation container (`app2`) or `remoteEntry.js`, removing `./App` or changing its props so the shell cannot mount it, moving to an SDK preset release that the shell's SDK cannot satisfy (a remote requires `^<its preset version>` of the shell's SDK), removing `/healthz` or `/`, removing `VITE_APP1_URL`, changing the image listen port |
+| **MINOR** | New backward-compatible capability | A new optional prop on `./App`, a new route that does not remove an existing one, a new optional `VITE_*` build arg |
+| **PATCH** | Backward-compatible fix | Ticket, theme, or navigation bug fix, visual fix that does not change the federation contract, dependency bump with no observable behavior change, documentation-only correction |
+
+### What counts as the runtime contract
+
+This remote has no package for another app to import from npm. Its public contract is what the shell, a browser, and an operator can rely on after the image is deployed.
+
+| In scope (SemVer applies) | Out of scope (may change without MAJOR) |
+|---------------------------|------------------------------------------|
+| Federation container `name` (`app2`), `filename` (`remoteEntry.js`), and `exposes['./App']` in `rsbuild.config.ts` (`pluginPlatform`) | Internal file layout under `src/`, component names that are not the exposed `./App`, CSS class names |
+| Props `./App` accepts: optional `userLabel` (string) and optional `onLogout` (function) | Mock ticket and user rows. They are fixture data, not an API |
+| Shared singletons and their `requiredVersion`: `react` `^19.3.0`, `react-dom` `^19.3.0`, `react-router-dom` `^7.18.4` | Patch-level upgrades inside those ranges |
+| When the shell already provides a router: index route (dashboard) and `user-management`. When this app is opened alone: `/` and unknown paths redirect to `/dashboard`, and `/dashboard/*` renders the same two pages | Copy, KPI counts, and theme class names |
+| Build-time env `VITE_APP1_URL` (default `http://localhost:5001`): where logout sends the browser when the shell did not pass `onLogout` | The default itself. A production image must set the repository variable |
+| Image listen port **8080**, `GET /healthz` (plain `ok`), `GET /` (document with `id="app"`), `GET /remoteEntry.js` (no-cache, CORS, defines `var app2`), hashed files under `/assets/` | nginx config comments, cache headers on files other than the ones named here |
+| `package.json` `version` once a tag exists — it must match the Git tag without the `v` | The npm package name. It is not published |
+
+`VITE_*` values are compiled into the browser bundle. They are public. Do not put secrets in them.
+
+### Guarantees
+
+- **Pre-`v1.0.0` (current status):** per [SemVer §4](https://semver.org/#spec-item-4), anything may change at any time while the major version is `0`. This remote has not yet committed to a stable contract via a Git tag. The table above still indicates what is *more* disruptive than what within `v0.x`, but a host should not yet assume `v0.x` compatibility across a MINOR bump the way it could once `v1.0.0` ships.
+- **MAJOR (once `v1` ships):** breaking changes to the runtime contract ship as `v2.0.0` with migration notes in the CHANGELOG.
+- **MINOR:** safe to roll the image forward without changing the shell's import of `app2/App` or the shared React versions, unless you opt into a new capability.
+- **PATCH:** drop-in image replacement. Upgrade recommended for security fixes. Every image is CVE-scanned (see below).
+
+## Supported releases
+
+| Version | Status | Image tag | Notes |
+|---------|--------|-----------|-------|
+| *(none tagged)* | **Unreleased** | — | [CHANGELOG.md](CHANGELOG.md) lives entirely under `[Unreleased]`. `package.json` `version` is `0.0.0` and is not a published release. No support window has started |
+| `< v0.1.0` | — | — | No tagged Git releases |
+
+This remote has no formal support-window policy yet, since nothing is running in production against a tagged release. Once a `v1.0.0` ships, this section will define how long a superseded major line receives security-only fixes.
+
+## Consume a release
+
+Do not add this repository as an npm dependency. The shell loads `remoteEntry.js` from the entry its `/remotes/manifest.json` names for `app2` (with `integrity` outside local, dev and test). You can also unpack the static tarball from the GitHub Release behind any static host that preserves the paths above.
+
+### Pull and verify the image
+
+Once a tag exists:
+
+```bash
+# Git tag v0.1.0 publishes the image as 0.1.0 (the v prefix is not part of the image tag)
+docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.0
+```
+
+**Today** only images from a push to `main` or `master` are published (see CI below). Every image pushed from `ci.yml` is signed keylessly via Sigstore/Cosign (no long-lived key). Verify before deploying:
+
+```bash
+# main-branch builds (signed by ci.yml's push job)
+cosign verify \
+  --certificate-identity-regexp "^https://github\.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/.github/workflows/.*@refs/heads/(main|master)$" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard@<digest>
+```
+
+Tagged releases, published by `.github/workflows/release.yml`, use `@refs/tags/` in the identity regexp:
+
+```bash
+# tagged releases (signed by release.yml's docker job)
+cosign verify \
+  --certificate-identity-regexp "^https://github\.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/.github/workflows/.*@refs/tags/.*$" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard@<digest>
+```
+
+### Image tag table
+
+`docker/metadata-action` uses `type=semver,pattern={{version}}`, which **strips** the leading `v` from the Git tag.
+
+| Git tag | Image tags |
+|---------|------------|
+| `v1.2.3` | `1.2.3`, `1.2`, `1`, `latest` |
+| `v1.2.3-rc.1` | `1.2.3-rc.1` only (`latest` is omitted when the tag contains `-`) |
+| push to `main` / `master` | branch name and `sha-<short>` (not a release) |
+
+## Cut a release
+
+1. `npm run test:ci` and `npm run build` pass locally.
+2. Add `## [X.Y.Z] - YYYY-MM-DD` to [CHANGELOG.md](CHANGELOG.md) and move the `[Unreleased]` notes into it. The release workflow fails when that section is missing or empty.
+3. Set `package.json` `version` to `X.Y.Z` (no `v`).
+4. Tag the commit: `git tag -a vX.Y.Z -m "vX.Y.Z"` and push the tag. `release.yml` checks that the tag matches `git describe --tags --exact-match`.
+5. Set the GitHub Actions variable `VITE_APP1_URL` to the shell origin before the production build. The default is `http://localhost:5001`.
+
+The workflow publishes the image, a CycloneDX SBOM, provenance, and `mfe-dashboard_vX.Y.Z_dist.tar.gz` plus checksums. It does not deploy a cluster.
+
+## Related
+
+- [README.md](README.md) — run it locally and read the contract
+- [ARCHITECTURE.md](ARCHITECTURE.md) — how the remote is put together
+- [docs/pipeline/README.md](docs/pipeline/README.md) — job order
+- [docs/runbook-release.md](docs/runbook-release.md) — a tag that did not publish

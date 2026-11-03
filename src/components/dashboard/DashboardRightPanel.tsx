@@ -1,0 +1,111 @@
+import { IconAlertCircle, IconBell, IconUser } from './DashboardIcons'
+import { slaOverviewForMyTickets } from '../../mocks/dashboardStats'
+
+type Props = {
+  unreadCount: number
+  showTenderError: boolean
+}
+
+export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
+  const sla = slaOverviewForMyTickets()
+  const pctOn = (sla.onTrack / sla.total) * 100
+  const pctWarn = (sla.warning / sla.total) * 100
+
+  return (
+    <aside className="flex flex-col gap-4">
+      <div className="rounded-xl border border-aura-primary/25 bg-aura-primary-soft p-4">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-aura-primary text-white">
+            <IconUser className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="text-sm font-semibold text-aura-text">Delegation / Coverage</h3>
+            <p className="mt-2 text-xs text-aura-muted">You are covered by</p>
+            <p className="text-sm font-semibold text-aura-text">Arjun R</p>
+            <p className="mt-1 text-xs text-aura-muted">12 Oct 2026 – 16 Oct 2026</p>
+            <button
+              type="button"
+              className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
+            >
+              View details
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-aura-border bg-aura-surface p-4 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-aura-secondary text-white">
+            <IconBell className="h-5 w-5" />
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.6rem] font-bold">
+              {unreadCount}
+            </span>
+          </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-aura-text">Unread Notifications</h3>
+            <button
+              type="button"
+              className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
+            >
+              View all
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-aura-border bg-aura-surface p-4 shadow-sm">
+        <h3 className="text-sm font-semibold text-aura-text">SLA Overview</h3>
+        <div className="mt-4 flex items-center gap-4">
+          <div
+            className="relative h-24 w-24 shrink-0 rounded-full"
+            style={{
+              background: `conic-gradient(#10b981 0 ${pctOn}%, #fbbf24 ${pctOn}% ${pctOn + pctWarn}%, #ef4444 ${pctOn + pctWarn}% 100%)`,
+            }}
+          >
+            <div className="absolute inset-2 flex flex-col items-center justify-center rounded-full bg-aura-surface text-center">
+              <span className="text-lg font-bold text-aura-text">{sla.total}</span>
+              <span className="text-[0.6rem] text-aura-muted">Total Tickets</span>
+            </div>
+          </div>
+          <ul className="space-y-1.5 text-xs text-aura-text">
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              On Track ({sla.onTrack})
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-amber-400" />
+              Warning ({sla.warning})
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-red-500" />
+              Breached ({sla.breached})
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {showTenderError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-500/45 dark:bg-transparent">
+          <div className="flex gap-3">
+            <IconAlertCircle className="h-8 w-8 shrink-0 text-red-600" />
+            <div>
+              <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                Tender Details Unavailable
+              </p>
+              <p className="mt-1 text-xs text-red-700 dark:text-red-400/90">
+                Tender details could not be loaded for this ticket. The ticket is still available and
+                can be processed.
+              </p>
+              <button
+                type="button"
+                className="mt-3 cursor-pointer rounded-lg border border-red-300 bg-aura-surface px-3 py-1.5 text-xs font-semibold text-red-800 dark:border-red-800 dark:text-red-300"
+              >
+                View Ticket →
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </aside>
+  )
+}

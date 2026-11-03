@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Page as DashboardPage
+    participant Hook as useDashboardData
+    participant Mock as ticketsForView
+
+    Page->>Hook: view + filters
+    Hook-->>Page: loadState loading
+    Note over Hook: 700 ms, or 400 ms on refresh
+    Hook->>Mock: ticketsForView(view)
+    Mock-->>Hook: rows
+    Hook-->>Page: ready, empty, or partial_failure
+    Page->>Page: search box filters the rows again
