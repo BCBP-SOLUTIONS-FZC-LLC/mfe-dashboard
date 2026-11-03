@@ -8,19 +8,22 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 
 | Piece | Role |
 |---|---|
-| `src/App.tsx` | Exposed module. Renders relative routes when a router already exists, otherwise its own `BrowserRouter` |
+| `src/App.tsx` | Exposed module. Reads the signed-in user (`useCurrentUser`) and sign-out (`useSignOut`) from the platform SDK the shell provides, then renders `DashboardApp` |
+| `src/DashboardApp.tsx` | The dashboard without the SDK. Renders relative routes when a router already exists, otherwise its own `BrowserRouter`. The standalone entry renders it directly |
 | `src/layouts/AppShellLayout.tsx` | Sidebar, search, theme, user menu, logout |
 | `src/pages/DashboardPage.tsx` | Ticket views, filters, KPI cards. Data comes from `useDashboardData` after a short timeout |
 | `src/pages/UserManagementPage.tsx` | Mock user table filtered by the shell search box |
 | `src/theme/` | Aura light/dark and daisyUI themes, stored in `localStorage` |
 | `nginx/default.conf` | Static host for the production image |
 
-Props the shell may pass:
+Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell needs to pass nothing. Props, when passed, override the SDK:
 
 | Prop | Meaning |
 |---|---|
-| `userLabel` | Display name or email. Initials are derived from it. Default `User` |
-| `onLogout` | Called from the sidebar and the user menu. When omitted, the browser goes to `VITE_APP1_URL` |
+| `userLabel` | Display name or email. Initials are derived from it. Default: the SDK user's email, then name, then `User` |
+| `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to `VITE_APP1_URL` |
+
+`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.2`, the preset's range) and a dev dependency pinned to web-shell's version for types and tests. It is never bundled (`import: false`), so only `src/App.tsx` and what it imports may use it: the standalone entry has no shell to provide it.
 
 ## Routes
 
@@ -59,7 +62,8 @@ The shell registers the remote in its `/remotes/manifest.json` (`"app2": { "entr
 ## Repository layout
 
 ```
-src/App.tsx                      exposed remote
+src/App.tsx                      exposed remote (platform SDK)
+src/DashboardApp.tsx             the dashboard without the SDK
 src/index.ts                     standalone entry (async boundary)
 src/main.tsx                     standalone bootstrap (#app)
 src/layouts/                     shell chrome and outlet context
@@ -106,7 +110,7 @@ Vitest 5, happy-dom, Testing Library. `vitest.config.ts` does **not** load Rsbui
 
 | Directory | What it exercises |
 |---|---|
-| `test/unit` | Theme storage, ticket views, `useDashboardData`, presentational components, `main.tsx` |
+| `test/unit` | Theme storage, ticket views, `useDashboardData`, presentational components, `main.tsx`, the SDK-connected `App` (`createTestPlatform` from `frontend-sdk/testing`) |
 | `test/e2e` | Dashboard filters, search, refresh, user menu, logout, standalone redirect |
 
 The gate requires **95%** statements, branches, functions, and lines on `src/**/*.{ts,tsx}`. Thresholds are not in the Vitest config. `COVERAGE_THRESHOLD` overrides the gate locally. CI does not set it.

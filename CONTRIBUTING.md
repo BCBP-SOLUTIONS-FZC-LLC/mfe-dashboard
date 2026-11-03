@@ -28,6 +28,7 @@ The hook rejects:
 
 - Federation name stays `app2`, the expose stays `./App`, and the shared map comes from `@bcbp-solutions-fzc-llc/webpack-preset` (`rsbuild.config.ts`). Keep its version the same as, or older than, web-shell's SDK. Do not set Rsbuild's `moduleFederation` option, and keep `splitChunks` on async chunks only.
 - `./App` keeps optional `userLabel` and `onLogout`. New required props are a breaking change ([VERSIONING.md](VERSIONING.md)).
+- Import `@bcbp-solutions-fzc-llc/frontend-sdk` only from `src/App.tsx` and modules it alone imports, never from `DashboardApp` or `main.tsx`: the SDK is never bundled, and standalone there is no shell to provide it. Keep the dev dependency on the same version as web-shell.
 - A new `VITE_*` variable is documented in [README.md](README.md) and given a Dockerfile `ARG` default when the image needs it.
 - `localStorage` stays limited to `bcbp.appTheme` and `bcbp.themeMode`.
 - nginx keeps `/healthz`, port 8080, and no-cache and CORS on `remoteEntry.js`, CORS on the hashed chunks.

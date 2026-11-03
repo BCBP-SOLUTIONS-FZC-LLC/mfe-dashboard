@@ -1,47 +1,26 @@
-import { BrowserRouter, Navigate, Route, Routes, useInRouterContext } from 'react-router-dom'
-import AppShellLayout from './layouts/AppShellLayout'
-import DashboardPage from './pages/DashboardPage'
-import UserManagementPage from './pages/UserManagementPage'
-import './index.css'
+// The module the shell mounts (./App). It reads the signed-in user and sign-out from the platform
+// SDK, which the shell provides as a shared singleton; this remote never bundles it. Props the shell
+// passes still win, so a shell that sends userLabel/onLogout keeps working unchanged.
+import { useCallback } from 'react'
+import { useCurrentUser, useSignOut } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import DashboardApp, { type DashboardAppProps } from './DashboardApp'
+import { defaultLogout } from './layouts/AppShellLayout'
 
-export type DashboardAppProps = {
-  userLabel?: string
-  onLogout?: () => void
-}
+export { routerBasename, type DashboardAppProps } from './DashboardApp'
 
-function DashboardRoutes({ userLabel, onLogout }: DashboardAppProps) {
+export default function App({ userLabel, onLogout }: DashboardAppProps) {
+  const user = useCurrentUser()
+  const signOut = useSignOut()
+  // Global sign-out (the identity provider's session ends too). useSignOut rejects when the shell
+  // provides no signOut; fall back to the shell's sign-in page then.
+  const sdkLogout = useCallback(() => {
+    signOut().catch(defaultLogout)
+  }, [signOut])
+
   return (
-    <Routes>
-      <Route element={<AppShellLayout userLabel={userLabel} onLogout={onLogout} />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="user-management" element={<UserManagementPage />} />
-      </Route>
-    </Routes>
-  )
-}
-
-/**
- * The part of the URL before `/dashboard`: '' standalone, `/t/<slug>` inside the shell. The SDK
- * does not share react-router-dom, so the remote runs its own router under the shell's prefix.
- */
-export function routerBasename(pathname: string): string {
-  const match = /^(.*?)\/dashboard(?:\/|$)/.exec(pathname)
-  return match?.[1] ?? ''
-}
-
-export default function App(props: DashboardAppProps) {
-  if (useInRouterContext()) {
-    return <DashboardRoutes {...props} />
-  }
-
-  const basename = routerBasename(window.location.pathname)
-  return (
-    <BrowserRouter {...(basename ? { basename } : {})}>
-      <Routes>
-        <Route path="/dashboard/*" element={<DashboardRoutes {...props} />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <DashboardApp
+      userLabel={userLabel ?? user?.email ?? user?.name}
+      onLogout={onLogout ?? sdkLogout}
+    />
   )
 }

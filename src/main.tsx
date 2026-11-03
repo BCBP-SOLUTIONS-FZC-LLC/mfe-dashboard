@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App'
+import DashboardApp from './DashboardApp'
 import { applyAppTheme, readStoredAppTheme } from './theme/themeMode'
 
 applyAppTheme(readStoredAppTheme())
@@ -12,6 +12,6 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    <DashboardApp />
   </StrictMode>,
 )

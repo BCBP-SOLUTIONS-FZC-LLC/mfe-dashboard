@@ -26,8 +26,9 @@ flowchart TB
 
 | Module | Responsibility |
 |---|---|
-| `src/main.tsx` | Applies the stored theme, then mounts `<App />` on `#app`. Throws if `#app` is missing. Used when this repo is the page. The shell imports `./App` and does not run `main.tsx` |
-| `src/App.tsx` | Contract props `userLabel?` and `onLogout?`. Picks embedded or standalone routing |
+| `src/main.tsx` | Applies the stored theme, then mounts `<DashboardApp />` on `#app`. Throws if `#app` is missing. Used when this repo is the page. The shell imports `./App` and does not run `main.tsx` |
+| `src/App.tsx` | Exposed module. `useCurrentUser` and `useSignOut` from the SDK fill `userLabel` and `onLogout`; props, when passed, win |
+| `src/DashboardApp.tsx` | Contract props `userLabel?` and `onLogout?`. Picks embedded or standalone routing. No SDK import, so the standalone entry can render it |
 | `src/layouts/AppShellLayout.tsx` | Sidebar, search box, theme picker, user menu. Publishes `{ search }` on the outlet context |
 | `src/pages/DashboardPage.tsx` | Views, filter drawer, KPI cards, empty / loading / partial states |
 | `src/hooks/useDashboardData.ts` | `setTimeout` 700 ms to load, 400 ms to refresh, then filters the fixture |
@@ -98,7 +99,7 @@ KPI numbers come from `KPI_COUNTS` in `src/mocks/dashboardStats.ts`. They are no
 
 ## Logout and theme
 
-`onLogout` from the shell runs as-is. The default, used in standalone mode, is `window.location.assign` of `VITE_APP1_URL` with one trailing slash removed. The default value is `http://localhost:5001`. It is read at click time from `import.meta.env`, which `rsbuild.config.ts` (`source.define`) inlines at build time.
+`onLogout` from the shell runs as-is. Without it, inside the shell, `App` calls the SDK's `useSignOut()` (global sign-out); if that rejects because the shell provides no `signOut`, it falls back to the default. The default, used in standalone mode, is `window.location.assign` of `VITE_APP1_URL` with one trailing slash removed. The default value is `http://localhost:5001`. It is read at click time from `import.meta.env`, which `rsbuild.config.ts` (`source.define`) inlines at build time.
 
 Theme keys:
 
