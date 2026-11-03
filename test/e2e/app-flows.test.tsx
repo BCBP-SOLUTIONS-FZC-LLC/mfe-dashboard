@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from '../../src/App'
+import App from '../../src/DashboardApp'
 
 describe('dashboard flows', () => {
   afterEach(() => {

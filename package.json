@@ -13,7 +13,9 @@
     "preview": "rsbuild preview"
   },
   "devDependencies": {
+    "@bcbp-solutions-fzc-llc/frontend-sdk": "1.0.0-alpha.2",
     "@bcbp-solutions-fzc-llc/webpack-preset": "1.0.0-alpha.2",
+    "@opentelemetry/api": "1.10.0",
     "@rsbuild/core": "^2.3.1",
     "@rsbuild/plugin-react": "^2.1.1",
     "@tailwindcss/postcss": "^4.3.4",
@@ -36,5 +38,8 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.5"
+  },
+  "peerDependencies": {
+    "@bcbp-solutions-fzc-llc/frontend-sdk": "^1.0.0-alpha.2"
   }
 }
