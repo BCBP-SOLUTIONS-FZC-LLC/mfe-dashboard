@@ -33,9 +33,9 @@ flowchart TB
 | `src/hooks/useDashboardData.ts` | `setTimeout` 700 ms to load, 400 ms to refresh, then filters the fixture |
 | `src/pages/UserManagementPage.tsx` | Filters the mock user list by the outlet search string |
 | `src/theme/themeMode.ts` | `bcbp.appTheme` and `bcbp.themeMode` in `localStorage` |
-| `nginx/default.conf` | Port 8080, `/healthz`, no-cache federation files |
+| `nginx/default.conf` | Port 8080, `/healthz`, no-cache `remoteEntry.js`, immutable hashed chunks, CORS on both |
 
-Shared singletons, declared in `module-federation.config.ts`: `react` `^19.3.0`, `react-dom` `^19.3.0`, `react-router-dom` `^7.18.4`. The shell must provide the same ranges. CSS is bundled with the expose (`bundleAllCSS: true`).
+The build is Rsbuild 2 with the platform SDK's plugin (`rsbuild.config.ts`, `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })`). The preset's shared map makes `react`, `react-dom` (`^19.0.0`), `@opentelemetry/api` and every SDK subpath strict singletons provided by the shell; the SDK is never bundled here. `react-router-dom` is not shared, so `App` runs its own `BrowserRouter` with the basename read from the URL (`routerBasename`: everything before `/dashboard`). The exposed module's CSS is a lazily loaded chunk next to `remoteEntry.js`. Only async chunks are split: a split entry would start asynchronously and leave `window.app2` as a Promise, which the SDK's `loadRemote` refuses.
 
 ## Routing
 
@@ -98,7 +98,7 @@ KPI numbers come from `KPI_COUNTS` in `src/mocks/dashboardStats.ts`. They are no
 
 ## Logout and theme
 
-`onLogout` from the shell runs as-is. The default, used in standalone mode, is `window.location.assign` of `VITE_APP1_URL` with one trailing slash removed. The default value is `http://localhost:5001`. It is read at click time from `import.meta.env`, which Vite inlines at build time.
+`onLogout` from the shell runs as-is. The default, used in standalone mode, is `window.location.assign` of `VITE_APP1_URL` with one trailing slash removed. The default value is `http://localhost:5001`. It is read at click time from `import.meta.env`, which `rsbuild.config.ts` (`source.define`) inlines at build time.
 
 Theme keys:
 
@@ -120,7 +120,7 @@ No tokens are written. Search text stays in React state.
 
 ## Image
 
-`Dockerfile` builds with Node 22 and copies `dist` into `nginxinc/nginx-unprivileged`. `USER 101`. Listen 8080. Build args that affect the bundle: `VITE_APP1_URL` (default `http://localhost:5001`), plus `BUILD_VERSION` and `SOURCE_DATE_EPOCH` for labels and reproducibility.
+`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`. Listen 8080. Build args that affect the bundle: `VITE_APP1_URL` (default `http://localhost:5001`), plus `BUILD_VERSION` and `SOURCE_DATE_EPOCH` for labels and reproducibility.
 
 `.dockerignore` excludes `.env`, so a value has to be a build arg. `VITE_APP1_URL` is declared as an `ARG`, which avoids baking an empty logout URL.
 
@@ -144,7 +144,7 @@ No tokens are written. Search text stays in React state.
 
 ## Testing
 
-Vitest does not load `vite.config.ts`, so the federation plugin is not in the test runner. End-to-end tests render `<App />` inside `MemoryRouter` for the embedded branch and alone for `BrowserRouter`. Hook tests use fake timers and a stable filters object.
+Vitest does not load `rsbuild.config.ts`, so the federation plugin is not in the test runner. End-to-end tests render `<App />` inside `MemoryRouter` for the embedded branch and alone for `BrowserRouter`. Hook tests use fake timers and a stable filters object.
 
 ## Threat notes
 

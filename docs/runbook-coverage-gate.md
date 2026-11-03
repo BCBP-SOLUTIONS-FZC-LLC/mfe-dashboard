@@ -15,7 +15,7 @@ npm run test:ci
 
 - A new branch in `src/pages/DashboardPage.tsx` or `src/layouts/AppShellLayout.tsx` without an assertion in `test/e2e/app-flows.test.tsx`.
 - A `renderHook` call that builds a new `filters` object on every render. `useDashboardData` restarts the timer and stays on `loading`. Pass a stable object.
-- `vitest.config.ts` started loading the app Vite config. Keep the federation plugin out of the test runner.
+- `vitest.config.ts` started loading `rsbuild.config.ts`. Keep the federation plugin out of the test runner.
 
 ## Fix
 

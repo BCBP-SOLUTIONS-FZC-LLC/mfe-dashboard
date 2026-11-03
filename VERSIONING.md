@@ -10,7 +10,7 @@ We use [SemVer 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH` (e.g. `v1.2.3`).
 
 | Bump | When you change | Examples |
 |------|-----------------|----------|
-| **MAJOR** | Breaking change in the runtime contract (§ below) | Renaming the federation container (`app2`) or `remoteEntry.js`, removing `./App` or changing its props so the shell cannot mount it, dropping a shared singleton or raising `requiredVersion` so the shell cannot load it, removing `/healthz` or `/`, removing `VITE_APP1_URL`, changing the image listen port |
+| **MAJOR** | Breaking change in the runtime contract (§ below) | Renaming the federation container (`app2`) or `remoteEntry.js`, removing `./App` or changing its props so the shell cannot mount it, moving to an SDK preset release that the shell's SDK cannot satisfy (a remote requires `^<its preset version>` of the shell's SDK), removing `/healthz` or `/`, removing `VITE_APP1_URL`, changing the image listen port |
 | **MINOR** | New backward-compatible capability | A new optional prop on `./App`, a new route that does not remove an existing one, a new optional `VITE_*` build arg |
 | **PATCH** | Backward-compatible fix | Ticket, theme, or navigation bug fix, visual fix that does not change the federation contract, dependency bump with no observable behavior change, documentation-only correction |
 
@@ -20,12 +20,12 @@ This remote has no package for another app to import from npm. Its public contra
 
 | In scope (SemVer applies) | Out of scope (may change without MAJOR) |
 |---------------------------|------------------------------------------|
-| Federation container `name` (`app2`), `filename` (`remoteEntry.js`), and `exposes['./App']` in `module-federation.config.ts` | Internal file layout under `src/`, component names that are not the exposed `./App`, CSS class names |
+| Federation container `name` (`app2`), `filename` (`remoteEntry.js`), and `exposes['./App']` in `rsbuild.config.ts` (`pluginPlatform`) | Internal file layout under `src/`, component names that are not the exposed `./App`, CSS class names |
 | Props `./App` accepts: optional `userLabel` (string) and optional `onLogout` (function) | Mock ticket and user rows. They are fixture data, not an API |
 | Shared singletons and their `requiredVersion`: `react` `^19.3.0`, `react-dom` `^19.3.0`, `react-router-dom` `^7.18.4` | Patch-level upgrades inside those ranges |
 | When the shell already provides a router: index route (dashboard) and `user-management`. When this app is opened alone: `/` and unknown paths redirect to `/dashboard`, and `/dashboard/*` renders the same two pages | Copy, KPI counts, and theme class names |
 | Build-time env `VITE_APP1_URL` (default `http://localhost:5001`): where logout sends the browser when the shell did not pass `onLogout` | The default itself. A production image must set the repository variable |
-| Image listen port **8080**, `GET /healthz` (plain `ok`), `GET /` (document with `id="app"`), `GET /remoteEntry.js` and `GET /mf-manifest.json` (no-cache), hashed files under `/assets/` | nginx config comments, cache headers on files other than the ones named here |
+| Image listen port **8080**, `GET /healthz` (plain `ok`), `GET /` (document with `id="app"`), `GET /remoteEntry.js` (no-cache, CORS, defines `var app2`), hashed files under `/assets/` | nginx config comments, cache headers on files other than the ones named here |
 | `package.json` `version` once a tag exists — it must match the Git tag without the `v` | The npm package name. It is not published |
 
 `VITE_*` values are compiled into the browser bundle. They are public. Do not put secrets in them.
@@ -48,7 +48,7 @@ This remote has no formal support-window policy yet, since nothing is running in
 
 ## Consume a release
 
-Do not add this repository as an npm dependency. The shell loads `remoteEntry.js` from the origin you configure as `VITE_APP2_URL` in **web-shell**. You can also unpack the static tarball from the GitHub Release behind any static host that preserves the paths above.
+Do not add this repository as an npm dependency. The shell loads `remoteEntry.js` from the entry its `/remotes/manifest.json` names for `app2` (with `integrity` outside local, dev and test). You can also unpack the static tarball from the GitHub Release behind any static host that preserves the paths above.
 
 ### Pull and verify the image
 

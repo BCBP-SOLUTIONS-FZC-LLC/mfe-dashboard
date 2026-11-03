@@ -26,11 +26,11 @@ The hook rejects:
 
 ## What a change has to keep true
 
-- Federation name stays `app2`, the expose stays `./App`, and the shared React ranges stay aligned with web-shell (`module-federation.config.ts`).
+- Federation name stays `app2`, the expose stays `./App`, and the shared map comes from `@bcbp-solutions-fzc-llc/webpack-preset` (`rsbuild.config.ts`). Keep its version the same as, or older than, web-shell's SDK. Do not set Rsbuild's `moduleFederation` option, and keep `splitChunks` on async chunks only.
 - `./App` keeps optional `userLabel` and `onLogout`. New required props are a breaking change ([VERSIONING.md](VERSIONING.md)).
 - A new `VITE_*` variable is documented in [README.md](README.md) and given a Dockerfile `ARG` default when the image needs it.
 - `localStorage` stays limited to `bcbp.appTheme` and `bcbp.themeMode`.
-- nginx keeps `/healthz`, port 8080, and no-cache on `remoteEntry.js` and `mf-manifest.json`.
+- nginx keeps `/healthz`, port 8080, and no-cache and CORS on `remoteEntry.js`, CORS on the hashed chunks.
 
 ## Tests
 
@@ -47,7 +47,7 @@ The hook rejects:
 
 | You changed | Update |
 |---|---|
-| `src/`, dependencies, Dockerfile, nginx, Vite or federation config, `index.html` | `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md). The changelog workflow fails the PR otherwise |
+| `src/`, dependencies, Dockerfile, nginx, `rsbuild.config.ts`, `index.html` | `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md). The changelog workflow fails the PR otherwise |
 | A route, prop, or `VITE_*` name | [README.md](README.md) and, if the contract moved, [VERSIONING.md](VERSIONING.md) |
 | A pipeline job | [docs/pipeline/README.md](docs/pipeline/README.md) and the matching runbook |
 

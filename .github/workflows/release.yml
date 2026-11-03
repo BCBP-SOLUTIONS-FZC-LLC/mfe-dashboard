@@ -58,7 +58,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v7.1.0
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
 
       - name: Verify CHANGELOG entry exists
@@ -66,6 +66,8 @@ jobs:
 
       - name: Prepare release bundle
         run: bash .github/scripts/prepare-release-asset.sh
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v7.0.1
@@ -135,6 +137,8 @@ jobs:
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            npm_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             BUILD_VERSION=${{ env.RELEASE_TAG }}
             SOURCE_DATE_EPOCH=${{ steps.sde.outputs.SOURCE_DATE_EPOCH }}

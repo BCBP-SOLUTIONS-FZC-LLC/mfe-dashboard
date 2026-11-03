@@ -8,6 +8,8 @@ set -euo pipefail
 echo "Building mfe-dashboard static bundle for ${RELEASE_TAG}"
 npm ci --no-audit --no-fund
 npm run build
+# Hidden source maps are uploaded privately, never shipped with the bundle.
+find dist -name '*.map' -delete
 
 ASSET_NAME="mfe-dashboard_${RELEASE_TAG}_dist.tar.gz"
 tar -C dist -czf "${ASSET_NAME}" .

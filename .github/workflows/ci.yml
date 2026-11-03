@@ -103,6 +103,8 @@ jobs:
           pull: ${{ github.event_name != 'pull_request' }}
           cache-from: ${{ steps.cache.outputs.from }}
           cache-to: ${{ steps.cache.outputs.to }}
+          secrets: |
+            npm_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             BUILD_VERSION=${{ github.sha }}
             SOURCE_DATE_EPOCH=${{ steps.cache.outputs.SOURCE_DATE_EPOCH }}
@@ -115,6 +117,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      packages: read
       security-events: write
       actions: read
     steps:
@@ -136,6 +139,8 @@ jobs:
           load: true
           tags: mfe-dashboard-ci-test
           cache-from: type=gha
+          secrets: |
+            npm_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             BUILD_VERSION=${{ github.sha }}
             VITE_APP1_URL=${{ vars.VITE_APP1_URL || 'http://localhost:5001' }}
@@ -216,6 +221,8 @@ jobs:
           load: true
           tags: mfe-dashboard-ci-test
           cache-from: type=gha
+          secrets: |
+            npm_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             BUILD_VERSION=${{ github.sha }}
             VITE_APP1_URL=${{ vars.VITE_APP1_URL || 'http://localhost:5001' }}
@@ -303,6 +310,8 @@ jobs:
           sbom: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            npm_token=${{ secrets.GITHUB_TOKEN }}
           build-args: |
             BUILD_VERSION=${{ github.sha }}
             SOURCE_DATE_EPOCH=${{ steps.sde.outputs.SOURCE_DATE_EPOCH }}

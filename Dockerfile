@@ -1,12 +1,15 @@
 # Pin base images to SHA digests for reproducible, supply-chain-safe builds.
 # CI (validate-quality.yml, "Dockerfile base image digest check") fails when a
 # FROM line uses a floating tag without @sha256.
-FROM node:22-bookworm@sha256:63538dfe497cc29dfafdda25ada09b46db68a3f4cc205abf1f5d6bf0913f3384 AS builder
+FROM node:26-bookworm@sha256:fa52d1669505e29b58c042875b1d65c229e0787a3610fd52869b22b68e480853 AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+COPY package.json package-lock.json .npmrc ./
+# @bcbp-solutions-fzc-llc/webpack-preset comes from GitHub Packages. The token is a BuildKit secret
+# (docker build --secret id=npm_token,env=NODE_AUTH_TOKEN), so it never lands in a layer.
+RUN --mount=type=secret,id=npm_token,required=true \
+    NODE_AUTH_TOKEN="$(cat /run/secrets/npm_token)" npm ci --no-audit --no-fund
 
 COPY . .
 
@@ -17,9 +20,10 @@ ARG VITE_APP1_URL=http://localhost:5001
 ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} \
     VITE_APP1_URL=${VITE_APP1_URL}
 
-RUN npm run build
+# Hidden source maps are uploaded privately, never served.
+RUN npm run build && find dist -name '*.map' -delete
 
-FROM nginxinc/nginx-unprivileged:1.27-alpine@sha256:65e3e85dbaed8ba248841d9d58a899b6197106c23cb0ff1a132b7bfe0547e4c0
+FROM nginxinc/nginx-unprivileged:1.31-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 
 ARG BUILD_VERSION=dev
 ENV BUILD_VERSION=${BUILD_VERSION}
@@ -28,6 +32,12 @@ LABEL org.opencontainers.image.title="mfe-dashboard" \
       org.opencontainers.image.source="https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard" \
       org.opencontainers.image.vendor="BCBP Solutions FZC LLC" \
       org.opencontainers.image.revision="${BUILD_VERSION}"
+
+# The pinned base lags Alpine security fixes, so upgrade its packages to keep
+# the Trivy gate green. Remove this step once nginxinc rebuilds often enough.
+USER 0
+# hadolint ignore=DL3017,DL3018
+RUN apk upgrade --no-cache
 
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 # 101 is the nginx user in nginxinc/nginx-unprivileged. A name fails Hadolint DL3066.

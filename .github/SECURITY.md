@@ -16,7 +16,7 @@ Email: vijay@bcbpsolutions.com
 Subject: `[mfe-dashboard] Security vulnerability`
 
 Include in your report:
-- Description of the vulnerability and the affected component (dashboard UI, theme storage, module-federation expose, static hosting)
+- Description of the vulnerability and the affected component (dashboard UI, theme storage, Module Federation expose, static hosting)
 - Steps to reproduce
 - Potential impact (token leakage, XSS, open redirect, untrusted remote load, privilege escalation)
 - Suggested fix or patch (if any)

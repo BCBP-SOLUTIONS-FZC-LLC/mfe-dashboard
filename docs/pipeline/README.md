@@ -9,7 +9,7 @@ Five workflow files. Markdown-only pushes and pull requests skip `ci.yml` (`path
 | [`ci.yml`](../../.github/workflows/ci.yml) | Pull request or push to `main` or `master`, or a manual run | Tests, image, scan, smoke. Push to `main` also publishes and signs |
 | [`validate-test.yml`](../../.github/workflows/validate-test.yml) | Called by `ci.yml` and `release.yml` | Vitest, the 95% coverage gate, then `npm run build` |
 | [`validate-quality.yml`](../../.github/workflows/validate-quality.yml) | Called by `ci.yml` and `release.yml` | Workflow hygiene, digest-pinned `FROM` lines, production `npm audit` |
-| [`changelog-check.yml`](../../.github/workflows/changelog-check.yml) | Pull request touching `src/`, the lockfile, the Dockerfile, nginx, Vite, federation config, or `index.html` | `CHANGELOG.md` is in the diff |
+| [`changelog-check.yml`](../../.github/workflows/changelog-check.yml) | Pull request touching `src/`, the lockfile, the Dockerfile, nginx, `rsbuild.config.ts`, or `index.html` | `CHANGELOG.md` is in the diff |
 | [`release.yml`](../../.github/workflows/release.yml) | Tag `vX.Y.Z` or `vX.Y.Z-*`, or a manual run with a tag input | Changelog section, image, SBOM, provenance, GitHub Release |
 
 Dependabot opens pull requests for npm, Docker, and GitHub Actions (`.github/dependabot.yml`).
@@ -49,9 +49,9 @@ Source: [`mermaid/ci-flow.mmd`](mermaid/ci-flow.mmd).
 
 | Job | Gate |
 |---|---|
-| `validate-test` | `npm ci`, `npm run test:coverage`, [`.github/scripts/coverage-gate.mjs`](../../.github/scripts/coverage-gate.mjs) at 95% for statements, branches, functions, and lines, upload `coverage/`, then `npm run build` (`tsc` and Vite). See [the coverage runbook](../runbook-coverage-gate.md) |
+| `validate-test` | `npm ci`, `npm run test:coverage`, [`.github/scripts/coverage-gate.mjs`](../../.github/scripts/coverage-gate.mjs) at 95% for statements, branches, functions, and lines, upload `coverage/`, then `npm run build` (`tsc` and `rsbuild build`). See [the coverage runbook](../runbook-coverage-gate.md) |
 | `validate-quality` | No HTML entities in workflows or scripts. LF in `.github/scripts`, `.github/workflows`, `Dockerfile`, and `nginx/`. Every `FROM` is `image:tag@sha256:…`. `.dockerignore` exists. `npm audit --omit=dev --audit-level=high` |
-| `build-image` | Hadolint on `Dockerfile`, then a `linux/amd64` build tagged `mfe-dashboard-ci-test` and stored in the Actions cache. Build arg: `VITE_APP1_URL` from the repository variable, otherwise `http://localhost:5001` |
+| `build-image` | Hadolint on `Dockerfile`, then a `linux/amd64` build tagged `mfe-dashboard-ci-test` and stored in the Actions cache. Build arg: `VITE_APP1_URL` from the repository variable, otherwise `http://localhost:5001`. Secret `npm_token` (`GITHUB_TOKEN`, `packages: read`) for the preset on GitHub Packages |
 | `trivy` | Reloads that cached image. Fails on unfixed **CRITICAL**, **HIGH**, or **UNKNOWN**. SARIF is uploaded and does not fail the job by itself. CycloneDX SBOM is an artifact named `sbom-<sha>`. Allowlist file: [`.trivyignore`](../../.trivyignore). See [the image runbook](../runbook-image-scan.md) |
 | `smoke` | Same cached image. [`.github/scripts/smoke-tests.sh`](../../.github/scripts/smoke-tests.sh): at most 200 MB, `GET /healthz` contains `ok`, `GET /` is 200 and contains `id="app"`, `GET /remoteEntry.js` is 200 |
 | `pr-summary` | [`.github/scripts/pr-summary.js`](../../.github/scripts/pr-summary.js) posts one comment. The coverage cell uses the `pct` output of `validate-test` |

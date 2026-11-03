@@ -20,13 +20,23 @@ function DashboardRoutes({ userLabel, onLogout }: DashboardAppProps) {
   )
 }
 
+/**
+ * The part of the URL before `/dashboard`: '' standalone, `/t/<slug>` inside the shell. The SDK
+ * does not share react-router-dom, so the remote runs its own router under the shell's prefix.
+ */
+export function routerBasename(pathname: string): string {
+  const match = /^(.*?)\/dashboard(?:\/|$)/.exec(pathname)
+  return match?.[1] ?? ''
+}
+
 export default function App(props: DashboardAppProps) {
   if (useInRouterContext()) {
     return <DashboardRoutes {...props} />
   }
 
+  const basename = routerBasename(window.location.pathname)
   return (
-    <BrowserRouter>
+    <BrowserRouter {...(basename ? { basename } : {})}>
       <Routes>
         <Route path="/dashboard/*" element={<DashboardRoutes {...props} />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
