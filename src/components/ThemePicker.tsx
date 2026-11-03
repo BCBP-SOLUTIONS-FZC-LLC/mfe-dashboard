@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react'
+import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { APP_ID } from '../i18n'
 import { IconPalette } from './dashboard/DashboardIcons'
 import { APP_THEME_OPTIONS, type AppThemeId } from '../theme/daisyThemes'
 import { dashBorderClass, dashSurfaceClass } from '../theme/themeMode'
@@ -11,6 +13,7 @@ type ThemePickerProps = {
 }
 
 export function ThemePicker({ activeThemeId, open, onOpenChange, onSelect }: ThemePickerProps) {
+  const t = useT(APP_ID)
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export function ThemePicker({ activeThemeId, open, onOpenChange, onSelect }: The
         data-theme-picker-trigger
         onClick={() => onOpenChange(!open)}
         className="rounded-lg p-2 text-aura-muted hover:bg-aura-hover"
-        aria-label="Choose theme"
+        aria-label={t('theme.choose')}
         aria-expanded={open}
         aria-haspopup="listbox"
       >
@@ -51,11 +54,11 @@ export function ThemePicker({ activeThemeId, open, onOpenChange, onSelect }: The
         <div
           ref={panelRef}
           role="listbox"
-          aria-label="Themes"
+          aria-label={t('theme.list')}
           className={`absolute right-0 top-[calc(100%+0.35rem)] z-50 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,14rem)] overflow-y-auto rounded-xl border py-2 shadow-lg ${dashBorderClass} ${dashSurfaceClass}`}
         >
           <p className="px-3 pb-1 pt-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-aura-muted">
-            App themes
+            {t('theme.appThemes')}
           </p>
           {auraThemes.map((theme) => (
             <ThemeOption

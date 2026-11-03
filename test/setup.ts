@@ -1,8 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { createTestPlatform } from '@bcbp-solutions-fzc-llc/frontend-sdk/testing'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { registerMessages } from '../src/i18n'
+import { startPlatform } from './platform'
 
 // createTestPlatform signs a user in but sets no storage workspace (only the OIDC provider does), so
 // the real storage() would write nothing. Stand in an in-memory one with the same AppStorage contract.
@@ -19,11 +18,10 @@ vi.mock('@bcbp-solutions-fzc-llc/frontend-sdk/storage', () => ({
   },
 }))
 
-// Every test runs against a fresh SDK runtime: signed in (so storage() persists), allowed to read
-// tenders as every web-shell role is, with this remote's messages loaded.
+// Every test runs against a fresh SDK runtime: signed in, with web-shell's tenant_admin grants and
+// this remote's messages loaded.
 beforeEach(async () => {
-  createTestPlatform({ permissions: ['read:tender'] })
-  registerMessages()
+  startPlatform()
   await new Promise((resolve) => setTimeout(resolve, 0))
 })
 

@@ -9,7 +9,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | Piece | Role |
 |---|---|
 | `src/App.tsx` | Exposed module, and the standalone page's root. User and sign-out from the SDK (`useCurrentUser`, `useSignOut`). Renders relative routes when a router already exists, otherwise its own `BrowserRouter` under the shell's workspace prefix (`slugFromPath`) |
-| `src/i18n.ts`, `src/locales/` | The `app2` message namespace (`registerNamespace`, `useT`) |
+| `src/i18n.ts`, `src/locales/` | The `app2` message namespace (`registerNamespace`, `useT`). Every UI string is in `src/locales/en.json`; mock data (tickets, users), brand names and theme names are not |
 | `src/layouts/AppShellLayout.tsx` | Sidebar, search, theme, user menu, logout |
 | `src/pages/DashboardPage.tsx` | Ticket views, filters, KPI cards. Data comes from `useDashboardData` after a short timeout |
 | `src/pages/UserManagementPage.tsx` | Mock user table filtered by the shell search box |
@@ -34,6 +34,8 @@ Use the SDK for anything it covers (storage, dates and numbers, messages, permis
 | Inside web-shell | Its own router under the shell's prefix: `/t/<slug>/dashboard` and `/t/<slug>/dashboard/user-management` |
 | Inside a host that shares `react-router-dom` (a router is already mounted) | index → dashboard, `user-management` → user table, relative to the host's route |
 | Alone (`npm run dev` or the image) | `/` and any unknown path redirect to `/dashboard`. `/dashboard/user-management` is the user table |
+
+User management needs `manage:members` (`useHasPermission`; in web-shell only `tenant_admin` has it). Without it the sidebar link is hidden and the route goes back to the dashboard. Standalone the SDK grants nothing, so it is hidden there too.
 
 One `rsbuild` run makes two builds into `dist/` (`rsbuild.config.ts` environments): **remote** (`remoteEntry.js` and its chunks, SDK from the shell) and **standalone** (`index.html` and `assets/`, SDK bundled). Dev server: `http://localhost:5002` (`strictPort`) serves both. The image listens on **8080**.
 

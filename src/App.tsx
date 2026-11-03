@@ -6,7 +6,12 @@ import { useCallback } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useInRouterContext } from 'react-router-dom'
 import { slugFromPath } from '@bcbp-solutions-fzc-llc/frontend-sdk/auth'
 import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
-import { useCurrentUser, useRouteTemplate, useSignOut } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import {
+  useCurrentUser,
+  useHasPermission,
+  useRouteTemplate,
+  useSignOut,
+} from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import AppShellLayout, { defaultLogout } from './layouts/AppShellLayout'
 import DashboardPage from './pages/DashboardPage'
 import UserManagementPage from './pages/UserManagementPage'
@@ -21,7 +26,9 @@ export type DashboardAppProps = {
 function UserManagementRoute() {
   // The shell registers /t/:slug/dashboard; the nested page is this remote's to name.
   useRouteTemplate('/t/:slug/dashboard/user-management')
-  return <UserManagementPage />
+  // Members are managed by those who may (web-shell: tenant_admin). A UI hint; the API decides.
+  const canManageMembers = useHasPermission('manage', 'members')
+  return canManageMembers ? <UserManagementPage /> : <Navigate to=".." relative="path" replace />
 }
 
 function DashboardRoutes({ userLabel, onLogout }: DashboardAppProps) {

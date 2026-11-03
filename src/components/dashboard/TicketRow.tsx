@@ -1,4 +1,6 @@
 import { formatDate } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { APP_ID } from '../../i18n'
 import {
   IconBuilding,
   IconCalendar,
@@ -17,17 +19,12 @@ const slaDot = {
   breached: 'bg-red-500',
 } as const
 
-const slaText = {
-  on_track: 'On Track',
-  warning: 'Warning',
-  breached: 'Breached',
-} as const
-
 function formatDue(iso: string) {
   return formatDate(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export function TicketRow({ ticket }: { ticket: TicketItem }) {
+  const t = useT(APP_ID)
   return (
     <article className="flex flex-col gap-3 rounded-xl border border-aura-border bg-aura-surface px-4 py-4 shadow-sm transition-shadow hover:shadow-md lg:flex-row lg:items-center">
       <div className="flex min-w-0 flex-1 gap-3">
@@ -36,33 +33,33 @@ export function TicketRow({ ticket }: { ticket: TicketItem }) {
           <h3 className="truncate text-sm font-semibold text-aura-text">
             {ticket.tenderTitle}
           </h3>
-          <p className="text-xs text-slate-500 dark:text-aura-muted">Client: {ticket.client}</p>
+          <p className="text-xs text-slate-500 dark:text-aura-muted">{t('ticket.client', { client: ticket.client })}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <Pill label={`Stage: ${ticket.stage}`} />
-            <Pill label={`Deliverable: ${ticket.deliverable}`} />
-            <Pill label={`Section: ${ticket.section}`} />
+            <Pill label={t('ticket.stage', { stage: ticket.stage })} />
+            <Pill label={t('ticket.deliverable', { deliverable: ticket.deliverable })} />
+            <Pill label={t('ticket.section', { section: ticket.section })} />
           </div>
           {ticket.tenderDetailsUnavailable ? (
-            <p className="mt-2 text-xs font-medium text-red-600">Tender details unavailable.</p>
+            <p className="mt-2 text-xs font-medium text-red-600">{t('ticket.detailsUnavailable')}</p>
           ) : null}
         </div>
       </div>
 
       <div className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600 dark:text-aura-text sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-        <Meta icon="building" label="Department" value={ticket.department} />
-        <Meta icon="user" label="Role Level" value={ticket.roleLevel} />
+        <Meta icon="building" label={t('ticket.department')} value={ticket.department} />
+        <Meta icon="user" label={t('ticket.roleLevel')} value={ticket.roleLevel} />
         <div>
-          <p className="text-[0.65rem] text-slate-400 dark:text-aura-muted">Due Date</p>
+          <p className="text-[0.65rem] text-slate-400 dark:text-aura-muted">{t('ticket.dueDate')}</p>
           <p className="inline-flex items-center gap-1.5 font-medium text-slate-800 dark:text-aura-text">
             <IconCalendar className="h-4 w-4 text-slate-400 dark:text-aura-muted" />
             {formatDue(ticket.dueDate)}
           </p>
         </div>
         <div>
-          <p className="text-[0.65rem] text-slate-400 dark:text-aura-muted">SLA State</p>
+          <p className="text-[0.65rem] text-slate-400 dark:text-aura-muted">{t('ticket.slaState')}</p>
           <p className="inline-flex items-center gap-1.5 font-medium text-slate-800 dark:text-aura-text">
             <span className={`h-2 w-2 rounded-full ${slaDot[ticket.slaState]}`} />
-            {slaText[ticket.slaState]}
+            {t(`sla.${ticket.slaState}`)}
           </p>
         </div>
       </div>
@@ -70,14 +67,14 @@ export function TicketRow({ ticket }: { ticket: TicketItem }) {
       <div className="flex shrink-0 flex-wrap items-center gap-2 lg:flex-col lg:items-end xl:flex-row">
         {ticket.restricted ? (
           <Badge tone="red" icon="lock">
-            Restricted
+            {t('ticket.restricted')}
           </Badge>
         ) : null}
         {ticket.evidenceGrade ? (
           <Badge tone="violet">{ticket.evidenceGrade}</Badge>
         ) : null}
         {ticket.delegatedFrom ? (
-          <Badge tone="sky">{`From ${ticket.delegatedFrom}`}</Badge>
+          <Badge tone="sky">{t('ticket.delegatedFrom', { name: ticket.delegatedFrom })}</Badge>
         ) : null}
         {ticket.unreadComments > 0 ? (
           <span className="inline-flex items-center gap-1 text-xs text-slate-500">

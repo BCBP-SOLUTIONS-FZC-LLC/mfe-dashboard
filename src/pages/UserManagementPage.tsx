@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { APP_ID } from '../i18n'
 import type { AppShellOutletContext } from '../layouts/appShellContext'
 import { dashBorderClass, dashSurfaceClass } from '../theme/themeMode'
 
@@ -68,6 +70,7 @@ function statusBadgeClass(status: ManagedUser['status']) {
 
 export default function UserManagementPage() {
   const { search } = useOutletContext<AppShellOutletContext>()
+  const t = useT(APP_ID)
 
   const users = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -87,16 +90,14 @@ export default function UserManagementPage() {
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-aura-text">User management</h1>
-          <p className="text-sm text-aura-muted">
-            View and manage users, roles, and access for your organization.
-          </p>
+          <h1 className="text-2xl font-bold text-aura-text">{t('users.title')}</h1>
+          <p className="text-sm text-aura-muted">{t('users.subtitle')}</p>
         </div>
         <button
           type="button"
           className="cursor-pointer rounded-lg bg-aura-secondary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:opacity-90"
         >
-          Invite user
+          {t('users.invite')}
         </button>
       </div>
 
@@ -105,19 +106,19 @@ export default function UserManagementPage() {
           <table className="w-full min-w-[640px] border-collapse text-left text-sm">
             <thead>
               <tr className={`border-b text-xs font-semibold uppercase tracking-wide text-aura-muted ${dashBorderClass}`}>
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">Email</th>
-                <th className="px-4 py-3 font-semibold">Role</th>
-                <th className="px-4 py-3 font-semibold">Department</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                <th className="px-4 py-3 font-semibold">{t('users.col.name')}</th>
+                <th className="px-4 py-3 font-semibold">{t('users.col.email')}</th>
+                <th className="px-4 py-3 font-semibold">{t('users.col.role')}</th>
+                <th className="px-4 py-3 font-semibold">{t('users.col.department')}</th>
+                <th className="px-4 py-3 font-semibold">{t('users.col.status')}</th>
+                <th className="px-4 py-3 font-semibold text-right">{t('users.col.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-sm text-aura-muted">
-                    No users match your search.
+                    {t('users.empty')}
                   </td>
                 </tr>
               ) : (
@@ -134,7 +135,7 @@ export default function UserManagementPage() {
                       <span
                         className={`inline-flex rounded-md border px-2 py-0.5 text-xs font-medium ${statusBadgeClass(user.status)}`}
                       >
-                        {user.status}
+                        {t(`users.status.${user.status}`)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -142,7 +143,7 @@ export default function UserManagementPage() {
                         type="button"
                         className="cursor-pointer text-sm font-semibold text-aura-secondary hover:underline"
                       >
-                        Edit
+                        {t('users.edit')}
                       </button>
                     </td>
                   </tr>
