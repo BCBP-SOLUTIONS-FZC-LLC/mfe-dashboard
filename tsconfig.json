@@ -6,6 +6,7 @@
     "jsx": "react-jsx",
     "types": [],
     "allowArbitraryExtensions": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
 
     /* Bundler mode */

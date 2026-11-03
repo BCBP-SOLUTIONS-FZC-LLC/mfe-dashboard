@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useHasPermission, useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { APP_ID } from '../i18n'
 import { BrandLogo } from '../components/BrandLogo'
 import {
   IconBell,
@@ -31,10 +33,9 @@ import {
 } from '../theme/themeMode'
 import type { AppShellOutletContext } from './appShellContext'
 
-type AppLanguage = 'en'
-
-const LANGUAGE_LABELS: Record<AppLanguage, string> = {
-  en: 'English',
+/** The page locale's name in that language, e.g. 'English' or 'العربية'. */
+function languageLabel(locale: string): string {
+  return new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale
 }
 
 type AppShellLayoutProps = {
@@ -94,17 +95,18 @@ export function defaultLogout() {
   window.location.assign(app1Url)
 }
 
-export default function AppShellLayout({
-  userLabel = 'User',
-  onLogout = defaultLogout,
-}: AppShellLayoutProps) {
+export default function AppShellLayout({ userLabel: userLabelProp, onLogout = defaultLogout }: AppShellLayoutProps) {
+  const t = useT(APP_ID)
+  const userLabel = userLabelProp ?? t('user.default')
+  // A UI hint (the user-management API decides). In web-shell only tenant_admin has it.
+  const canManageMembers = useHasPermission('manage', 'members')
   const location = useLocation()
   const [search, setSearch] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [appTheme, setAppTheme] = useState<AppThemeId>(() => readStoredAppTheme())
   const [themePickerOpen, setThemePickerOpen] = useState(false)
-  const [language] = useState<AppLanguage>('en')
+  const { locale } = useLocale()
   const userMenuPanelRef = useRef<HTMLDivElement>(null)
   const themeMode: ThemeMode = auraModeFromAppTheme(appTheme)
 
@@ -145,19 +147,19 @@ export default function AppShellLayout({
     >
       <UserMenuItem
         icon={<IconUser className="h-4 w-4" />}
-        label="User profile"
+        label={t('userMenu.profile')}
         onClick={() => setUserMenuOpen(false)}
       />
       <UserMenuItem
         icon={<IconGlobe className="h-4 w-4" />}
-        label="Language"
-        hint={LANGUAGE_LABELS[language]}
+        label={t('userMenu.language')}
+        hint={languageLabel(locale)}
         onClick={() => setUserMenuOpen(false)}
       />
       <UserMenuItem
         icon={<IconThemeMode className="h-4 w-4" />}
-        label="Theme mode"
-        hint={themeMode === 'dark' ? 'Dark' : 'Light'}
+        label={t('userMenu.themeMode')}
+        hint={themeMode === 'dark' ? t('userMenu.themeDark') : t('userMenu.themeLight')}
         onClick={() => {
           setAppTheme((current) => {
             const next = toggleThemeMode(auraModeFromAppTheme(current))
@@ -168,13 +170,13 @@ export default function AppShellLayout({
       />
       <UserMenuItem
         icon={<IconCalendar className="h-4 w-4" />}
-        label="Holiday management"
+        label={t('userMenu.holidays')}
         onClick={() => setUserMenuOpen(false)}
       />
       <div className={`my-1 border-t ${dashBorderClass}`} role="separator" />
       <UserMenuItem
         icon={<IconPowerSimple className="h-4 w-4" />}
-        label="Logout"
+        label={t('userMenu.logout')}
         onClick={() => {
           setUserMenuOpen(false)
           onLogout()
@@ -199,16 +201,18 @@ export default function AppShellLayout({
 
         <nav className="flex-1 space-y-4 overflow-y-auto px-3 pt-3">
           <p className="px-2 pb-1 text-[0.65rem] font-semibold uppercase tracking-wider text-aura-muted">
-            Menu
+            {t('nav.menu')}
           </p>
           <NavLink to="/dashboard" end className={navLinkClass}>
             <IconHome className="h-[1.125rem] w-[1.125rem]" />
-            Dashboard
+            {t('nav.dashboard')}
           </NavLink>
-          <NavLink to="/dashboard/user-management" className={navLinkClass}>
-            <IconUsers className="h-[1.125rem] w-[1.125rem]" />
-            User management
-          </NavLink>
+          {canManageMembers ? (
+            <NavLink to="/dashboard/user-management" className={navLinkClass}>
+              <IconUsers className="h-[1.125rem] w-[1.125rem]" />
+              {t('nav.userManagement')}
+            </NavLink>
+          ) : null}
         </nav>
         <button
           type="button"
@@ -216,7 +220,7 @@ export default function AppShellLayout({
           className="mx-3 mb-5 mt-2 flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-aura-muted hover:bg-aura-hover hover:text-aura-text"
         >
           <IconPowerSimple />
-          Logout
+          {t('nav.logout')}
         </button>
       </aside>
 
@@ -232,7 +236,7 @@ export default function AppShellLayout({
             type="button"
             onClick={() => setSidebarOpen((open) => !open)}
             className="inline-flex cursor-pointer rounded-lg p-2 text-aura-muted hover:bg-aura-hover"
-            aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+            aria-label={sidebarOpen ? t('header.hideSidebar') : t('header.showSidebar')}
             aria-expanded={sidebarOpen}
           >
             <IconSidebar />
@@ -246,8 +250,8 @@ export default function AppShellLayout({
               onChange={(e) => setSearch(e.target.value)}
               placeholder={
                 isUserManagement
-                  ? 'Search users by name or email…'
-                  : 'Search tickets, tenders, clients...'
+                  ? t('header.searchUsers')
+                  : t('header.searchTickets')
               }
               className="w-full rounded-full border border-aura-border bg-aura-canvas py-2.5 pl-10 pr-4 text-sm text-aura-text outline-none ring-1 ring-transparent focus:border-aura-primary/40 focus:bg-aura-surface focus:ring-aura-primary/25"
             />
@@ -257,7 +261,7 @@ export default function AppShellLayout({
             <button
               type="button"
               className="relative rounded-lg p-2 text-aura-muted hover:bg-aura-hover"
-              aria-label="Notifications"
+              aria-label={t('header.notifications')}
             >
               <IconBell className="h-5 w-5 text-aura-text" />
               <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.55rem] font-bold text-white">
@@ -275,7 +279,7 @@ export default function AppShellLayout({
               className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium ${dashBorderClass} bg-aura-canvas`}
             >
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Available
+              {t('header.available')}
               <IconChevronDown className="h-3.5 w-3.5 text-aura-muted" />
             </button>
             <div className="relative">

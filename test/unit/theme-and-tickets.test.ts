@@ -1,3 +1,4 @@
+import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { describe, expect, it } from 'vitest'
 import { ticketsForView } from '../../src/mocks/dashboardTickets'
 import {
@@ -15,34 +16,36 @@ import {
   toggleThemeMode,
 } from '../../src/theme/themeMode'
 
+const store = () => storage('app2')
+
 describe('theme mode', () => {
   it('defaults to light and keeps a stored dark mode', () => {
     expect(readStoredThemeMode()).toBe('light')
-    localStorage.setItem('bcbp.themeMode', 'dark')
+    store().set('themeMode', 'dark')
     expect(readStoredThemeMode()).toBe('dark')
-    localStorage.setItem('bcbp.themeMode', 'nope')
+    store().set('themeMode', 'nope')
     expect(readStoredThemeMode()).toBe('light')
   })
 
   it('prefers the stored app theme over the mode key', () => {
-    localStorage.setItem('bcbp.themeMode', 'dark')
+    store().set('themeMode', 'dark')
     expect(readStoredAppTheme()).toBe('dark')
-    localStorage.setItem('bcbp.appTheme', 'cupcake')
+    store().set('appTheme', 'cupcake')
     expect(readStoredAppTheme()).toBe('cupcake')
   })
 
   it('writes aura themes to both keys and leaves daisy themes off the mode key', () => {
     applyAppTheme('dark')
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(localStorage.getItem('bcbp.appTheme')).toBe('dark')
-    expect(localStorage.getItem('bcbp.themeMode')).toBe('dark')
+    expect(store().get('appTheme')).toBe('dark')
+    expect(store().get('themeMode')).toBe('dark')
 
     applyThemeMode('light')
-    expect(localStorage.getItem('bcbp.themeMode')).toBe('light')
+    expect(store().get('themeMode')).toBe('light')
 
     applyAppTheme('cupcake')
-    expect(localStorage.getItem('bcbp.appTheme')).toBe('cupcake')
-    expect(localStorage.getItem('bcbp.themeMode')).toBe('light')
+    expect(store().get('appTheme')).toBe('cupcake')
+    expect(store().get('themeMode')).toBe('light')
   })
 
   it('toggles light and dark and maps a daisy theme onto the logo mode', () => {
