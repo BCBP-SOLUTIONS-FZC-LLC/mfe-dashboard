@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useRef } from 'react'
+import { useDismiss } from '../hooks/useDismiss'
 import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { APP_ID } from '../i18n'
 import { IconPalette } from './dashboard/DashboardIcons'
@@ -16,23 +17,8 @@ export function ThemePicker({ activeThemeId, open, onOpenChange, onSelect }: The
   const t = useT(APP_ID)
   const panelRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    const onPointerDown = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (panelRef.current?.contains(target)) {
-        return
-      }
-      if (target instanceof Element && target.closest('[data-theme-picker-trigger]')) {
-        return
-      }
-      onOpenChange(false)
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [open, onOpenChange])
+  const close = useCallback(() => onOpenChange(false), [onOpenChange])
+  useDismiss(open, close, { panelRef, trigger: '[data-theme-picker-trigger]' })
 
   const auraThemes = APP_THEME_OPTIONS.filter((t) => t.group === 'aura')
   const daisyThemes = APP_THEME_OPTIONS.filter((t) => t.group === 'daisy')

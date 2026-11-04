@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
+import { useDismiss } from '../hooks/useDismiss'
 import { useMemberAccess } from '../hooks/useMemberAccess'
 import { APP_ID } from '../i18n'
 import { BrandLogo } from '../components/BrandLogo'
@@ -116,23 +117,8 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
     applyAppTheme(appTheme)
   }, [appTheme])
 
-  useEffect(() => {
-    if (!userMenuOpen) {
-      return
-    }
-    const onPointerDown = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (userMenuPanelRef.current?.contains(target)) {
-        return
-      }
-      if (target instanceof Element && target.closest('[data-user-menu-trigger]')) {
-        return
-      }
-      setUserMenuOpen(false)
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [userMenuOpen])
+  const closeUserMenu = useCallback(() => setUserMenuOpen(false), [])
+  useDismiss(userMenuOpen, closeUserMenu, { panelRef: userMenuPanelRef, trigger: '[data-user-menu-trigger]', menu: true })
 
   function toggleUserMenu() {
     setUserMenuOpen((open) => !open)

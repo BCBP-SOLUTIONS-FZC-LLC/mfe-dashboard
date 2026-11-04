@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import { formatNumber, problemMessage } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import { isProblemError } from '@bcbp-solutions-fzc-llc/frontend-sdk/problem'
 import { useHasPermission, useStepUp, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { APP_ID } from '../i18n'
 import {
@@ -19,6 +20,7 @@ import type { AppShellOutletContext } from '../layouts/appShellContext'
 import { DashboardRightPanel } from '../components/dashboard/DashboardRightPanel'
 import { TicketRow } from '../components/dashboard/TicketRow'
 import { useDashboardData } from '../hooks/useDashboardData'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { KPI_COUNTS, UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
 import { DEPARTMENT_OPTIONS, ROLE_OPTIONS, TENDER_OPTIONS } from '../mocks/dashboardTickets'
 import type { DashboardFilters, DashboardView } from '../types/ticket'
@@ -87,6 +89,8 @@ export default function DashboardPage() {
   const [view, setView] = useState<DashboardView>('my-tickets')
   const [filters, setFilters] = useState<DashboardFilters>(defaultFilters)
   const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false)
+  const filtersDrawerRef = useRef<HTMLElement>(null)
+  useFocusTrap(filtersDrawerOpen, filtersDrawerRef)
   const t = useT(APP_ID)
   // "All Tenders In Flight" is for users who may read every tender (a UI hint; the API decides).
   const canSeeAllTenders = useHasPermission('read', 'tender')
@@ -111,7 +115,7 @@ export default function DashboardPage() {
     [canSeeAllTenders],
   )
 
-  const { loadState, tickets, cachedAt, refreshing, refresh } = useDashboardData({
+  const { loadState, tickets, cachedAt, refreshing, refresh, error } = useDashboardData({
     view,
     filters,
     canSeeAllTenders,
@@ -208,6 +212,7 @@ export default function DashboardPage() {
                 onClick={() => setFiltersDrawerOpen(false)}
               />
               <aside
+                ref={filtersDrawerRef}
                 className="fixed inset-y-0 right-0 z-50 flex w-[min(100%,20rem)] flex-col border-l border-gray-200 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:border-aura-border dark:bg-aura-surface"
                 role="dialog"
                 aria-modal="true"
@@ -337,6 +342,25 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
+
+              {error ? (
+                <div
+                  role="alert"
+                  className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-500/45 dark:bg-transparent dark:text-red-300"
+                >
+                  <span>
+                    {t('dashboard.loadFailed')}{' '}
+                    {isProblemError(error) ? problemMessage(error) : null}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={refresh}
+                    className="cursor-pointer font-semibold text-red-800 underline dark:text-red-300"
+                  >
+                    {t('dashboard.retry')}
+                  </button>
+                </div>
+              ) : null}
 
               {loadState === 'partial_failure' ? (
                 <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">

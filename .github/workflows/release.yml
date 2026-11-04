@@ -55,6 +55,16 @@ jobs:
       - name: Verify release tag matches checkout
         run: bash .github/scripts/verify-release-tag.sh
 
+      # A release built without the repository variable would send standalone logout to localhost.
+      - name: Verify VITE_APP1_URL is set for releases
+        env:
+          VITE_APP1_URL: ${{ vars.VITE_APP1_URL }}
+        run: |
+          case "${VITE_APP1_URL}" in
+            https://*) echo "VITE_APP1_URL=${VITE_APP1_URL}" ;;
+            *) echo "::error title=VITE_APP1_URL::Set the repository variable VITE_APP1_URL to the sign-in app's https:// origin before releasing (now: '${VITE_APP1_URL}')"; exit 1 ;;
+          esac
+
       - name: Set up Node
         uses: actions/setup-node@v7.1.0
         with:
@@ -68,6 +78,7 @@ jobs:
         run: bash .github/scripts/prepare-release-asset.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_APP1_URL: ${{ vars.VITE_APP1_URL }}
 
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v7.0.2
@@ -142,7 +153,7 @@ jobs:
           build-args: |
             BUILD_VERSION=${{ env.RELEASE_TAG }}
             SOURCE_DATE_EPOCH=${{ steps.sde.outputs.SOURCE_DATE_EPOCH }}
-            VITE_APP1_URL=${{ vars.VITE_APP1_URL || 'http://localhost:5001' }}
+            VITE_APP1_URL=${{ vars.VITE_APP1_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

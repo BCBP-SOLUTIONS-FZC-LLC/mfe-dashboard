@@ -14,6 +14,7 @@ import * as ReactDom from 'react-dom'
 import * as Auth from '@bcbp-solutions-fzc-llc/frontend-sdk/auth'
 import * as Config from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
 import * as I18n from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import * as Problem from '@bcbp-solutions-fzc-llc/frontend-sdk/problem'
 import * as SdkReact from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import * as Storage from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import sdkPackage from '@bcbp-solutions-fzc-llc/frontend-sdk/package.json'
@@ -36,6 +37,7 @@ function shellScope(omit: string[] = []) {
     [`${SDK}/auth`]: [sdkPackage.version, Auth],
     [`${SDK}/config`]: [sdkPackage.version, Config],
     [`${SDK}/i18n`]: [sdkPackage.version, I18n],
+    [`${SDK}/problem`]: [sdkPackage.version, Problem],
     [`${SDK}/react`]: [sdkPackage.version, SdkReact],
     [`${SDK}/storage`]: [sdkPackage.version, Storage],
   }
@@ -135,7 +137,7 @@ describe('./App loaded through the container', () => {
     expect(await screen.findByRole('button', { name: /Ada L/ })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /dashboard/i })[0]).toHaveAttribute('href', '/t/test/dashboard')
-    expect(consumed).toEqual(new Set(['react', 'react/jsx-runtime', `${SDK}/auth`, `${SDK}/config`, `${SDK}/i18n`, `${SDK}/react`, `${SDK}/storage`]))
+    expect(consumed).toEqual(new Set(['react', 'react/jsx-runtime', `${SDK}/auth`, `${SDK}/config`, `${SDK}/i18n`, `${SDK}/problem`, `${SDK}/react`, `${SDK}/storage`]))
   })
 
   it('fails to load when the shell does not provide the SDK (no fallback copy)', async () => {

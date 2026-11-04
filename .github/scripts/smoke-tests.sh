@@ -66,6 +66,34 @@ if [ "${map_count}" -ne 0 ]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Security headers and compression"
+doc_headers=$(curl -s -D - -o /dev/null "http://127.0.0.1:${PORT}/dashboard")
+entry_headers=$(curl -s -D - -o /dev/null -H 'Accept-Encoding: gzip' "http://127.0.0.1:${PORT}/remoteEntry.js")
+echo "${doc_headers}"
+for header in \
+  "Content-Security-Policy: default-src 'self'" \
+  "frame-ancestors 'none'" \
+  "X-Content-Type-Options: nosniff" \
+  "X-Frame-Options: DENY" \
+  "Referrer-Policy: strict-origin-when-cross-origin" \
+  "X-Robots-Tag: noindex"; do
+  if ! grep -qiF "${header}" <<<"${doc_headers}"; then
+    echo "::error file=nginx/document-headers.conf,title=Security headers::The document is missing '${header}'"
+    exit 1
+  fi
+done
+if grep -qi '^Server: nginx/' <<<"${doc_headers}"; then
+  echo "::error file=nginx/default.conf,title=Security headers::nginx reveals its version (server_tokens)"
+  exit 1
+fi
+for header in "X-Content-Type-Options: nosniff" "Access-Control-Allow-Origin: *" "Content-Encoding: gzip"; do
+  if ! grep -qiF "${header}" <<<"${entry_headers}"; then
+    echo "::error file=nginx/default.conf,title=Security headers::remoteEntry.js is missing '${header}'"
+    exit 1
+  fi
+done
+echo "::endgroup::"
+
 {
   echo "### Smoke test results"
   echo "- ✅ Startup gate: \`/healthz\`, \`/\`, and \`/remoteEntry.js\` returned 200"

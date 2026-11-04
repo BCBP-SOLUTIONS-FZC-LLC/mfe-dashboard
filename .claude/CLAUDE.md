@@ -8,7 +8,7 @@ A Module Federation **remote**, container `app2`, exposing `./App` (`src/App.tsx
 
 React 19, React Router 7, Tailwind 4 + daisyUI 5, Rsbuild 2 (Rspack) with `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild`, Vitest 5 + happy-dom, nginx 1.31 image on port 8080. Node 22 in CI, npm. Packages `@bcbp-solutions-fzc-llc/*` come from **GitHub Packages**: `export NODE_AUTH_TOKEN=$(gh auth token)` before `npm ci` / `npm install`.
 
-**Status (2026-11-04):** untagged (`[Unreleased]`). Platform SDK `1.0.0-alpha.3` (same as web-shell); `webpack-preset` and `eslint-plugin` still `1.0.0-alpha.2` (web-shell: `alpha.3`). Data is fixtures; no backend calls. Open items: [LLD §15](../docs/lld/mfe-dashboard-lld.md#15-open-items).
+**Status (2026-11-04):** untagged (`[Unreleased]`). Platform packages (`frontend-sdk`, `webpack-preset`, `eslint-plugin`) `1.0.0-alpha.3`, all the same as web-shell. Data is fixtures; no backend calls. Open items: [LLD §15](../docs/lld/mfe-dashboard-lld.md#15-open-items).
 
 **Owns:** the dashboard (views, KPIs, filters, load states, right panel), user management UI, the remote's chrome (sidebar, search, theme, user menu), the `app2` catalog, themes, the nginx image.
 
@@ -35,7 +35,9 @@ One test: `npx vitest run test/unit/authz/permissions.test.tsx -t "read-only"`. 
 - **Container contract:** name `app2`, expose `./App`, `remoteEntry.js` defines `var app2` synchronously. Keep `splitChunks` async-only and the dev server without HMR/live reload. Do not set Rsbuild's `moduleFederation` option. `./App` props stay optional (`userLabel`, `onLogout`).
 - **Access by permission, never by role name.** `read:tender`, `read:members`, `manage:members`, plus `useReadOnly()`. Roles belong to IAM and web-shell's map.
 - **Every UI string is a key in `src/locales/en.json`, and every key is used** (`test/unit/i18n/catalog.test.ts`).
-- **No raw browser storage, no tokens, no identity headers, no unsafe HTML** (lint).
+- **No raw browser storage, no tokens, no identity headers, no unsafe HTML** (lint). No third-party origins in the standalone page: the image's CSP is same-origin only (fonts are self-hosted).
+- **Calendar dates** (`YYYY-MM-DD`) go through `calendarDate()` (`src/lib/dates.ts`) before `formatDate`; `new Date('YYYY-MM-DD')` is UTC and shows the previous day west of UTC.
+- **Popups and dialogs** use `useDismiss` (outside press, Escape, menu arrow keys) and `useFocusTrap`; do not hand-roll document listeners.
 - **Diagrams:** edit `docs/architecture/mermaid/*.mmd` and the matching fence in `ARCHITECTURE.md` together; `test/unit/docs/diagrams.test.ts` fails when they differ.
 - **Changelog:** a PR touching `src/`, dependencies, the Dockerfile, nginx, `rsbuild.config.ts` or `index.html` adds a line under `[Unreleased]` (`changelog` check).
 - **Coverage gate** is 95% on all four metrics; do not lower it.

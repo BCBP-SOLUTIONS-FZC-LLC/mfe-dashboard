@@ -3,7 +3,7 @@ import { useApi } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { ticketsForView } from '../mocks/dashboardTickets'
 import type { DashboardFilters, DashboardView, TicketItem } from '../types/ticket'
 
-export type DashboardLoadState = 'loading' | 'ready' | 'empty' | 'partial_failure'
+export type DashboardLoadState = 'loading' | 'error' | 'ready' | 'empty' | 'partial_failure'
 
 type Options = {
   view: DashboardView
@@ -47,7 +47,7 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
   const key = JSON.stringify([view, filters, canSeeAllTenders])
   const refreshRequested = useRef(false)
 
-  const { data, loading, reload } = useApi(async (_api, signal): Promise<Loaded> => {
+  const { data, error, loading, reload } = useApi(async (_api, signal): Promise<Loaded> => {
     const isRefresh = refreshRequested.current
     refreshRequested.current = false
     await delay(isRefresh ? 400 : 700, signal)
@@ -57,10 +57,15 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
   }, [key])
 
   // useApi keeps the last data while it loads: a refresh of the same query shows it, a new query
-  // (view or filters changed) is a fresh load.
+  // (view or filters changed) is a fresh load. An API error (ProblemError, timeout, network) is
+  // 'error' with the error; useApi drops the rows then, and throws any other exception to the
+  // error boundary (the shell's RemoteBoundary).
   const current = data?.key === key ? data : undefined
+  const failed = error !== undefined && !loading
   const loadState: DashboardLoadState = !current
-    ? 'loading'
+    ? failed
+      ? 'error'
+      : 'loading'
     : current.partialFailure
       ? 'partial_failure'
       : current.tickets.length === 0
@@ -72,6 +77,8 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
     tickets: current?.tickets ?? [],
     cachedAt: current?.cachedAt ?? null,
     refreshing: loading && current !== undefined,
+    /** The failed load's SDK ApiError, until a reload succeeds. */
+    error: failed ? error : undefined,
     refresh: () => {
       refreshRequested.current = true
       reload()

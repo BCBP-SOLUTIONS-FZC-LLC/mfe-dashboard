@@ -29,8 +29,9 @@ export default defineConfig({
     inlineScripts: false,
     inlineStyles: false,
   },
-  // Root-relative url()s in the CSS point at files in public/; leave them as written.
-  tools: { cssLoader: { url: false } },
+  // Root-relative url()s in the CSS point at files in public/; leave them as written. Relative ones
+  // (the self-hosted font files) are bundled.
+  tools: { cssLoader: { url: { filter: (url: string) => !url.startsWith('/') } } },
   environments: {
     remote: {
       plugins: [pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })],

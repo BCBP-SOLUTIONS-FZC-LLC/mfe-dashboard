@@ -20,7 +20,7 @@ ARG VITE_APP1_URL=http://localhost:5001
 ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} \
     VITE_APP1_URL=${VITE_APP1_URL}
 
-# Hidden source maps are uploaded privately, never served.
+# Source maps are not served: they are deleted here (no upload yet; see the LLD's open items).
 RUN npm run build && find dist -name '*.map' -delete
 
 FROM nginxinc/nginx-unprivileged:1.31-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
@@ -40,6 +40,7 @@ USER 0
 RUN apk upgrade --no-cache
 
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY nginx/security-headers.conf nginx/document-headers.conf /etc/nginx/
 # 101 is the nginx user in nginxinc/nginx-unprivileged. A name fails Hadolint DL3066.
 COPY --from=builder --chown=101:101 /app/dist /usr/share/nginx/html
 
