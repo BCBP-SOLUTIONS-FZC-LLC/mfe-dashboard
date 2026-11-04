@@ -36,11 +36,6 @@ import {
 } from '../theme/themeMode'
 import type { AppShellOutletContext } from './appShellContext'
 
-/** The page locale's name in that language, e.g. 'English' or 'العربية'. */
-function languageLabel(locale: string): string {
-  return new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale
-}
-
 type AppShellLayoutProps = {
   userLabel?: string
   onLogout?: () => void
@@ -109,6 +104,9 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
   const [appTheme, setAppTheme] = useState<AppThemeId>(() => readStoredAppTheme())
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const { locale } = useLocale()
+  // The locale's own name from the catalog (`language.<locale>`); t() returns the key when there is none.
+  const languageKey = `language.${locale}`
+  const languageName = t(languageKey) === languageKey ? locale : t(languageKey)
   const userMenuPanelRef = useRef<HTMLDivElement>(null)
   const themeMode: ThemeMode = auraModeFromAppTheme(appTheme)
 
@@ -154,7 +152,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
       <UserMenuItem
         icon={<IconGlobe className="h-4 w-4" />}
         label={t('userMenu.language')}
-        hint={languageLabel(locale)}
+        hint={languageName}
         onClick={() => setUserMenuOpen(false)}
       />
       <UserMenuItem

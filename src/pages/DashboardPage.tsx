@@ -20,6 +20,7 @@ import { DashboardRightPanel } from '../components/dashboard/DashboardRightPanel
 import { TicketRow } from '../components/dashboard/TicketRow'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { KPI_COUNTS, UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
+import { DEPARTMENT_OPTIONS, ROLE_OPTIONS, TENDER_OPTIONS } from '../mocks/dashboardTickets'
 import type { DashboardFilters, DashboardView } from '../types/ticket'
 import { dashBorderClass, dashSurfaceClass } from '../theme/themeMode'
 
@@ -247,9 +248,7 @@ export default function DashboardPage() {
                     onChange={(role) => setFilters((f) => ({ ...f, role }))}
                     options={[
                       ['all', t('filters.role.all')],
-                      ['Reviewer', 'Reviewer'],
-                      ['Approver', 'Approver'],
-                      ['Lead', 'Lead'],
+                      ...ROLE_OPTIONS.map((r): [string, string] => [r, r]),
                     ]}
                     stacked
                   />
@@ -259,9 +258,7 @@ export default function DashboardPage() {
                     onChange={(department) => setFilters((f) => ({ ...f, department }))}
                     options={[
                       ['all', t('filters.department.all')],
-                      ['IT Department', 'IT Department'],
-                      ['Engineering', 'Engineering'],
-                      ['Operations', 'Operations'],
+                      ...DEPARTMENT_OPTIONS.map((d): [string, string] => [d, d]),
                     ]}
                     stacked
                   />
@@ -282,9 +279,7 @@ export default function DashboardPage() {
                     onChange={(tender) => setFilters((f) => ({ ...f, tender }))}
                     options={[
                       ['all', t('filters.tender.all')],
-                      ['IT', 'IT Infrastructure'],
-                      ['Software', 'Software'],
-                      ['Hardware', 'Hardware'],
+                      ...TENDER_OPTIONS.map(([k, label]): [string, string] => [k, label]),
                     ]}
                     stacked
                   />

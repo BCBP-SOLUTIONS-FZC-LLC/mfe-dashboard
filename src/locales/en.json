@@ -4,6 +4,8 @@
 
   "user.default": "User",
 
+  "language.en": "English",
+
   "nav.menu": "Menu",
   "nav.dashboard": "Dashboard",
   "nav.userManagement": "User management",
