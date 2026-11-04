@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import { useHasPermission, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { APP_ID } from '../i18n'
 import {
   IconChevronDown,
   IconChevronRight,
@@ -20,47 +22,15 @@ import { KPI_COUNTS } from '../mocks/dashboardStats'
 import type { DashboardFilters, DashboardView } from '../types/ticket'
 import { dashBorderClass, dashSurfaceClass } from '../theme/themeMode'
 
-const VIEWS: {
-  id: DashboardView
-  label: string
-  kpiTitle: string
-  kpiSubtitle: string
-  adminOnly?: boolean
-}[] = [
-  {
-    id: 'my-tickets',
-    label: 'My Tickets',
-    kpiTitle: 'My Tickets',
-    kpiSubtitle: 'Open tickets assigned to you',
-  },
-  {
-    id: 'awaiting-review',
-    label: 'Awaiting My Review',
-    kpiTitle: 'Awaiting My Review',
-    kpiSubtitle: 'Tickets for your review',
-  },
-  {
-    id: 'awaiting-approval',
-    label: 'Awaiting My Approval',
-    kpiTitle: 'Awaiting My Approval',
-    kpiSubtitle: 'Final approval tasks',
-  },
-  {
-    id: 'delegated',
-    label: 'Delegated To Me',
-    kpiTitle: 'Delegated To Me',
-    kpiSubtitle: 'Tickets routed through delegation',
-  },
-  {
-    id: 'all-tenders',
-    label: 'All Tenders In Flight',
-    kpiTitle: 'All Tenders In Flight',
-    kpiSubtitle: 'Running workflows in your tenant',
-    adminOnly: true,
-  },
+// Labels and subtitles: `views.<id>.label` and `views.<id>.subtitle` in the app2 catalog.
+const VIEWS: { id: DashboardView; adminOnly?: boolean }[] = [
+  { id: 'my-tickets' },
+  { id: 'awaiting-review' },
+  { id: 'awaiting-approval' },
+  { id: 'delegated' },
+  { id: 'all-tenders', adminOnly: true },
 ]
 
-const CAN_SEE_ALL_TENDERS = true
 
 const KPI_CARD_STYLE: Record<DashboardView, { surface: string; active: string }> = {
   'my-tickets': {
@@ -103,12 +73,11 @@ function countActiveFilters(filters: DashboardFilters): number {
   return count
 }
 
-function lastUpdatedLabel(cachedAt: number | null) {
+function lastUpdatedLabel(t: (key: string, vars?: Record<string, number>) => string, cachedAt: number | null) {
   if (!cachedAt) {
-    return 'Updating…'
+    return t('lastUpdated.pending')
   }
-  const mins = Math.max(1, Math.floor((Date.now() - cachedAt) / 60000))
-  return `Last updated: ${mins} min${mins === 1 ? '' : 's'} ago`
+  return t('lastUpdated.ago', { mins: Math.max(1, Math.floor((Date.now() - cachedAt) / 60000)) })
 }
 
 export default function DashboardPage() {
@@ -116,6 +85,9 @@ export default function DashboardPage() {
   const [view, setView] = useState<DashboardView>('my-tickets')
   const [filters, setFilters] = useState<DashboardFilters>(defaultFilters)
   const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false)
+  const t = useT(APP_ID)
+  // "All Tenders In Flight" is for users who may read every tender (a UI hint; the API decides).
+  const canSeeAllTenders = useHasPermission('read', 'tender')
 
   useEffect(() => {
     if (!filtersDrawerOpen) {
@@ -133,14 +105,14 @@ export default function DashboardPage() {
   const activeFilterCount = countActiveFilters(filters)
 
   const visibleViews = useMemo(
-    () => VIEWS.filter((v) => !v.adminOnly || CAN_SEE_ALL_TENDERS),
-    [],
+    () => VIEWS.filter((v) => !v.adminOnly || canSeeAllTenders),
+    [canSeeAllTenders],
   )
 
   const { loadState, tickets, cachedAt, refreshing, refresh } = useDashboardData({
     view,
     filters,
-    canSeeAllTenders: CAN_SEE_ALL_TENDERS,
+    canSeeAllTenders,
   })
 
   const visibleTickets = useMemo(() => {
@@ -156,7 +128,6 @@ export default function DashboardPage() {
     )
   }, [tickets, search])
 
-  const activeViewMeta = VIEWS.find((v) => v.id === view)!
   const showMfaBanner = view === 'awaiting-approval'
   const showTenderError = tickets.some((t) => t.tenderDetailsUnavailable)
   const unreadNotifications = 3
@@ -164,10 +135,8 @@ export default function DashboardPage() {
   return (
     <>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-sm text-aura-muted">
-              Track your work, approvals and tenders — all in one place.
-            </p>
+            <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
+            <p className="text-sm text-aura-muted">{t('dashboard.subtitle')}</p>
           </div>
 
           <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -184,9 +153,9 @@ export default function DashboardPage() {
                   <KpiViewIcon view={v.id} />
                   <IconChevronRight className="h-5 w-5 text-aura-muted" />
                 </div>
-                <p className="mt-3 text-xs font-medium text-aura-muted">{v.kpiTitle}</p>
+                <p className="mt-3 text-xs font-medium text-aura-muted">{t(`views.${v.id}.label`)}</p>
                 <p className="text-2xl font-bold text-aura-text">{KPI_COUNTS[v.id]}</p>
-                <p className="mt-1 text-[0.65rem] text-aura-muted">{v.kpiSubtitle}</p>
+                <p className="mt-1 text-[0.65rem] text-aura-muted">{t(`views.${v.id}.subtitle`)}</p>
               </button>
             ))}
           </div>
@@ -206,7 +175,7 @@ export default function DashboardPage() {
                       : 'bg-aura-secondary-soft font-medium text-aura-secondary hover:bg-aura-secondary/15'
                   }`}
                 >
-                  {v.label}
+                  {t(`views.${v.id}.label`)}
                 </button>
               ))}
             </div>
@@ -217,7 +186,7 @@ export default function DashboardPage() {
               aria-expanded={filtersDrawerOpen}
             >
               <IconFilter className="h-4 w-4 text-aura-secondary" />
-              Filters
+              {t('filters.button')}
               {activeFilterCount > 0 ? (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-aura-secondary px-1 text-[0.65rem] font-bold text-white dark:border dark:border-aura-secondary/60 dark:bg-transparent dark:text-aura-secondary">
                   {activeFilterCount}
@@ -231,7 +200,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 className="fixed inset-0 z-40 cursor-default bg-black/30"
-                aria-label="Close filters"
+                aria-label={t('filters.close')}
                 onClick={() => setFiltersDrawerOpen(false)}
               />
               <aside
@@ -245,36 +214,36 @@ export default function DashboardPage() {
                     id="dashboard-filters-title"
                     className="text-lg font-bold tracking-tight text-aura-text"
                   >
-                    Filters
+                    {t('filters.title')}
                   </h2>
                   <button
                     type="button"
                     onClick={() => setFiltersDrawerOpen(false)}
                     className="-mr-1 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-aura-muted dark:hover:bg-aura-hover"
-                    aria-label="Close filters panel"
+                    aria-label={t('filters.closePanel')}
                   >
                     <IconClose className="h-5 w-5" />
                   </button>
                 </div>
                 <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
                   <FilterSelect
-                    label="Status"
+                    label={t('filters.status')}
                     value={filters.status}
                     onChange={(status) => setFilters((f) => ({ ...f, status }))}
                     options={[
-                      ['all', 'All Open'],
-                      ['open', 'Open'],
-                      ['review', 'In review'],
-                      ['approval', 'Approval'],
+                      ['all', t('filters.status.all')],
+                      ['open', t('filters.status.open')],
+                      ['review', t('filters.status.review')],
+                      ['approval', t('filters.status.approval')],
                     ]}
                     stacked
                   />
                   <FilterSelect
-                    label="Role"
+                    label={t('filters.role')}
                     value={filters.role}
                     onChange={(role) => setFilters((f) => ({ ...f, role }))}
                     options={[
-                      ['all', 'All Roles'],
+                      ['all', t('filters.role.all')],
                       ['Reviewer', 'Reviewer'],
                       ['Approver', 'Approver'],
                       ['Lead', 'Lead'],
@@ -282,11 +251,11 @@ export default function DashboardPage() {
                     stacked
                   />
                   <FilterSelect
-                    label="Department"
+                    label={t('filters.department')}
                     value={filters.department}
                     onChange={(department) => setFilters((f) => ({ ...f, department }))}
                     options={[
-                      ['all', 'All Departments'],
+                      ['all', t('filters.department.all')],
                       ['IT Department', 'IT Department'],
                       ['Engineering', 'Engineering'],
                       ['Operations', 'Operations'],
@@ -294,22 +263,22 @@ export default function DashboardPage() {
                     stacked
                   />
                   <FilterSelect
-                    label="Deadline"
+                    label={t('filters.deadline')}
                     value={filters.deadline}
                     onChange={(deadline) => setFilters((f) => ({ ...f, deadline }))}
                     options={[
-                      ['all', 'All Deadlines'],
-                      ['week', 'This week'],
-                      ['overdue', 'Overdue'],
+                      ['all', t('filters.deadline.all')],
+                      ['week', t('filters.deadline.week')],
+                      ['overdue', t('filters.deadline.overdue')],
                     ]}
                     stacked
                   />
                   <FilterSelect
-                    label="Tender"
+                    label={t('filters.tender')}
                     value={filters.tender}
                     onChange={(tender) => setFilters((f) => ({ ...f, tender }))}
                     options={[
-                      ['all', 'All Tenders'],
+                      ['all', t('filters.tender.all')],
                       ['IT', 'IT Infrastructure'],
                       ['Software', 'Software'],
                       ['Hardware', 'Hardware'],
@@ -323,14 +292,14 @@ export default function DashboardPage() {
                     onClick={() => setFilters(defaultFilters)}
                     className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:bg-aura-input dark:text-aura-text dark:hover:bg-aura-hover"
                   >
-                    Clear
+                    {t('filters.clear')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setFiltersDrawerOpen(false)}
                     className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-aura-secondary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
                   >
-                    Apply
+                    {t('filters.apply')}
                     <IconChevronRight className="h-4 w-4" aria-hidden />
                   </button>
                 </div>
@@ -340,7 +309,7 @@ export default function DashboardPage() {
 
           {showMfaBanner ? (
             <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-950">
-              MFA re-authentication required before final approval.
+              {t('dashboard.mfaBanner')}
             </div>
           ) : null}
 
@@ -348,16 +317,16 @@ export default function DashboardPage() {
             <section>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold text-aura-text">
-                  {activeViewMeta.label} ({KPI_COUNTS[view]})
+                  {t('dashboard.listHeading', { view: t(`views.${view}.label`), count: KPI_COUNTS[view] })}
                 </h2>
                 <div className="flex items-center gap-2 text-xs text-aura-muted">
-                  <span>{lastUpdatedLabel(cachedAt)}</span>
+                  <span>{lastUpdatedLabel(t, cachedAt)}</span>
                   <button
                     type="button"
                     onClick={refresh}
                     disabled={refreshing}
                     className="cursor-pointer text-aura-secondary hover:underline disabled:opacity-50"
-                    aria-label="Refresh"
+                    aria-label={t('dashboard.refresh')}
                   >
                     <IconRefresh className="h-4 w-4" />
                   </button>
@@ -366,7 +335,7 @@ export default function DashboardPage() {
 
               {loadState === 'partial_failure' ? (
                 <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
-                  Some tender details could not be loaded. Tickets are retained below.
+                  {t('dashboard.partialFailure')}
                 </p>
               ) : null}
 
@@ -385,14 +354,14 @@ export default function DashboardPage() {
                 <div
                   className={`rounded-xl border border-dashed border-aura-border px-6 py-12 text-center ${dashSurfaceClass}`}
                 >
-                  <p className="text-sm font-medium text-aura-text">No tickets found</p>
-                  <p className="mt-1 text-xs text-aura-muted">Try adjusting your filters.</p>
+                  <p className="text-sm font-medium text-aura-text">{t('dashboard.empty.title')}</p>
+                  <p className="mt-1 text-xs text-aura-muted">{t('dashboard.empty.hint')}</p>
                   <button
                     type="button"
                     onClick={() => setFilters(defaultFilters)}
                     className="mt-3 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
                   >
-                    Clear Filters →
+                    {t('dashboard.clearFilters')}
                   </button>
                 </div>
               ) : null}
@@ -403,8 +372,8 @@ export default function DashboardPage() {
                     <div
                       className={`rounded-xl border border-dashed border-aura-border px-6 py-8 text-center ${dashSurfaceClass}`}
                     >
-                      <p className="text-sm font-medium text-aura-text">No matching tickets</p>
-                      <p className="mt-1 text-xs text-aura-muted">Try a different search term.</p>
+                      <p className="text-sm font-medium text-aura-text">{t('dashboard.noMatch.title')}</p>
+                      <p className="mt-1 text-xs text-aura-muted">{t('dashboard.noMatch.hint')}</p>
                     </div>
                   ) : (
                     visibleTickets.map((ticket) => (
@@ -420,40 +389,35 @@ export default function DashboardPage() {
 
           <section className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StateCard
-              title="Empty State"
+              title={t('states.empty.title')}
               icon={<IconEmptyDoc className="h-4 w-4 text-aura-primary" />}
             >
-              <p className="text-xs text-aura-muted">
-                No tickets found for the selected filters. Try adjusting your filters or check back
-                later.
-              </p>
+              <p className="text-xs text-aura-muted">{t('states.empty.body')}</p>
               <button
                 type="button"
                 onClick={() => setFilters(defaultFilters)}
                 className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary"
               >
-                Clear Filters →
+                {t('dashboard.clearFilters')}
               </button>
             </StateCard>
-            <StateCard title="Loading State" icon={<IconLoading className="h-4 w-4 text-aura-primary" />}>
-              <p className="text-xs text-aura-muted">Loading your tickets…</p>
+            <StateCard title={t('states.loading.title')} icon={<IconLoading className="h-4 w-4 text-aura-primary" />}>
+              <p className="text-xs text-aura-muted">{t('states.loading.body')}</p>
             </StateCard>
             <StateCard
-              title="Cached Data Freshness"
+              title={t('states.fresh.title')}
               icon={<IconClock className="h-4 w-4 text-aura-secondary" />}
             >
-              <p className="text-xs font-medium text-aura-text">{lastUpdatedLabel(cachedAt)}</p>
-              <p className="mt-0.5 text-xs text-aura-muted">Data is fresh and up to date.</p>
+              <p className="text-xs font-medium text-aura-text">{lastUpdatedLabel(t, cachedAt)}</p>
+              <p className="mt-0.5 text-xs text-aura-muted">{t('states.fresh.body')}</p>
             </StateCard>
             <StateCard
-              title="Partial Failure"
+              title={t('states.partial.title')}
               icon={<IconAlertTriangle className="h-4 w-4 text-red-500" />}
             >
-              <p className="text-xs text-aura-muted">
-                Some tender details could not be loaded. Ticket is retained.
-              </p>
+              <p className="text-xs text-aura-muted">{t('states.partial.body')}</p>
               <button type="button" className="mt-1.5 text-xs font-semibold text-aura-secondary">
-                View details →
+                {t('states.viewDetails')}
               </button>
             </StateCard>
           </section>

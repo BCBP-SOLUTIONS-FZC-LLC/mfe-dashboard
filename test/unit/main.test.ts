@@ -1,3 +1,4 @@
+import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { describe, expect, it, vi } from 'vitest'
 
 const render = vi.fn()
@@ -10,7 +11,7 @@ vi.mock('react-dom/client', () => ({
 describe('main', () => {
   it('applies the stored theme and mounts #app', async () => {
     document.body.innerHTML = '<div id="app"></div>'
-    localStorage.setItem('bcbp.appTheme', 'dark')
+    storage('app2').set('appTheme', 'dark')
     await import('../../src/main')
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(createRoot).toHaveBeenCalledWith(document.getElementById('app'))

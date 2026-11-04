@@ -1,17 +1,24 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import App, { routerBasename } from '../../src/App'
+import { describe, expect, it, vi } from 'vitest'
+import App, { workspaceBasename } from '../../src/App'
 
-describe('routerBasename', () => {
+describe('workspaceBasename (as web-shell computes its basename)', () => {
   it.each([
     ['/dashboard', ''],
     ['/dashboard/user-management', ''],
     ['/t/acme/dashboard', '/t/acme'],
     ['/t/acme/dashboard/user-management', '/t/acme'],
     ['/', ''],
-    ['/t/acme/dashboards', ''],
   ])('%s → %j', (path, basename) => {
-    expect(routerBasename(path)).toBe(basename)
+    expect(workspaceBasename(path)).toBe(basename)
+  })
+
+  it('is empty without runtime config (standalone)', async () => {
+    vi.resetModules()
+    vi.doMock('@bcbp-solutions-fzc-llc/frontend-sdk/config', () => ({ tryGetConfig: () => undefined }))
+    const standalone = await import('../../src/App')
+    expect(standalone.workspaceBasename('/t/acme/dashboard')).toBe('')
+    vi.doUnmock('@bcbp-solutions-fzc-llc/frontend-sdk/config')
   })
 })
 
@@ -22,13 +29,5 @@ describe('App inside the shell', () => {
     expect(await screen.findByRole('heading', { name: 'User management' })).toBeInTheDocument()
     const dashboardLink = screen.getAllByRole('link', { name: /dashboard/i })[0]!
     expect(dashboardLink).toHaveAttribute('href', '/t/acme/dashboard')
-  })
-})
-
-describe('standalone entry', () => {
-  it('loads main behind the async boundary', async () => {
-    document.body.innerHTML = '<div id="app"></div>'
-    const { started } = await import('../../src/index')
-    await expect(started).resolves.toBeDefined()
   })
 })

@@ -26,14 +26,13 @@ flowchart TB
 
 | Module | Responsibility |
 |---|---|
-| `src/main.tsx` | Applies the stored theme, then mounts `<DashboardApp />` on `#app`. Throws if `#app` is missing. Used when this repo is the page. The shell imports `./App` and does not run `main.tsx` |
-| `src/App.tsx` | Exposed module. `useCurrentUser` and `useSignOut` from the SDK fill `userLabel` and `onLogout`; props, when passed, win |
-| `src/DashboardApp.tsx` | Contract props `userLabel?` and `onLogout?`. Picks embedded or standalone routing. No SDK import, so the standalone entry can render it |
+| `src/main.tsx` | Standalone entry: applies the stored theme, then mounts `<App />` on `#app`. Throws if `#app` is missing. Used when this repo is the page. The shell imports `./App` and does not run `main.tsx` |
+| `src/App.tsx` | Exposed module and standalone root. Contract props `userLabel?` and `onLogout?`; without them `useCurrentUser` and `useSignOut` from the SDK. Picks embedded or own routing; the basename is `workspaceBasename()` (SDK `slugFromPath`, as web-shell) |
 | `src/layouts/AppShellLayout.tsx` | Sidebar, search box, theme picker, user menu. Publishes `{ search }` on the outlet context |
 | `src/pages/DashboardPage.tsx` | Views, filter drawer, KPI cards, empty / loading / partial states |
 | `src/hooks/useDashboardData.ts` | `setTimeout` 700 ms to load, 400 ms to refresh, then filters the fixture |
 | `src/pages/UserManagementPage.tsx` | Filters the mock user list by the outlet search string |
-| `src/theme/themeMode.ts` | `bcbp.appTheme` and `bcbp.themeMode` in `localStorage` |
+| `src/theme/themeMode.ts` | `appTheme` and `themeMode` in the SDK's `storage('app2')` |
 | `nginx/default.conf` | Port 8080, `/healthz`, no-cache `remoteEntry.js`, immutable hashed chunks, CORS on both |
 
 The build is Rsbuild 2 with the platform SDK's plugin (`rsbuild.config.ts`, `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })`). The preset's shared map makes `react`, `react-dom` (`^19.0.0`), `@opentelemetry/api` and every SDK subpath strict singletons provided by the shell; the SDK is never bundled here. `react-router-dom` is not shared, so `App` runs its own `BrowserRouter` with the basename read from the URL (`routerBasename`: everything before `/dashboard`). The exposed module's CSS is a lazily loaded chunk next to `remoteEntry.js`. Only async chunks are split: a split entry would start asynchronously and leave `window.app2` as a Promise, which the SDK's `loadRemote` refuses.
@@ -61,7 +60,7 @@ flowchart TD
 
 `useInRouterContext()` is the branch. The shell already owns `/dashboard/*`, so the remote's routes are relative (`/` and `user-management`). Opened alone, `BrowserRouter` redirects `/` and unknown paths to `/dashboard`.
 
-Sidebar links are absolute (`/dashboard`, `/dashboard/user-management`), which matches the standalone router and the shell's URL.
+Sidebar links are absolute (`/dashboard`, `/dashboard/user-management`), which matches the standalone router and the shell's URL. The user-management link and route need `read:members` or `manage:members`, and the Invite and Edit actions need `manage:members` (`useMemberAccess`, after IAM LLD §10.4); without either, the route navigates back to the dashboard. "All Tenders In Flight" needs `read:tender`.
 
 ## Ticket load
 
@@ -105,17 +104,19 @@ Theme keys:
 
 | Key | Values |
 |---|---|
-| `bcbp.appTheme` | `light`, `dark`, or a daisyUI theme id |
-| `bcbp.themeMode` | `light` or `dark`, written only for Aura themes |
+| `appTheme` | `light`, `dark`, or a daisyUI theme id |
+| `themeMode` | `light` or `dark`, written only for Aura themes |
 
-`readStoredAppTheme` prefers `bcbp.appTheme`, then `bcbp.themeMode`, then `light`.
+`readStoredAppTheme` prefers `appTheme`, then `themeMode`, then `light`.
 
 ## Browser storage
 
 | Key | Store | Contents |
 |---|---|---|
-| `bcbp.appTheme` | `localStorage` | Theme id |
-| `bcbp.themeMode` | `localStorage` | `light` or `dark` |
+| `appTheme` | SDK `storage('app2')` (`localStorage`, namespaced per workspace) | Theme id |
+| `themeMode` | SDK `storage('app2')` | `light` or `dark` |
+
+The SDK clears both on logout and workspace switch, and refuses token-like keys. Before sign-in (standalone) it writes nothing.
 
 No tokens are written. Search text stays in React state.
 
@@ -152,7 +153,7 @@ Vitest does not load `rsbuild.config.ts`, so the federation plugin is not in the
 | Item | Note |
 |---|---|
 | `VITE_APP1_URL` | Fixed at build. Logout is an open navigation to that origin. Do not take it from the query string |
-| `localStorage` theme | Any script in the page origin can read it. It is not a credential |
+| Theme in SDK storage | Any script in the page origin can read it. It is not a credential, and the SDK clears it on logout |
 | Mock data | Includes sample names and emails. They are not accounts |
 | Remote execution | The shell runs this bundle in the shell origin. A substituted `remoteEntry.js` is the shell's supply-chain problem; this image is signed (see [VERSIONING.md](VERSIONING.md)) |
 

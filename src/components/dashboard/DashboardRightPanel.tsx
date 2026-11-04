@@ -1,5 +1,10 @@
+import { formatDate } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { IconAlertCircle, IconBell, IconUser } from './DashboardIcons'
-import { slaOverviewForMyTickets } from '../../mocks/dashboardStats'
+import { APP_ID } from '../../i18n'
+import { DELEGATION_COVERAGE, slaOverviewForMyTickets } from '../../mocks/dashboardStats'
+
+const DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
 
 type Props = {
   unreadCount: number
@@ -7,6 +12,7 @@ type Props = {
 }
 
 export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
+  const t = useT(APP_ID)
   const sla = slaOverviewForMyTickets()
   const pctOn = (sla.onTrack / sla.total) * 100
   const pctWarn = (sla.warning / sla.total) * 100
@@ -19,15 +25,20 @@ export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
             <IconUser className="h-5 w-5" />
           </span>
           <div>
-            <h3 className="text-sm font-semibold text-aura-text">Delegation / Coverage</h3>
-            <p className="mt-2 text-xs text-aura-muted">You are covered by</p>
-            <p className="text-sm font-semibold text-aura-text">Arjun R</p>
-            <p className="mt-1 text-xs text-aura-muted">12 Oct 2026 – 16 Oct 2026</p>
+            <h3 className="text-sm font-semibold text-aura-text">{t('panel.delegation.title')}</h3>
+            <p className="mt-2 text-xs text-aura-muted">{t('panel.delegation.coveredBy')}</p>
+            <p className="text-sm font-semibold text-aura-text">{DELEGATION_COVERAGE.coveredBy}</p>
+            <p className="mt-1 text-xs text-aura-muted">
+              {t('panel.delegation.period', {
+                from: formatDate(new Date(DELEGATION_COVERAGE.from), DAY),
+                to: formatDate(new Date(DELEGATION_COVERAGE.to), DAY),
+              })}
+            </p>
             <button
               type="button"
               className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
             >
-              View details
+              {t('panel.viewDetails')}
             </button>
           </div>
         </div>
@@ -42,19 +53,19 @@ export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
             </span>
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-aura-text">Unread Notifications</h3>
+            <h3 className="text-sm font-semibold text-aura-text">{t('panel.notifications.title')}</h3>
             <button
               type="button"
               className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
             >
-              View all
+              {t('panel.notifications.viewAll')}
             </button>
           </div>
         </div>
       </div>
 
       <div className="rounded-xl border border-aura-border bg-aura-surface p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-aura-text">SLA Overview</h3>
+        <h3 className="text-sm font-semibold text-aura-text">{t('panel.sla.title')}</h3>
         <div className="mt-4 flex items-center gap-4">
           <div
             className="relative h-24 w-24 shrink-0 rounded-full"
@@ -64,21 +75,21 @@ export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
           >
             <div className="absolute inset-2 flex flex-col items-center justify-center rounded-full bg-aura-surface text-center">
               <span className="text-lg font-bold text-aura-text">{sla.total}</span>
-              <span className="text-[0.6rem] text-aura-muted">Total Tickets</span>
+              <span className="text-[0.6rem] text-aura-muted">{t('panel.sla.total')}</span>
             </div>
           </div>
           <ul className="space-y-1.5 text-xs text-aura-text">
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              On Track ({sla.onTrack})
+              {t('panel.sla.onTrack', { count: sla.onTrack })}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-amber-400" />
-              Warning ({sla.warning})
+              {t('panel.sla.warning', { count: sla.warning })}
             </li>
             <li className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-red-500" />
-              Breached ({sla.breached})
+              {t('panel.sla.breached', { count: sla.breached })}
             </li>
           </ul>
         </div>
@@ -90,17 +101,16 @@ export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
             <IconAlertCircle className="h-8 w-8 shrink-0 text-red-600" />
             <div>
               <p className="text-sm font-semibold text-red-800 dark:text-red-300">
-                Tender Details Unavailable
+                {t('panel.tenderError.title')}
               </p>
               <p className="mt-1 text-xs text-red-700 dark:text-red-400/90">
-                Tender details could not be loaded for this ticket. The ticket is still available and
-                can be processed.
+                {t('panel.tenderError.body')}
               </p>
               <button
                 type="button"
                 className="mt-3 cursor-pointer rounded-lg border border-red-300 bg-aura-surface px-3 py-1.5 text-xs font-semibold text-red-800 dark:border-red-800 dark:text-red-300"
               >
-                View Ticket →
+                {t('panel.tenderError.action')}
               </button>
             </div>
           </div>

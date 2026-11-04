@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { PlatformProvider, type ShellContextValue } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
-import { createTestPlatform } from '@bcbp-solutions-fzc-llc/frontend-sdk/testing'
+import { startPlatform } from '../platform'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/App'
 
@@ -11,7 +11,7 @@ const user = { sub: 'u-1', name: 'Ada Lovelace', email: 'ada.lovelace@example.co
 // A fresh SDK runtime signed in as `user`, under a shell whose signOut the test controls (the test
 // platform's own shell has none).
 function shellWith(signOut?: ShellContextValue['signOut']) {
-  createTestPlatform({ user })
+  startPlatform({ user })
   const shell: ShellContextValue = { user, locale: 'en', switchWorkspace: async () => {}, signOut }
   return ({ children }: { children: ReactNode }) => <PlatformProvider shell={shell}>{children}</PlatformProvider>
 }
@@ -29,7 +29,7 @@ describe('App mounted by the shell (platform SDK)', () => {
 
   it('shows the signed-in user from the SDK session', async () => {
     window.history.replaceState({}, '', '/t/test/dashboard')
-    const platform = createTestPlatform({ user })
+    const platform = startPlatform({ user })
     render(<App />, { wrapper: platform.Wrapper })
     expect(await screen.findByRole('button', { name: /Ada L/ })).toBeInTheDocument()
     expect(screen.getByText('AL')).toBeInTheDocument()
@@ -38,7 +38,7 @@ describe('App mounted by the shell (platform SDK)', () => {
 
   it('uses the user name when the session has no email', async () => {
     window.history.replaceState({}, '', '/t/test/dashboard')
-    const platform = createTestPlatform({ user: { sub: 'u-2', name: 'Grace Hopper' } })
+    const platform = startPlatform({ user: { sub: 'u-2', name: 'Grace Hopper' } })
     render(<App />, { wrapper: platform.Wrapper })
     expect(await screen.findByText('GH')).toBeInTheDocument()
     platform.reset()
