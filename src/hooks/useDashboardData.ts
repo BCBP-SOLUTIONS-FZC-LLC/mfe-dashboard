@@ -1,5 +1,8 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
+import { getLogger } from '@bcbp-solutions-fzc-llc/frontend-sdk/logging'
 import { useApi } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { APP_ID } from '../i18n'
+import { calendarDate } from '../lib/dates'
 import { ticketsForView } from '../mocks/dashboardTickets'
 import type { DashboardFilters, DashboardView, TicketItem } from '../types/ticket'
 
@@ -21,6 +24,18 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Deadline filter on a ticket's due day, against the local day of `now`: 'overdue' is before today, 'week' is today and the next six days. */
+export function matchesDeadline(dueDate: string, deadline: string, now: Date): boolean {
+  if (deadline === 'all') return true
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const due = calendarDate(dueDate).getTime()
+  if (deadline === 'overdue') return due < today
+  if (deadline === 'week') return due >= today && due < today + 7 * DAY_MS
+  return true
+}
+
 function filterTickets(view: DashboardView, filters: DashboardFilters, canSeeAllTenders: boolean) {
   let data = ticketsForView(view, canSeeAllTenders)
   if (filters.status !== 'all') {
@@ -34,6 +49,10 @@ function filterTickets(view: DashboardView, filters: DashboardFilters, canSeeAll
   }
   if (filters.tender !== 'all') {
     data = data.filter((t) => t.tenderTitle.toLowerCase().includes(filters.tender.toLowerCase()))
+  }
+  if (filters.deadline !== 'all') {
+    const now = new Date()
+    data = data.filter((t) => matchesDeadline(t.dueDate, filters.deadline, now))
   }
   return data
 }
@@ -62,6 +81,13 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
   // error boundary (the shell's RemoteBoundary).
   const current = data?.key === key ? data : undefined
   const failed = error !== undefined && !loading
+
+  // The SDK redacts the record and tags it with the remote; the shell exports it with its logs.
+  useEffect(() => {
+    if (error) {
+      getLogger({ mfe: APP_ID }).warn('dashboard tickets failed to load', { error, view })
+    }
+  }, [error, view])
   const loadState: DashboardLoadState = !current
     ? failed
       ? 'error'

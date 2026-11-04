@@ -21,7 +21,8 @@ import { DashboardRightPanel } from '../components/dashboard/DashboardRightPanel
 import { TicketRow } from '../components/dashboard/TicketRow'
 import { useDashboardData } from '../hooks/useDashboardData'
 import { useFocusTrap } from '../hooks/useFocusTrap'
-import { KPI_COUNTS, UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
+import { useNow } from '../hooks/useNow'
+import { kpiCounts, UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
 import { DEPARTMENT_OPTIONS, ROLE_OPTIONS, TENDER_OPTIONS } from '../mocks/dashboardTickets'
 import type { DashboardFilters, DashboardView } from '../types/ticket'
 import { dashBorderClass, dashSurfaceClass } from '../theme/themeMode'
@@ -77,11 +78,11 @@ function countActiveFilters(filters: DashboardFilters): number {
   return count
 }
 
-function lastUpdatedLabel(t: (key: string, vars?: Record<string, number>) => string, cachedAt: number | null) {
+function lastUpdatedLabel(t: (key: string, vars?: Record<string, number>) => string, cachedAt: number | null, now: number) {
   if (!cachedAt) {
     return t('lastUpdated.pending')
   }
-  return t('lastUpdated.ago', { mins: Math.max(1, Math.floor((Date.now() - cachedAt) / 60000)) })
+  return t('lastUpdated.ago', { mins: Math.max(1, Math.floor((now - cachedAt) / 60000)) })
 }
 
 export default function DashboardPage() {
@@ -110,6 +111,8 @@ export default function DashboardPage() {
 
   const activeFilterCount = countActiveFilters(filters)
 
+  const counts = useMemo(() => kpiCounts(canSeeAllTenders), [canSeeAllTenders])
+
   const visibleViews = useMemo(
     () => VIEWS.filter((v) => !v.adminOnly || canSeeAllTenders),
     [canSeeAllTenders],
@@ -120,6 +123,9 @@ export default function DashboardPage() {
     filters,
     canSeeAllTenders,
   })
+
+  // "Last updated: N mins ago" keeps counting while the list is shown.
+  const now = useNow(30_000, cachedAt !== null)
 
   const visibleTickets = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -153,7 +159,7 @@ export default function DashboardPage() {
                 key={v.id}
                 type="button"
                 onClick={() => setView(v.id)}
-                className={`cursor-pointer rounded-2xl border p-4 text-left shadow-sm transition-all hover:shadow-md ${
+                className={`cursor-pointer rounded-2xl border p-4 text-start shadow-sm transition-all hover:shadow-md ${
                   KPI_CARD_STYLE[v.id].surface
                 } ${view === v.id ? KPI_CARD_STYLE[v.id].active : ''}`}
               >
@@ -162,7 +168,7 @@ export default function DashboardPage() {
                   <IconChevronRight className="h-5 w-5 text-aura-muted" />
                 </div>
                 <p className="mt-3 text-xs font-medium text-aura-muted">{t(`views.${v.id}.label`)}</p>
-                <p className="text-2xl font-bold text-aura-text">{formatNumber(KPI_COUNTS[v.id])}</p>
+                <p className="text-2xl font-bold text-aura-text">{formatNumber(counts[v.id])}</p>
                 <p className="mt-1 text-[0.65rem] text-aura-muted">{t(`views.${v.id}.subtitle`)}</p>
               </button>
             ))}
@@ -213,7 +219,7 @@ export default function DashboardPage() {
               />
               <aside
                 ref={filtersDrawerRef}
-                className="fixed inset-y-0 right-0 z-50 flex w-[min(100%,20rem)] flex-col border-l border-gray-200 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:border-aura-border dark:bg-aura-surface"
+                className="fixed inset-y-0 end-0 z-50 flex w-[min(100%,20rem)] flex-col border-s border-gray-200 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:border-aura-border dark:bg-aura-surface"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="dashboard-filters-title"
@@ -228,7 +234,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setFiltersDrawerOpen(false)}
-                    className="-mr-1 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-aura-muted dark:hover:bg-aura-hover"
+                    className="-me-1 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-aura-muted dark:hover:bg-aura-hover"
                     aria-label={t('filters.closePanel')}
                   >
                     <IconClose className="h-5 w-5" />
@@ -327,10 +333,10 @@ export default function DashboardPage() {
             <section>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-sm font-semibold text-aura-text">
-                  {t('dashboard.listHeading', { view: t(`views.${view}.label`), count: KPI_COUNTS[view] })}
+                  {t('dashboard.listHeading', { view: t(`views.${view}.label`), count: visibleTickets.length })}
                 </h2>
                 <div className="flex items-center gap-2 text-xs text-aura-muted">
-                  <span>{lastUpdatedLabel(t, cachedAt)}</span>
+                  <span>{lastUpdatedLabel(t, cachedAt, now)}</span>
                   <button
                     type="button"
                     onClick={refresh}
@@ -437,7 +443,7 @@ export default function DashboardPage() {
               title={t('states.fresh.title')}
               icon={<IconClock className="h-4 w-4 text-aura-secondary" />}
             >
-              <p className="text-xs font-medium text-aura-text">{lastUpdatedLabel(t, cachedAt)}</p>
+              <p className="text-xs font-medium text-aura-text">{lastUpdatedLabel(t, cachedAt, now)}</p>
               <p className="mt-0.5 text-xs text-aura-muted">{t('states.fresh.body')}</p>
             </StateCard>
             <StateCard
@@ -475,7 +481,7 @@ export function FilterSelect({
           <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full cursor-pointer appearance-none rounded-md border border-gray-200 bg-white py-2.5 pl-3 pr-9 text-sm text-gray-900 outline-none transition-[border-color,box-shadow] focus:border-aura-secondary/50 focus:ring-2 focus:ring-aura-secondary/15 dark:border-aura-border dark:bg-aura-input dark:text-aura-text"
+            className="w-full cursor-pointer appearance-none rounded-md border border-gray-200 bg-white py-2.5 ps-3 pe-9 text-sm text-gray-900 outline-none transition-[border-color,box-shadow] focus:border-aura-secondary/50 focus:ring-2 focus:ring-aura-secondary/15 dark:border-aura-border dark:bg-aura-input dark:text-aura-text"
           >
             {options.map(([val, text]) => (
               <option key={val} value={val}>
@@ -484,7 +490,7 @@ export function FilterSelect({
             ))}
           </select>
           <IconChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-aura-muted"
+            className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-aura-muted"
             aria-hidden
           />
         </div>

@@ -21,6 +21,18 @@ Nothing is tagged yet. `package.json` `version` is `0.0.0`. Everything that is t
 
 ### Changed
 
+- **Remaining production gaps fixed (`2026-11-04`).**
+  - Every build writes `dist/remote-manifest-entry.json`: web-shell's manifest entry with the sha384 integrity of `remoteEntry.js`. The image serves it, releases attach it, and the smoke test compares it with the served file.
+  - The deadline filter is applied (overdue / this week, by local day).
+  - KPI counts come from the same rows the list shows, and the list heading counts the rows shown.
+  - "Last updated" keeps counting.
+  - Start and mount only show the stored theme; only a user's choice writes storage (no more ignored-write warnings on the standalone page).
+  - A failed ticket load is logged through the SDK (`getLogger`, now a shared `/logging`).
+  - The standalone page renders inside the SDK's `MFEErrorBoundary`.
+  - The header search has an `aria-label`.
+  - Layout classes are logical (RTL-ready).
+  - Fonts are `@fontsource-variable/geist` and `/inter`, with web-shell's Tailwind font stack. Inside the shell, the remote's text was falling back to the system font.
+  - `overrides.minimatch` `^11.0.4` clears the 11 dev-only audit findings.
 - **`PUBLIC_APP1_URL` replaces `VITE_APP1_URL` (`2026-11-04`).** The build is Rsbuild, so the logout target uses Rsbuild's `PUBLIC_` prefix (`config/app1Url.ts`, `import.meta.env.PUBLIC_APP1_URL`, Dockerfile `ARG`, CI and release build args, `.env.example`). `.dockerignore` no longer lists `.mf`, `@mf-types` and `keycloak` (Vite-era paths that no longer exist).
 - **Production gaps fixed (`2026-11-04`).**
   - Due dates and the delegation period are local calendar days (`src/lib/dates.ts`). They showed one day early west of UTC.

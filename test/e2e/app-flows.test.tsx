@@ -161,7 +161,7 @@ describe('dashboard flows', () => {
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
   })
 
-  it('shows a plural last-updated label and leaves the filter drawer open for other keys', async () => {
+  it('keeps the last-updated label counting and leaves the filter drawer open for other keys', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-10-27T12:00:00Z'))
     render(
@@ -174,9 +174,12 @@ describe('dashboard flows', () => {
     })
     expect(screen.getAllByText('Last updated: 1 min ago').length).toBeGreaterThan(0)
 
-    vi.setSystemTime(new Date('2026-10-27T12:04:00Z'))
+    // No re-render needed: the label refreshes itself (useNow, every 30 s).
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4 * 60_000)
+    })
+    expect(screen.getAllByText('Last updated: 4 mins ago').length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole('button', { name: /^Filters/ }))
-    expect(screen.getAllByText(/Last updated: \d+ mins ago/).length).toBeGreaterThan(0)
     expect(screen.getByRole('dialog', { name: 'Filters' })).toBeInTheDocument()
 
     fireEvent.keyDown(document, { key: 'Enter' })

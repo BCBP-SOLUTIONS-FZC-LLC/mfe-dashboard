@@ -11,7 +11,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | Release | Untagged; everything is under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.3` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.3`, all the same as web-shell |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
-| Tests | 20 files, 87 tests (unit, integration, e2e); coverage 99.3% statements, 97.7% branches, 100% functions, 99.2% lines (gate 95%) |
+| Tests | 22 files, 110 tests (unit, integration, e2e); coverage 99.3% statements, 97.8% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
 
 Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, flows, failure handling) and [ARCHITECTURE.md](ARCHITECTURE.md) (diagrams, decisions). Claude Code guidance: [.claude/CLAUDE.md](.claude/CLAUDE.md).
@@ -59,12 +59,12 @@ Built with Rsbuild 2 (Rspack) and the platform SDK's plugin, `pluginPlatform({ r
 
 - container `app2`, defined as the global `var app2` by `remoteEntry.js`. The shell's SDK (`loadRemote`) injects that script and reads `window.app2`. Chunks load relative to `remoteEntry.js`.
 - Module Federation v1 (Rspack's webpack-compatible protocol). Do not set Rsbuild's `moduleFederation` option; the plugin refuses it.
-- shared strict singletons from the preset. The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and the SDK subpaths it imports (`auth`, `config`, `i18n`, `problem`, `react`, `storage`; `^1.0.0-alpha.3`, `import: false`: never bundled, no fallback, always the shell's). The shell provides them; web-shell does not need to list anything for this remote. `test/integration/remote-entry.test.tsx` loads the built container exactly this way.
+- shared strict singletons from the preset. The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and the SDK subpaths it imports (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.3`, `import: false`: never bundled, no fallback, always the shell's). The shell provides them; web-shell does not need to list anything for this remote. `test/integration/remote-entry.test.tsx` loads the built container exactly this way.
 - `react-router-dom` is **not** shared. The remote runs its own `BrowserRouter`, with the basename the shell computes: `workspacePathPrefix` + `slugFromPath(location)` (`/t/<slug>` inside the shell, empty standalone).
 - `splitChunks: { preset: 'none', chunks: 'async' }`. Rsbuild's default vendor groups split the entries too, and a `remoteEntry.js` that needs other chunks starts asynchronously: `window.app2` is then a Promise and the SDK refuses it.
 - The dev server runs without Rsbuild's live-reload client for the same reason (it would be injected into `remoteEntry.js`). Reload the shell by hand after a change.
 
-The shell registers the remote in its `/remotes/manifest.json` (`"app2": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`). `integrity` is required outside local, dev and test.
+Every build writes this remote's entry to `dist/remote-manifest-entry.json` (served at `/remote-manifest-entry.json`, attached to each GitHub Release) with the sha384 integrity of the exact `remoteEntry.js` built; copy it into the environment's manifest with an absolute `entry`. The shell registers the remote in its `/remotes/manifest.json` (`"app2": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`). `integrity` is required outside local, dev and test.
 
 ## nginx
 

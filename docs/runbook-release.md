@@ -29,3 +29,7 @@ Cosign identity for tags:
 ```
 
 OIDC issuer: `https://token.actions.githubusercontent.com`.
+
+## Web-shell's manifest entry
+
+Each release attaches `mfe-dashboard_<tag>_remote-manifest-entry.json` (also inside the dist tarball and served by the image at `/remote-manifest-entry.json`): `entry`, `version` (the tag without `v`), `ownerDomain` and the sha384 `integrity` of that release's `remoteEntry.js`. Copy the `app2` object into the environment's `/remotes/manifest.json` and set `entry` to the absolute URL the release is served from. A rebuilt `remoteEntry.js` has a different hash; always take the entry from the same release as the files.

@@ -16,6 +16,10 @@ describe('main', () => {
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(createRoot).toHaveBeenCalledWith(document.getElementById('app'))
     expect(render).toHaveBeenCalled()
+    // Standalone has no shell RemoteBoundary: App renders inside the SDK's MFEErrorBoundary.
+    const tree = (render.mock.calls[0] as unknown[])[0] as { props: { children: { type: { name: string }; props: { mfe: string } } } }
+    expect(tree.props.children.type.name).toBe('MFEErrorBoundary')
+    expect(tree.props.children.props.mfe).toBe('app2')
   })
 
   it('throws when #app is missing', async () => {

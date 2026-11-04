@@ -1,6 +1,8 @@
 // AppShellLayout's own logic: the user button's initials and short name for each label shape, the
 // catalog's "User" when nobody is named, and the no-shell logout target.
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppShellLayout, { defaultLogout } from '../../../src/layouts/AppShellLayout'
@@ -32,6 +34,36 @@ describe('user button', () => {
     const button = userButton(undefined)
     expect(within(button).getByText('US')).toBeInTheDocument()
     expect(within(button).getByText('User')).toBeInTheDocument()
+  })
+})
+
+describe('theme', () => {
+  it('shows the theme on mount without storing it, and stores a choice', async () => {
+    render(
+      <MemoryRouter>
+        <AppShellLayout userLabel="Ada" />
+      </MemoryRouter>,
+    )
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(storage('app2').get('appTheme')).toBeUndefined()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { expanded: false, name: (_, el) => el.hasAttribute('data-user-menu-trigger') }))
+    await user.click(screen.getByRole('menuitem', { name: /Theme mode/ }))
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(storage('app2').get('appTheme')).toBe('dark')
+    expect(storage('app2').get('themeMode')).toBe('dark')
+  })
+})
+
+describe('search box', () => {
+  it('is labelled for screen readers, not only by its placeholder', () => {
+    render(
+      <MemoryRouter>
+        <AppShellLayout userLabel="Ada" />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('searchbox', { name: 'Search tickets, tenders, clients...' })).toBeInTheDocument()
   })
 })
 

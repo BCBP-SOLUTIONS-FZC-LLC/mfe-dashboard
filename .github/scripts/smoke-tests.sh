@@ -66,6 +66,18 @@ if [ "${map_count}" -ne 0 ]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Remote manifest entry"
+# web-shell's manifest pins remoteEntry.js by this integrity; it must match the file the image serves.
+manifest_integrity=$(curl -sf "http://127.0.0.1:${PORT}/remote-manifest-entry.json" | sed -n 's/.*"integrity": *"\(sha384-[^"]*\)".*/\1/p')
+served_integrity="sha384-$(openssl dgst -sha384 -binary /tmp/mfe-dashboard-entry.js | openssl base64 -A)"
+echo "manifest: ${manifest_integrity}"
+echo "served:   ${served_integrity}"
+if [ -z "${manifest_integrity}" ] || [ "${manifest_integrity}" != "${served_integrity}" ]; then
+  echo "::error file=config/remote-manifest-entry.mjs,title=Remote manifest entry::remote-manifest-entry.json is missing or its integrity does not match the served remoteEntry.js"
+  exit 1
+fi
+echo "::endgroup::"
+
 echo "::group::Security headers and compression"
 doc_headers=$(curl -s -D - -o /dev/null "http://127.0.0.1:${PORT}/dashboard")
 entry_headers=$(curl -s -D - -o /dev/null -H 'Accept-Encoding: gzip' "http://127.0.0.1:${PORT}/remoteEntry.js")

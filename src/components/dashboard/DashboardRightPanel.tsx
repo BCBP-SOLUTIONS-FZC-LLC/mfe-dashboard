@@ -49,7 +49,7 @@ export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
         <div className="flex items-start gap-3">
           <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-aura-secondary text-white">
             <IconBell className="h-5 w-5" />
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.6rem] font-bold">
+            <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.6rem] font-bold">
               {formatNumber(unreadCount)}
             </span>
           </span>

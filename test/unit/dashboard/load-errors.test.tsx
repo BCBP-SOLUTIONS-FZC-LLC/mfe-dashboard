@@ -7,12 +7,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../../src/App'
 import { useDashboardData } from '../../../src/hooks/useDashboardData'
 import * as tickets from '../../../src/mocks/dashboardTickets'
+import { startPlatform } from '../../fixtures/platform'
 
-// The right panel's SLA summary reads the fixtures directly while rendering; only the ticket load
+// The KPI cards and the SLA summary read the fixtures directly while rendering; only the ticket load
 // (through useApi) is meant to fail here.
 vi.mock('../../../src/mocks/dashboardStats', async (actual) => ({
   ...(await actual<typeof import('../../../src/mocks/dashboardStats')>()),
-  slaOverviewForMyTickets: () => ({ total: 12, onTrack: 6, warning: 3, breached: 3 }),
+  kpiCounts: () => ({ 'my-tickets': 3, 'awaiting-review': 2, 'awaiting-approval': 1, delegated: 1, 'all-tenders': 7 }),
+  slaOverviewForMyTickets: () => ({ total: 3, onTrack: 1, warning: 1, breached: 1 }),
 }))
 
 const filters = { status: 'all', role: 'all', department: 'all', deadline: 'all', tender: 'all' }
@@ -52,6 +54,19 @@ describe('useDashboardData errors', () => {
     })
     expect(result.current.loadState).toBe('ready')
     expect(result.current.error).toBeUndefined()
+  })
+
+  it('logs the failure through the SDK, tagged with the remote', async () => {
+    vi.useFakeTimers()
+    const platform = startPlatform()
+    fail = new NetworkError(false, 'req-9')
+    renderHook(() => useDashboardData({ view: 'delegated', filters, canSeeAllTenders: true }))
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(700)
+    })
+    const record = platform.logs.find((l) => l.body === 'dashboard tickets failed to load')
+    expect(record?.level).toBe('warn')
+    expect(record?.attributes).toMatchObject({ mfe: 'app2', view: 'delegated' })
   })
 
   it('reports a failed refresh the same way (useApi drops the old rows)', async () => {

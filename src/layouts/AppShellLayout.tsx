@@ -24,7 +24,8 @@ import { ThemePicker } from '../components/ThemePicker'
 import type { AppThemeId } from '../theme/daisyThemes'
 import { auraModeFromAppTheme } from '../theme/daisyThemes'
 import {
-  applyAppTheme,
+  saveAppTheme,
+  showAppTheme,
   dashBorderClass,
   dashHeaderClass,
   dashShellClass,
@@ -80,7 +81,7 @@ function UserMenuItem({
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-aura-text hover:bg-aura-hover"
+      className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-start text-sm text-aura-text hover:bg-aura-hover"
     >
       <span className="text-aura-muted">{icon}</span>
       <span className="min-w-0 flex-1">{label}</span>
@@ -113,9 +114,16 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
 
   const isUserManagement = location.pathname.includes('/user-management')
 
+  // Show the theme on the page; store it only when the user picks one (chooseTheme), so a mount
+  // writes nothing.
   useEffect(() => {
-    applyAppTheme(appTheme)
+    showAppTheme(appTheme)
   }, [appTheme])
+
+  const chooseTheme = useCallback((themeId: AppThemeId) => {
+    setAppTheme(themeId)
+    saveAppTheme(themeId)
+  }, [])
 
   const closeUserMenu = useCallback(() => setUserMenuOpen(false), [])
   useDismiss(userMenuOpen, closeUserMenu, { panelRef: userMenuPanelRef, trigger: '[data-user-menu-trigger]', menu: true })
@@ -128,7 +136,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
     <div
       ref={userMenuPanelRef}
       role="menu"
-      className={`absolute right-0 top-[calc(100%+0.35rem)] z-50 min-w-[14.5rem] rounded-xl border py-1 shadow-lg ${dashBorderClass} ${dashSurfaceClass}`}
+      className={`absolute end-0 top-[calc(100%+0.35rem)] z-50 min-w-[14.5rem] rounded-xl border py-1 shadow-lg ${dashBorderClass} ${dashSurfaceClass}`}
     >
       <UserMenuItem
         icon={<IconUser className="h-4 w-4" />}
@@ -146,11 +154,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
         label={t('userMenu.themeMode')}
         hint={themeMode === 'dark' ? t('userMenu.themeDark') : t('userMenu.themeLight')}
         onClick={() => {
-          setAppTheme((current) => {
-            const next = toggleThemeMode(auraModeFromAppTheme(current))
-            applyAppTheme(next)
-            return next
-          })
+          chooseTheme(toggleThemeMode(themeMode))
         }}
       />
       <UserMenuItem
@@ -175,8 +179,8 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
   return (
     <div className={`min-h-dvh font-sans ${dashShellClass}`}>
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[17.5rem] flex-col transition-transform duration-200 ease-out ${dashSidebarClass} ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+        className={`fixed inset-y-0 start-0 z-40 flex w-[17.5rem] flex-col transition-transform duration-200 ease-out ${dashSidebarClass} ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full pointer-events-none'
         }`}
         aria-hidden={!sidebarOpen}
       >
@@ -211,7 +215,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
 
       <div
         className={`flex min-h-dvh min-w-0 flex-col transition-[padding] duration-200 ease-out ${
-          sidebarOpen ? 'pl-[17.5rem]' : 'pl-0'
+          sidebarOpen ? 'ps-[17.5rem]' : 'ps-0'
         }`}
       >
         <header
@@ -228,9 +232,10 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
           </button>
 
           <div className="relative min-w-[12rem] flex-1 md:max-w-xl">
-            <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-[1.125rem] w-[1.125rem] -translate-y-1/2 text-aura-muted" />
+            <IconSearch className="pointer-events-none absolute start-3.5 top-1/2 h-[1.125rem] w-[1.125rem] -translate-y-1/2 text-aura-muted" />
             <input
               type="search"
+              aria-label={isUserManagement ? t('header.searchUsers') : t('header.searchTickets')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={
@@ -238,18 +243,18 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
                   ? t('header.searchUsers')
                   : t('header.searchTickets')
               }
-              className="w-full rounded-full border border-aura-border bg-aura-canvas py-2.5 pl-10 pr-4 text-sm text-aura-text outline-none ring-1 ring-transparent focus:border-aura-primary/40 focus:bg-aura-surface focus:ring-aura-primary/25"
+              className="w-full rounded-full border border-aura-border bg-aura-canvas py-2.5 ps-10 pe-4 text-sm text-aura-text outline-none ring-1 ring-transparent focus:border-aura-primary/40 focus:bg-aura-surface focus:ring-aura-primary/25"
             />
           </div>
 
-          <div className="ml-auto flex flex-wrap items-center gap-1 sm:gap-2">
+          <div className="ms-auto flex flex-wrap items-center gap-1 sm:gap-2">
             <button
               type="button"
               className="relative rounded-lg p-2 text-aura-muted hover:bg-aura-hover"
               aria-label={t('header.notifications')}
             >
               <IconBell className="h-5 w-5 text-aura-text" />
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.55rem] font-bold text-white">
+              <span className="absolute end-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.55rem] font-bold text-white">
                 {formatNumber(UNREAD_NOTIFICATIONS)}
               </span>
             </button>
@@ -257,7 +262,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
               activeThemeId={appTheme}
               open={themePickerOpen}
               onOpenChange={setThemePickerOpen}
-              onSelect={(themeId) => setAppTheme(themeId)}
+              onSelect={chooseTheme}
             />
             <button
               type="button"
@@ -272,7 +277,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
                 type="button"
                 data-user-menu-trigger
                 onClick={toggleUserMenu}
-                className={`inline-flex cursor-pointer items-center gap-2 rounded-lg py-1 pl-1 pr-2 ${dashBorderClass}`}
+                className={`inline-flex cursor-pointer items-center gap-2 rounded-lg py-1 ps-1 pe-2 ${dashBorderClass}`}
                 aria-expanded={userMenuOpen}
                 aria-haspopup="menu"
               >

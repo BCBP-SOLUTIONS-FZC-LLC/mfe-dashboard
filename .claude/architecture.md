@@ -32,6 +32,7 @@ mfe-dashboard/
 │   └── runbook-*.md
 ├── nginx/default.conf, Dockerfile
 ├── rsbuild.config.ts              environments: remote (pluginPlatform app2) and standalone
+├── config/remote-manifest-entry.mjs  post-build: dist/remote-manifest-entry.json (remoteEntry.js sha384)
 ├── config/app1Url.ts              PUBLIC_APP1_URL → deprecated VITE_APP1_URL → http://localhost:5001
 ├── vitest.config.ts               happy-dom; test/{unit,integration,e2e}; coverage on src/
 ├── eslint.config.js               @bcbp-solutions-fzc-llc/eslint-plugin + React hooks (as web-shell)
@@ -49,12 +50,13 @@ mfe-dashboard/
 | User, sign-out | `useCurrentUser`, `useSignOut` | `App.tsx` |
 | Basename, route template | `slugFromPath` (`/auth`), `tryGetConfig` (`/config`), `useRouteTemplate` | `App.tsx` |
 | Access | `useHasPermission`, `useReadOnly`, `useStepUp` | `DashboardPage.tsx`, `useMemberAccess.ts` |
-| Data, errors | `useApi`, `isProblemError`, `problemMessage` | `useDashboardData.ts`, `DashboardPage.tsx` |
+| Data, errors, logs | `useApi`, `isProblemError`, `problemMessage`, `getLogger` | `useDashboardData.ts`, `DashboardPage.tsx` |
+| Standalone render errors | `MFEErrorBoundary` | `main.tsx` |
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` | `i18n.ts`, components |
 | Storage | `storage('app2')` | `theme/themeMode.ts` |
 | Tests | `createTestPlatform` | `test/fixtures/platform.ts` |
 
-Next SDK APIs to reach for: `useApiClient` (real APIs), `useFeatureFlag`, `Can`, `MFEErrorBoundary`, `getLogger`.
+Next SDK APIs to reach for: `useApiClient` (real APIs), `useFeatureFlag`, `Can`, `getServiceMeter`.
 
 ## Build
 
@@ -65,7 +67,7 @@ One `rsbuild build`, two environments into `dist/`:
 | `remote` | `remoteEntry.js` (`var app2`), chunks beside it, CSS in `assets/async/` | shell's (`import: false`) |
 | `standalone` | `index.html`, `assets/` | bundled; anonymous defaults with no shell |
 
-The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `problem`, `react`, `storage` (`^1.0.0-alpha.3`, the preset's SDK version). `react-router-dom` is not shared.
+The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage` (`^1.0.0-alpha.3`, the preset's SDK version). `react-router-dom` is not shared.
 
 ## Access
 
