@@ -5,8 +5,11 @@ import {
   IconBell,
   IconCalendar,
   IconChevronDown,
+  IconDrafting,
   IconGlobe,
   IconHome,
+  IconInbox,
+  IconList,
   IconPowerSimple,
   IconSearch,
   IconSidebar,
@@ -64,6 +67,12 @@ function navLinkClass({ isActive }: { isActive: boolean }) {
   }`
 }
 
+function subNavLinkClass({ isActive }: { isActive: boolean }) {
+  return `flex items-center gap-2.5 px-3 py-2 text-sm font-medium no-underline transition-colors ml-4 border-l border-aura-border pl-3 ${
+    isActive ? 'text-aura-primary' : 'text-aura-muted hover:text-aura-text'
+  }`
+}
+
 function UserMenuItem({
   icon,
   label,
@@ -110,6 +119,22 @@ export default function AppShellLayout({
 
   const unreadNotifications = 3
   const isUserManagement = location.pathname.includes('/user-management')
+  const isTenders = location.pathname.includes('/tenders')
+  const isDrafting = location.pathname.includes('/drafting')
+  const [tendersMenuOpen, setTendersMenuOpen] = useState(isTenders)
+  const [draftingMenuOpen, setDraftingMenuOpen] = useState(isDrafting)
+
+  useEffect(() => {
+    if (isTenders) {
+      setTendersMenuOpen(true)
+    }
+  }, [isTenders])
+
+  useEffect(() => {
+    if (isDrafting) {
+      setDraftingMenuOpen(true)
+    }
+  }, [isDrafting])
 
   useEffect(() => {
     applyAppTheme(appTheme)
@@ -201,14 +226,81 @@ export default function AppShellLayout({
           <p className="px-2 pb-1 text-[0.65rem] font-semibold uppercase tracking-wider text-aura-muted">
             Menu
           </p>
-          <NavLink to="/dashboard" end className={navLinkClass}>
-            <IconHome className="h-[1.125rem] w-[1.125rem]" />
-            Dashboard
-          </NavLink>
-          <NavLink to="/dashboard/user-management" className={navLinkClass}>
-            <IconUsers className="h-[1.125rem] w-[1.125rem]" />
-            User management
-          </NavLink>
+          <div className="space-y-1">
+            <NavLink to="/dashboard" end className={navLinkClass}>
+              <IconHome className="h-[1.125rem] w-[1.125rem]" />
+              Dashboard
+            </NavLink>
+            <div>
+              <button
+                type="button"
+                onClick={() => setTendersMenuOpen((open) => !open)}
+                className={`${navLinkClass({ isActive: isTenders })} w-full`}
+                aria-expanded={tendersMenuOpen}
+                aria-controls="tenders-submenu"
+              >
+                <IconCalendar className="h-[1.125rem] w-[1.125rem]" />
+                <span className="flex-1 text-left">Tenders</span>
+                <IconChevronDown
+                  className={`h-4 w-4 shrink-0 transition-transform ${tendersMenuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {tendersMenuOpen ? (
+                <div id="tenders-submenu" className="mt-1 space-y-1">
+                  <NavLink to="/t/demo/tenders" end className={subNavLinkClass}>
+                    <IconList className="h-[1.125rem] w-[1.125rem]" />
+                    All tenders
+                  </NavLink>
+                  <NavLink to="/t/demo/tenders/intake" className={subNavLinkClass}>
+                    <IconInbox className="h-[1.125rem] w-[1.125rem]" />
+                    Intake inbox
+                  </NavLink>
+                </div>
+              ) : null}
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => setDraftingMenuOpen((open) => !open)}
+                className={`${navLinkClass({ isActive: isDrafting })} w-full`}
+                aria-expanded={draftingMenuOpen}
+                aria-controls="drafting-submenu"
+              >
+                <IconDrafting className="h-[1.125rem] w-[1.125rem]" />
+                <span className="flex-1 text-left">Drafting</span>
+                <IconChevronDown
+                  className={`h-4 w-4 shrink-0 transition-transform ${draftingMenuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {draftingMenuOpen ? (
+                <div id="drafting-submenu" className="mt-1 space-y-1">
+                  <NavLink to="/t/demo/drafting" end className={subNavLinkClass}>
+                    <IconList className="h-[1.125rem] w-[1.125rem]" />
+                    Overview
+                  </NavLink>
+                  <NavLink
+                    to="/t/demo/drafting/sections/sec-methodology?mode=draft"
+                    className={subNavLinkClass}
+                  >
+                    <IconDrafting className="h-[1.125rem] w-[1.125rem]" />
+                    Section workspace
+                  </NavLink>
+                  <NavLink to="/t/demo/drafting/generate/gen-tech-1" className={subNavLinkClass}>
+                    <IconInbox className="h-[1.125rem] w-[1.125rem]" />
+                    Generation
+                  </NavLink>
+                  <NavLink to="/t/demo/drafting/approve/apr-tech-1" className={subNavLinkClass}>
+                    <IconUsers className="h-[1.125rem] w-[1.125rem]" />
+                    Approve &amp; sign
+                  </NavLink>
+                </div>
+              ) : null}
+            </div>
+            <NavLink to="/dashboard/user-management" className={navLinkClass}>
+              <IconUsers className="h-[1.125rem] w-[1.125rem]" />
+              User management
+            </NavLink>
+          </div>
         </nav>
         <button
           type="button"

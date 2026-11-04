@@ -315,6 +315,51 @@ export function IconCalendar({ className = 'h-4 w-4' }: IconProps) {
   )
 }
 
+export function IconDrafting({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.75}
+        d="M5 19h4l9.5-9.5a1.5 1.5 0 00-2.1-2.1L7 16.9V19zM13.5 6.5l2.1 2.1"
+      />
+    </svg>
+  )
+}
+
+export function IconList({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.75}
+        d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+      />
+    </svg>
+  )
+}
+
+export function IconInbox({ className = 'h-4 w-4' }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.75}
+        d="M4 13l2.2-7.2A2 2 0 018.1 4.5h7.8a2 2 0 011.9 1.3L20 13v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.75}
+        d="M4 13h4.2a2 2 0 011.8 1.1l.4.8a2 2 0 001.8 1.1h1.6a2 2 0 001.8-1.1l.4-.8A2 2 0 0115.8 13H20"
+      />
+    </svg>
+  )
+}
+
 export function IconLock({ className = 'h-3 w-3' }: IconProps) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 20 20" aria-hidden>
