@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import App, { workspaceBasename } from '../../src/App'
+import App, { workspaceBasename } from '../../../src/App'
 
 describe('workspaceBasename (as web-shell computes its basename)', () => {
   it.each([
@@ -16,7 +16,7 @@ describe('workspaceBasename (as web-shell computes its basename)', () => {
   it('is empty without runtime config (standalone)', async () => {
     vi.resetModules()
     vi.doMock('@bcbp-solutions-fzc-llc/frontend-sdk/config', () => ({ tryGetConfig: () => undefined }))
-    const standalone = await import('../../src/App')
+    const standalone = await import('../../../src/App')
     expect(standalone.workspaceBasename('/t/acme/dashboard')).toBe('')
     vi.doUnmock('@bcbp-solutions-fzc-llc/frontend-sdk/config')
   })

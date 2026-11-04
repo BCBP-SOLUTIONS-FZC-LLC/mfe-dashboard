@@ -37,8 +37,11 @@ The hook rejects:
 
 | Layer | Directory | Use it for |
 |---|---|---|
-| Unit | `test/unit` | Theme helpers, `ticketsForView`, `useDashboardData` (fake timers), presentational components |
+| Unit | `test/unit/<area>` | One area of `src/`: `app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk` |
+| Integration | `test/integration` | The built remote container, loaded as web-shell loads it |
 | End to end | `test/e2e` | Render `App` inside `MemoryRouter` (embedded) and without one (standalone `BrowserRouter`) |
+
+[test/README.md](test/README.md) lists what each folder covers. New UI text needs a catalog key (`test/unit/i18n/catalog.test.ts`), and code that would reimplement the platform SDK fails `test/unit/sdk/dependency-rules.test.ts`.
 
 `useDashboardData` waits 700 ms to load and 400 ms to refresh. Pass a **stable** filters object into `renderHook`. A new object on every render retriggers the effect.
 

@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { PlatformProvider, type ShellContextValue } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
-import { startPlatform } from '../platform'
+import { startPlatform } from '../../fixtures/platform'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from '../../src/App'
+import App from '../../../src/App'
 
 const user = { sub: 'u-1', name: 'Ada Lovelace', email: 'ada.lovelace@example.com' }
 

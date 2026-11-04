@@ -79,7 +79,7 @@ rsbuild.config.ts                Rsbuild + platform plugin (remote app2)
 nginx/default.conf
 Dockerfile
 .github/                         CI, release, coverage gate
-test/                            Vitest unit and e2e
+test/                            Vitest unit, integration and e2e (test/README.md)
 docs/                            pipeline map and runbooks
 ```
 
@@ -103,7 +103,7 @@ The shell, when you want them together, is a separate repo and expects this dev 
 | `npm run dev` | Rsbuild dev server on port 5002 (CORS open for the shell) |
 | `npm run build` | `tsc` (TypeScript 7), then both builds into a clean `dist/` |
 | `npm run lint` | ESLint with `@bcbp-solutions-fzc-llc/eslint-plugin` and React hooks rules (as web-shell). typescript-eslint needs the TypeScript 6 API, so `typescript` is the `@typescript/typescript6` alias and `tsc` comes from `@typescript/native` (TypeScript 7), as the TypeScript 7 release notes recommend |
-| `npm test` | Vitest once |
+| `npm test` | Vitest once: unit, integration and e2e (`npm run test:unit`, `test:integration`, `test:e2e` run one suite) |
 | `npm run test:coverage` | Vitest with the v8 report |
 | `npm run test:ci` | Coverage plus the 95% gate (`.github/scripts/coverage-gate.mjs`) |
 | `npm run hooks:install` | Copy `.githooks/pre-commit` into `.git/hooks` |
@@ -111,11 +111,12 @@ The shell, when you want them together, is a separate repo and expects this dev 
 
 ## Tests
 
-Vitest 5, happy-dom, Testing Library. `vitest.config.ts` does **not** load Rsbuild or the federation plugin. Layers:
+Vitest 5, happy-dom, Testing Library, laid out like platform-reactcommon's `test/`. See [test/README.md](test/README.md).
 
 | Directory | What it exercises |
 |---|---|
-| `test/unit` | Theme storage, ticket views, `useDashboardData`, presentational components, `main.tsx`, the SDK-connected `App`, `app2` messages. `test/setup.ts` starts a fresh `createTestPlatform` per test (allowed `read:tender`); since SDK `1.0.0-alpha.3` the test platform sets the storage workspace, so theme tests run against the real `storage()` |
+| `test/unit` | One area per folder: `app`, `authz`, `dashboard`, `components`, `theme`, `i18n` (including the catalog against the source), `sdk` (rules that the SDK is used, not reimplemented) |
+| `test/integration` | The built `remoteEntry.js` loaded the way web-shell loads it: `init(shareScope)`, `get('./App')`, rendered with the shell's React and SDK |
 | `test/e2e` | Dashboard filters, search, refresh, user menu, logout, standalone redirect |
 
 The gate requires **95%** statements, branches, functions, and lines on `src/**/*.{ts,tsx}`. Thresholds are not in the Vitest config. `COVERAGE_THRESHOLD` overrides the gate locally. CI does not set it.

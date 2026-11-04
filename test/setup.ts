@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach } from 'vitest'
-import { startPlatform } from './platform'
+import { startPlatform } from './fixtures/platform'
 
 // Every test runs against a fresh SDK runtime: signed in, with web-shell's tenant_admin grants and
 // this remote's messages loaded.
