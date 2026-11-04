@@ -9,6 +9,9 @@ export const KPI_COUNTS: Record<DashboardView, number> = {
   'all-tenders': 18,
 }
 
+/** Unread notifications (no notifications service yet). */
+export const UNREAD_NOTIFICATIONS = 3
+
 /** Who covers the signed-in user, and when (ISO dates). */
 export const DELEGATION_COVERAGE = { coveredBy: 'Arjun R', from: '2026-10-12', to: '2026-10-16' }
 

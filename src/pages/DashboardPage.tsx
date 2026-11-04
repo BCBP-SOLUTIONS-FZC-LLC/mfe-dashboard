@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { useHasPermission, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import { useHasPermission, useStepUp, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { APP_ID } from '../i18n'
 import {
   IconChevronDown,
@@ -18,7 +19,7 @@ import type { AppShellOutletContext } from '../layouts/appShellContext'
 import { DashboardRightPanel } from '../components/dashboard/DashboardRightPanel'
 import { TicketRow } from '../components/dashboard/TicketRow'
 import { useDashboardData } from '../hooks/useDashboardData'
-import { KPI_COUNTS } from '../mocks/dashboardStats'
+import { KPI_COUNTS, UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
 import type { DashboardFilters, DashboardView } from '../types/ticket'
 import { dashBorderClass, dashSurfaceClass } from '../theme/themeMode'
 
@@ -128,9 +129,11 @@ export default function DashboardPage() {
     )
   }, [tickets, search])
 
-  const showMfaBanner = view === 'awaiting-approval'
+  // Approvals need a recent MFA login: the SDK compares the login time with the tenant's window
+  // (SessionContext.mfaFreshnessSeconds) and redirects back here after re-authentication.
+  const stepUp = useStepUp()
+  const showMfaBanner = view === 'awaiting-approval' && stepUp.needed
   const showTenderError = tickets.some((t) => t.tenderDetailsUnavailable)
-  const unreadNotifications = 3
 
   return (
     <>
@@ -154,7 +157,7 @@ export default function DashboardPage() {
                   <IconChevronRight className="h-5 w-5 text-aura-muted" />
                 </div>
                 <p className="mt-3 text-xs font-medium text-aura-muted">{t(`views.${v.id}.label`)}</p>
-                <p className="text-2xl font-bold text-aura-text">{KPI_COUNTS[v.id]}</p>
+                <p className="text-2xl font-bold text-aura-text">{formatNumber(KPI_COUNTS[v.id])}</p>
                 <p className="mt-1 text-[0.65rem] text-aura-muted">{t(`views.${v.id}.subtitle`)}</p>
               </button>
             ))}
@@ -189,7 +192,7 @@ export default function DashboardPage() {
               {t('filters.button')}
               {activeFilterCount > 0 ? (
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-aura-secondary px-1 text-[0.65rem] font-bold text-white dark:border dark:border-aura-secondary/60 dark:bg-transparent dark:text-aura-secondary">
-                  {activeFilterCount}
+                  {formatNumber(activeFilterCount)}
                 </span>
               ) : null}
             </button>
@@ -308,8 +311,15 @@ export default function DashboardPage() {
           ) : null}
 
           {showMfaBanner ? (
-            <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-950">
-              {t('dashboard.mfaBanner')}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-950">
+              <span>{t('dashboard.mfaBanner')}</span>
+              <button
+                type="button"
+                onClick={() => void stepUp.reauthenticate()}
+                className="cursor-pointer font-semibold underline"
+              >
+                {t('dashboard.reauthenticate')}
+              </button>
             </div>
           ) : null}
 
@@ -384,7 +394,7 @@ export default function DashboardPage() {
               )}
             </section>
 
-            <DashboardRightPanel unreadCount={unreadNotifications} showTenderError={showTenderError} />
+            <DashboardRightPanel unreadCount={UNREAD_NOTIFICATIONS} showTenderError={showTenderError} />
           </div>
 
           <section className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

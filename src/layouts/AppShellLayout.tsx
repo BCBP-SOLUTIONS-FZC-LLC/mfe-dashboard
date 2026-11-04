@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
 import { useMemberAccess } from '../hooks/useMemberAccess'
 import { APP_ID } from '../i18n'
 import { BrandLogo } from '../components/BrandLogo'
@@ -110,7 +112,6 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
   const userMenuPanelRef = useRef<HTMLDivElement>(null)
   const themeMode: ThemeMode = auraModeFromAppTheme(appTheme)
 
-  const unreadNotifications = 3
   const isUserManagement = location.pathname.includes('/user-management')
 
   useEffect(() => {
@@ -265,7 +266,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
             >
               <IconBell className="h-5 w-5 text-aura-text" />
               <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.55rem] font-bold text-white">
-                {unreadNotifications}
+                {formatNumber(UNREAD_NOTIFICATIONS)}
               </span>
             </button>
             <ThemePicker
