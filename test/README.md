@@ -20,6 +20,7 @@ The Docker image is smoke-tested in CI by `.github/scripts/smoke-tests.sh`: size
 | `components/` | Presentational components: logos, icons, ticket rows, theme picker, filter selects |
 | `theme/` | Theme mode and app theme in `storage('app2')` |
 | `i18n/` | `app2` messages through the SDK (plurals, fallback), and the `en` catalog against the source: no missing keys, no unused keys, every message formats |
+| `docs/` | `ARCHITECTURE.md`'s mermaid fences equal `docs/architecture/mermaid/*.mmd` |
 | `sdk/` | Dependency rules: the remote uses the platform SDK and does not reimplement it (no `Intl` formatters, `fetch`, token or cookie reading, role-name checks, browser storage, hand-made workspace paths or sign-out; SDK imports only from public subpaths; the SDK stays a peer dependency) |
 
 ## `integration/remote-entry.test.tsx`

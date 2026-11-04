@@ -4,15 +4,29 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 
 `package.json` is private. Consume the GHCR image or the release tarball. Do not `npm install` this package. Versioning rules are in [VERSIONING.md](VERSIONING.md).
 
+## Status
+
+| | |
+|---|---|
+| Release | Untagged; everything is under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) |
+| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.3` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.2` (web-shell: `alpha.3`) |
+| Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
+| Tests | 17 files, 78 tests (unit, integration, e2e); coverage 100% statements, functions and lines, 99.6% branches (gate 95%) |
+| Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
+
+Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, flows, failure handling) and [ARCHITECTURE.md](ARCHITECTURE.md) (diagrams, decisions). Claude Code guidance: [.claude/CLAUDE.md](.claude/CLAUDE.md).
+
 ## Mental model
 
 | Piece | Role |
 |---|---|
-| `src/App.tsx` | Exposed module, and the standalone page's root. User and sign-out from the SDK (`useCurrentUser`, `useSignOut`). Renders relative routes when a router already exists, otherwise its own `BrowserRouter` under the shell's workspace prefix (`slugFromPath`) |
+| `src/App.tsx` | Exposed module, and the standalone page's root. User and sign-out from the SDK (`useCurrentUser`, `useSignOut`). Renders relative routes when a router already exists, otherwise its own `BrowserRouter` under the shell's workspace prefix (`workspaceBasename`: `workspacePathPrefix` + `slugFromPath`) |
 | `src/i18n.ts`, `src/locales/` | The `app2` message namespace (`registerNamespace`, `useT`). Every UI string is in `src/locales/en.json`; mock data (tickets, users), brand names and theme names are not |
 | `src/layouts/AppShellLayout.tsx` | Sidebar, search, theme, user menu, logout |
-| `src/pages/DashboardPage.tsx` | Ticket views, filters, KPI cards. Data comes from `useDashboardData` after a short timeout |
+| `src/pages/DashboardPage.tsx` | Ticket views, filters, KPI cards, the approval step-up banner (`useStepUp`). "All Tenders In Flight" needs `read:tender` |
+| `src/hooks/useDashboardData.ts` | Tickets through the SDK's `useApi` (fixture loader: 700 ms load, 400 ms refresh, aborted when superseded) |
 | `src/pages/UserManagementPage.tsx` | Mock user table filtered by the shell search box |
+| `src/hooks/useMemberAccess.ts` | `canView` (`read:members` or `manage:members`) and `canManage` (`manage:members`, not read-only) |
 | `src/theme/` | Aura light/dark and daisyUI themes, stored with the SDK's `storage('app2')` |
 | `nginx/default.conf` | Static host for the production image |
 
@@ -45,7 +59,7 @@ Built with Rsbuild 2 (Rspack) and the platform SDK's plugin, `pluginPlatform({ r
 
 - container `app2`, defined as the global `var app2` by `remoteEntry.js`. The shell's SDK (`loadRemote`) injects that script and reads `window.app2`. Chunks load relative to `remoteEntry.js`.
 - Module Federation v1 (Rspack's webpack-compatible protocol). Do not set Rsbuild's `moduleFederation` option; the plugin refuses it.
-- shared strict singletons from the preset: `react`, `react-dom` (`^19.0.0`), `@opentelemetry/api` (`~1.10.0`) and every SDK subpath (`import: false`: never bundled, always the shell's). The shell provides them; web-shell does not need to list anything for this remote.
+- shared strict singletons from the preset. The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and the SDK subpaths it imports (`auth`, `config`, `i18n`, `react`, `storage`; `^1.0.0-alpha.2`, `import: false`: never bundled, no fallback, always the shell's). The shell provides them; web-shell does not need to list anything for this remote. `test/integration/remote-entry.test.tsx` loads the built container exactly this way.
 - `react-router-dom` is **not** shared. The remote runs its own `BrowserRouter`, with the basename the shell computes: `workspacePathPrefix` + `slugFromPath(location)` (`/t/<slug>` inside the shell, empty standalone).
 - `splitChunks: { preset: 'none', chunks: 'async' }`. Rsbuild's default vendor groups split the entries too, and a `remoteEntry.js` that needs other chunks starts asynchronously: `window.app2` is then a Promise and the SDK refuses it.
 - The dev server runs without Rsbuild's live-reload client for the same reason (it would be injected into `remoteEntry.js`). Reload the shell by hand after a change.
@@ -72,15 +86,20 @@ src/main.tsx                     standalone entry (#app)
 src/i18n.ts, src/locales/        app2 messages
 src/layouts/                     shell chrome and outlet context
 src/pages/                       dashboard and user management
-src/hooks/useDashboardData.ts    mock load (700 ms) and refresh (400 ms)
-src/mocks/                       ticket fixtures
+src/components/                  logo, theme picker, ticket row, right panel, icons
+src/hooks/                       useDashboardData (useApi), useMemberAccess
+src/mocks/                       ticket, stats and filter fixtures
 src/theme/                       theme, in SDK storage
-rsbuild.config.ts                Rsbuild + platform plugin (remote app2)
+src/types/                       ticket, view, SLA and filter types
+rsbuild.config.ts                Rsbuild + platform plugin (remote app2, standalone)
 nginx/default.conf
 Dockerfile
 .github/                         CI, release, coverage gate
-test/                            Vitest unit, integration and e2e (test/README.md)
+test/                            unit/<area>, integration, e2e, fixtures (test/README.md)
+docs/lld/                        low-level design
+docs/architecture/mermaid/       diagram sources embedded in ARCHITECTURE.md
 docs/                            pipeline map and runbooks
+.claude/                         Claude Code guidance, settings and hooks
 ```
 
 ## Local setup
@@ -115,7 +134,7 @@ Vitest 5, happy-dom, Testing Library, laid out like platform-reactcommon's `test
 
 | Directory | What it exercises |
 |---|---|
-| `test/unit` | One area per folder: `app`, `authz`, `dashboard`, `components`, `theme`, `i18n` (including the catalog against the source), `sdk` (rules that the SDK is used, not reimplemented) |
+| `test/unit` | One area per folder: `app`, `authz`, `dashboard`, `components`, `theme`, `i18n` (including the catalog against the source), `sdk` (rules that the SDK is used, not reimplemented), `docs` (ARCHITECTURE.md diagrams equal their sources) |
 | `test/integration` | The built `remoteEntry.js` loaded the way web-shell loads it: `init(shareScope)`, `get('./App')`, rendered with the shell's React and SDK |
 | `test/e2e` | Dashboard filters, search, refresh, user menu, logout, standalone redirect |
 
@@ -157,5 +176,8 @@ Sign-in, token storage, and loading other remotes belong to web-shell. This repo
 ## Related docs
 
 - [ARCHITECTURE.md](ARCHITECTURE.md)
+- [LLD](docs/lld/mfe-dashboard-lld.md)
+- [test/README.md](test/README.md)
+- [.claude/CLAUDE.md](.claude/CLAUDE.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [docs/README.md](docs/README.md)

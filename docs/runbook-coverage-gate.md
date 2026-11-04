@@ -13,9 +13,9 @@ npm run test:ci
 
 ## What usually dropped it
 
-- A new branch in `src/pages/DashboardPage.tsx` or `src/layouts/AppShellLayout.tsx` without an assertion in `test/e2e/app-flows.test.tsx`.
+- A new branch in `src/` without a test in the matching `test/unit/<area>/` folder or `test/e2e/app-flows.test.tsx` ([test/README.md](../test/README.md)).
 - A `renderHook` call that builds a new `filters` object on every render. `useDashboardData` restarts the timer and stays on `loading`. Pass a stable object.
-- `vitest.config.ts` started loading `rsbuild.config.ts`. Keep the federation plugin out of the test runner.
+- `vitest.config.ts` started loading `rsbuild.config.ts`. Keep the federation plugin out of the test runner; the integration suite builds the remote in a child process (`test/fixtures/remote-build.ts`).
 
 ## Fix
 

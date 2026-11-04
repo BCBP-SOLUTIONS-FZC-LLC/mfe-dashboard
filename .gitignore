@@ -14,6 +14,7 @@ coverage
 .coverage
 *.local
 docker.local.env
+.claude/settings.local.json
 .env
 
 # Editor directories and files

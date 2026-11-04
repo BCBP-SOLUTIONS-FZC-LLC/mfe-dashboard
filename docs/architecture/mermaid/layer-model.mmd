@@ -1,13 +1,19 @@
 flowchart TB
-    host["web-shell app1\nloads remoteEntry.js"]
-    app["src/App.tsx\nexpose ./App"]
-    shell["AppShellLayout\nsearch, theme, logout"]
+    host["web-shell app1\nloadRemote: init(shareScope), get('./App')"]
+    sdk["platform SDK (shell singleton)\nuser, sign-out, permissions, step-up,\nuseApi, i18n, storage, route templates"]
+    app["src/App.tsx\nexpose ./App, BrowserRouter\nbasename /t/<slug>"]
+    shell["AppShellLayout\nsearch, theme, user menu, logout"]
     pages["DashboardPage\nUserManagementPage"]
-    data["useDashboardData\nmock tickets"]
-    nginx["nginx :8080\n/healthz / remoteEntry.js"]
+    hooks["useDashboardData (useApi)\nuseMemberAccess"]
+    mocks["src/mocks\nfixture tickets, stats, users"]
+    nginx["nginx :8080\n/healthz, /, remoteEntry.js"]
 
     host --> app
     app --> shell
     shell --> pages
-    pages --> data
-    nginx --> app
+    pages --> hooks
+    hooks --> mocks
+    app -.-> sdk
+    pages -.-> sdk
+    hooks -.-> sdk
+    nginx --> host
