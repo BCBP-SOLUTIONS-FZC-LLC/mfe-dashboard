@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useHasPermission, useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { useMemberAccess } from '../hooks/useMemberAccess'
 import { APP_ID } from '../i18n'
 import { BrandLogo } from '../components/BrandLogo'
 import {
@@ -98,8 +99,7 @@ export function defaultLogout() {
 export default function AppShellLayout({ userLabel: userLabelProp, onLogout = defaultLogout }: AppShellLayoutProps) {
   const t = useT(APP_ID)
   const userLabel = userLabelProp ?? t('user.default')
-  // A UI hint (the user-management API decides). In web-shell only tenant_admin has it.
-  const canManageMembers = useHasPermission('manage', 'members')
+  const { canView: canViewMembers } = useMemberAccess()
   const location = useLocation()
   const [search, setSearch] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -207,7 +207,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
             <IconHome className="h-[1.125rem] w-[1.125rem]" />
             {t('nav.dashboard')}
           </NavLink>
-          {canManageMembers ? (
+          {canViewMembers ? (
             <NavLink to="/dashboard/user-management" className={navLinkClass}>
               <IconUsers className="h-[1.125rem] w-[1.125rem]" />
               {t('nav.userManagement')}

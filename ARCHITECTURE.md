@@ -60,7 +60,7 @@ flowchart TD
 
 `useInRouterContext()` is the branch. The shell already owns `/dashboard/*`, so the remote's routes are relative (`/` and `user-management`). Opened alone, `BrowserRouter` redirects `/` and unknown paths to `/dashboard`.
 
-Sidebar links are absolute (`/dashboard`, `/dashboard/user-management`), which matches the standalone router and the shell's URL. The user-management link and route need `manage:members` (`useHasPermission`); without it the route navigates back to the dashboard. "All Tenders In Flight" needs `read:tender`.
+Sidebar links are absolute (`/dashboard`, `/dashboard/user-management`), which matches the standalone router and the shell's URL. The user-management link and route need `read:members` or `manage:members`, and the Invite and Edit actions need `manage:members` (`useMemberAccess`, after IAM LLD §10.4); without either, the route navigates back to the dashboard. "All Tenders In Flight" needs `read:tender`.
 
 ## Ticket load
 
