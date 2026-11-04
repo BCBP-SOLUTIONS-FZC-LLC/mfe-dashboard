@@ -1,4 +1,4 @@
-import { formatDate } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import { formatDate, formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { IconAlertCircle, IconBell, IconUser } from './DashboardIcons'
 import { APP_ID } from '../../i18n'
@@ -49,7 +49,7 @@ export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
           <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-aura-secondary text-white">
             <IconBell className="h-5 w-5" />
             <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.6rem] font-bold">
-              {unreadCount}
+              {formatNumber(unreadCount)}
             </span>
           </span>
           <div className="min-w-0 flex-1">
@@ -74,7 +74,7 @@ export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
             }}
           >
             <div className="absolute inset-2 flex flex-col items-center justify-center rounded-full bg-aura-surface text-center">
-              <span className="text-lg font-bold text-aura-text">{sla.total}</span>
+              <span className="text-lg font-bold text-aura-text">{formatNumber(sla.total)}</span>
               <span className="text-[0.6rem] text-aura-muted">{t('panel.sla.total')}</span>
             </div>
           </div>

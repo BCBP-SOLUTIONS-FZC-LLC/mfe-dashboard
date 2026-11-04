@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
 import { useMemberAccess } from '../hooks/useMemberAccess'
 import { APP_ID } from '../i18n'
 import { BrandLogo } from '../components/BrandLogo'
@@ -33,11 +35,6 @@ import {
   type ThemeMode,
 } from '../theme/themeMode'
 import type { AppShellOutletContext } from './appShellContext'
-
-/** The page locale's name in that language, e.g. 'English' or 'العربية'. */
-function languageLabel(locale: string): string {
-  return new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale
-}
 
 type AppShellLayoutProps = {
   userLabel?: string
@@ -107,10 +104,12 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
   const [appTheme, setAppTheme] = useState<AppThemeId>(() => readStoredAppTheme())
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const { locale } = useLocale()
+  // The locale's own name from the catalog (`language.<locale>`); t() returns the key when there is none.
+  const languageKey = `language.${locale}`
+  const languageName = t(languageKey) === languageKey ? locale : t(languageKey)
   const userMenuPanelRef = useRef<HTMLDivElement>(null)
   const themeMode: ThemeMode = auraModeFromAppTheme(appTheme)
 
-  const unreadNotifications = 3
   const isUserManagement = location.pathname.includes('/user-management')
 
   useEffect(() => {
@@ -153,7 +152,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
       <UserMenuItem
         icon={<IconGlobe className="h-4 w-4" />}
         label={t('userMenu.language')}
-        hint={languageLabel(locale)}
+        hint={languageName}
         onClick={() => setUserMenuOpen(false)}
       />
       <UserMenuItem
@@ -265,7 +264,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
             >
               <IconBell className="h-5 w-5 text-aura-text" />
               <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.55rem] font-bold text-white">
-                {unreadNotifications}
+                {formatNumber(UNREAD_NOTIFICATIONS)}
               </span>
             </button>
             <ThemePicker

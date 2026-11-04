@@ -34,7 +34,8 @@ describe('dashboard flows', () => {
 
     await user.click(screen.getAllByRole('button', { name: /Awaiting My Approval/ })[0]!)
     expect(await screen.findByText('Hospital Campus Redevelopment')).toBeInTheDocument()
-    expect(screen.getByText(/MFA re-authentication required/)).toBeInTheDocument()
+    // A fresh login (no MFA window in the session context): no step-up needed.
+    expect(screen.queryByText(/MFA re-authentication required/)).not.toBeInTheDocument()
 
     await user.click(screen.getAllByRole('button', { name: /Delegated To Me/ })[0]!)
     expect(await screen.findByText('From Arjun R')).toBeInTheDocument()

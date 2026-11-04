@@ -1,4 +1,4 @@
-import { formatDate } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import { formatDate, formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { APP_ID } from '../../i18n'
 import {
@@ -79,7 +79,7 @@ export function TicketRow({ ticket }: { ticket: TicketItem }) {
         {ticket.unreadComments > 0 ? (
           <span className="inline-flex items-center gap-1 text-xs text-slate-500">
             <IconChat className="h-4 w-4" />
-            {ticket.unreadComments}
+            {formatNumber(ticket.unreadComments)}
           </span>
         ) : null}
         <IconChevronRight className="h-5 w-5 text-slate-300" aria-hidden />

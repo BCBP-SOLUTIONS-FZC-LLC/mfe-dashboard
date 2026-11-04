@@ -109,6 +109,19 @@ const baseTickets: TicketItem[] = [
   },
 ]
 
+// Filter options, kept next to the data they filter. Departments come from the tickets themselves;
+// with real data they come from IAM (the tenant's departments) and the tender service.
+/** Every department in the tickets, sorted. */
+export const DEPARTMENT_OPTIONS: readonly string[] = [...new Set(baseTickets.map((t) => t.department))].sort()
+/** Role filters: matched as a substring of `roleLevel` (e.g. 'Reviewer' matches 'Senior Reviewer'). */
+export const ROLE_OPTIONS: readonly string[] = ['Reviewer', 'Approver', 'Lead']
+/** Tender filters: [keyword matched in the tender title, label]. */
+export const TENDER_OPTIONS: readonly (readonly [string, string])[] = [
+  ['IT', 'IT Infrastructure'],
+  ['Software', 'Software'],
+  ['Hardware', 'Hardware'],
+]
+
 export function ticketsForView(view: string, canSeeAllTenders: boolean): TicketItem[] {
   switch (view) {
     case 'my-tickets':

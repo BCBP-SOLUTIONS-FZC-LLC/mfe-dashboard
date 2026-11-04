@@ -35,7 +35,7 @@ Use the SDK for anything it covers (storage, dates and numbers, messages, permis
 | Inside a host that shares `react-router-dom` (a router is already mounted) | index → dashboard, `user-management` → user table, relative to the host's route |
 | Alone (`npm run dev` or the image) | `/` and any unknown path redirect to `/dashboard`. `/dashboard/user-management` is the user table |
 
-User management follows IAM's rules (iam-org-membership LLD §10.4): anyone with `read:members` (every active member) or `manage:members` sees the page and its sidebar link; only `manage:members` (`tenant_admin`, `tenant_owner`) gets Invite and Edit (`src/hooks/useMemberAccess.ts`). Without either, the link is hidden and the route goes back to the dashboard. The role → permission map is web-shell's (`src/platform/permissions.ts`). Standalone the SDK grants nothing, so the page is hidden there.
+User management follows IAM's rules (iam-org-membership LLD §10.4): anyone with `read:members` (every active member) or `manage:members` sees the page and its sidebar link; only `manage:members` (`tenant_admin`, `tenant_owner`) gets Invite and Edit, and not in a read-only tenant (SDK `useReadOnly`) (`src/hooks/useMemberAccess.ts`). Without either, the link is hidden and the route goes back to the dashboard. The role → permission map is web-shell's (`src/platform/permissions.ts`). Standalone the SDK grants nothing, so the page is hidden there.
 
 One `rsbuild` run makes two builds into `dist/` (`rsbuild.config.ts` environments): **remote** (`remoteEntry.js` and its chunks, SDK from the shell) and **standalone** (`index.html` and `assets/`, SDK bundled). Dev server: `http://localhost:5002` (`strictPort`) serves both. The image listens on **8080**.
 
