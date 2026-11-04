@@ -23,7 +23,7 @@ Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell
 | `userLabel` | Display name or email. Initials are derived from it. Default: the SDK user's email, then name, then `User` |
 | `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to `VITE_APP1_URL` |
 
-`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.2`, the preset's range) and a dev dependency pinned to web-shell's version for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload.
+`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.3`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.3`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload.
 
 Use the SDK for anything it covers (storage, dates and numbers, messages, permissions, data loading, navigation) instead of writing it here. `npm run lint` runs the platform's ESLint rules, which reject raw `localStorage`/`sessionStorage`, unsanitised HTML and SDK deep imports.
 
@@ -115,7 +115,7 @@ Vitest 5, happy-dom, Testing Library. `vitest.config.ts` does **not** load Rsbui
 
 | Directory | What it exercises |
 |---|---|
-| `test/unit` | Theme storage, ticket views, `useDashboardData`, presentational components, `main.tsx`, the SDK-connected `App`, `app2` messages. `test/setup.ts` starts a fresh `createTestPlatform` per test (allowed `read:tender`) and swaps in an in-memory `storage()`, because the test platform sets no storage workspace |
+| `test/unit` | Theme storage, ticket views, `useDashboardData`, presentational components, `main.tsx`, the SDK-connected `App`, `app2` messages. `test/setup.ts` starts a fresh `createTestPlatform` per test (allowed `read:tender`); since SDK `1.0.0-alpha.3` the test platform sets the storage workspace, so theme tests run against the real `storage()` |
 | `test/e2e` | Dashboard filters, search, refresh, user menu, logout, standalone redirect |
 
 The gate requires **95%** statements, branches, functions, and lines on `src/**/*.{ts,tsx}`. Thresholds are not in the Vitest config. `COVERAGE_THRESHOLD` overrides the gate locally. CI does not set it.
