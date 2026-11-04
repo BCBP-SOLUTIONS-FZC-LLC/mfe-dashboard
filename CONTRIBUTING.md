@@ -29,7 +29,7 @@ The hook rejects:
 - Federation name stays `app2`, the expose stays `./App`, and the shared map comes from `@bcbp-solutions-fzc-llc/webpack-preset` (`rsbuild.config.ts`). Keep its version the same as, or older than, web-shell's SDK. Do not set Rsbuild's `moduleFederation` option, and keep `splitChunks` on async chunks only.
 - `./App` keeps optional `userLabel` and `onLogout`. New required props are a breaking change ([VERSIONING.md](VERSIONING.md)).
 - Do not reimplement what `@bcbp-solutions-fzc-llc/frontend-sdk` (platform-reactcommon) provides: storage, locale-aware dates and numbers, messages and plurals, permissions, data loading (`useApi`), navigation, sign-out. Import it through its public subpaths only. Keep the dev dependency on the same version as web-shell. `npm run lint` enforces the platform rules.
-- A new `VITE_*` variable is documented in [README.md](README.md) and given a Dockerfile `ARG` default when the image needs it.
+- A new `PUBLIC_*` variable is documented in [README.md](README.md) and given a Dockerfile `ARG` default when the image needs it.
 - No raw `localStorage` or `sessionStorage`: use `storage('app2')` from the SDK (the lint rule `no-raw-storage`).
 - nginx keeps `/healthz`, port 8080, and no-cache and CORS on `remoteEntry.js`, CORS on the hashed chunks.
 
@@ -52,7 +52,7 @@ The hook rejects:
 | You changed | Update |
 |---|---|
 | `src/`, dependencies, Dockerfile, nginx, `rsbuild.config.ts`, `index.html` | `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md). The changelog workflow fails the PR otherwise |
-| A route, prop, or `VITE_*` name | [README.md](README.md) and, if the contract moved, [VERSIONING.md](VERSIONING.md) |
+| A route, prop, or `PUBLIC_*` name | [README.md](README.md) and, if the contract moved, [VERSIONING.md](VERSIONING.md) |
 | A pipeline job | [docs/pipeline/README.md](docs/pipeline/README.md) and the matching runbook |
 | The contract, a flow, an SDK API in use, a failure mode, an open item | [the LLD](docs/lld/mfe-dashboard-lld.md) |
 | Module structure, a diagram, a decision | [ARCHITECTURE.md](ARCHITECTURE.md) and `docs/architecture/mermaid/*.mmd` together (`test/unit/docs/diagrams.test.ts`) |

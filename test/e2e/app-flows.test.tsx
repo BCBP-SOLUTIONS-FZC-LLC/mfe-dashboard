@@ -143,7 +143,7 @@ describe('dashboard flows', () => {
     expect(assign).toHaveBeenCalledWith('http://localhost:5001')
 
     assign.mockClear()
-    vi.stubEnv('VITE_APP1_URL', 'http://127.0.0.1:5001/')
+    vi.stubEnv('PUBLIC_APP1_URL', 'http://127.0.0.1:5001/')
     await user.click(screen.getByRole('button', { name: 'Logout' }))
     expect(assign).toHaveBeenCalledWith('http://127.0.0.1:5001')
   })

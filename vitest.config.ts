@@ -13,7 +13,7 @@ export default defineConfig({
     setupFiles: ['./test/setup.ts'],
     include: ['test/{unit,integration,e2e}/**/*.test.{ts,tsx}'],
     env: {
-      VITE_APP1_URL: 'http://localhost:5001',
+      PUBLIC_APP1_URL: 'http://localhost:5001',
     },
     coverage: {
       provider: 'v8',

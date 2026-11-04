@@ -18,7 +18,8 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
-| 1.1 | 2026-11-04 | Production gaps: ticket-load error state (§6.3, §7.3, §11), local calendar dates (§6.1), keyboard and focus handling (§7.8), nginx security headers, gzip and self-hosted fonts (§12.3, §13), `webpack-preset` / `eslint-plugin` `1.0.0-alpha.3` (§4.2, §12.2), release guard for `VITE_APP1_URL` (§12.4) |
+| 1.2 | 2026-11-04 | `VITE_APP1_URL` renamed `PUBLIC_APP1_URL` with the old name as a deprecated fallback (§12.4) |
+| 1.1 | 2026-11-04 | Production gaps: ticket-load error state (§6.3, §7.3, §11), local calendar dates (§6.1), keyboard and focus handling (§7.8), nginx security headers, gzip and self-hosted fonts (§12.3, §13), `webpack-preset` / `eslint-plugin` `1.0.0-alpha.3` (§4.2, §12.2), release guard for `PUBLIC_APP1_URL` (§12.4) |
 
 ### Table of Contents
 
@@ -125,7 +126,7 @@ The preset's `sharedFor('remote')` configures `react`, `react/jsx-runtime`, `rea
 | Prop | Type | Default |
 |---|---|---|
 | `userLabel` | `string?` | `useCurrentUser()` email, then name, then the catalog's `User` |
-| `onLogout` | `() => void?` | `useSignOut()()` (global sign-out); when it rejects (no shell `signOut`), `defaultLogout()` → `VITE_APP1_URL` |
+| `onLogout` | `() => void?` | `useSignOut()()` (global sign-out); when it rejects (no shell `signOut`), `defaultLogout()` → `PUBLIC_APP1_URL` |
 
 web-shell passes neither today. A new required prop is a MAJOR change.
 
@@ -214,7 +215,7 @@ KPI numbers are `KPI_COUNTS` (fixed per view), not row counts. The SLA overview 
 
 ### 7.2 Standalone
 
-`src/main.tsx` applies the stored theme (`readStoredAppTheme` → `applyAppTheme`), then renders `<App />` on `#app` (throws if `#app` is missing). There is no runtime config, so the basename is empty, the user is anonymous, permissions deny all (User management and All Tenders are hidden), and logout goes to `VITE_APP1_URL`.
+`src/main.tsx` applies the stored theme (`readStoredAppTheme` → `applyAppTheme`), then renders `<App />` on `#app` (throws if `#app` is missing). There is no runtime config, so the basename is empty, the user is anonymous, permissions deny all (User management and All Tenders are hidden), and logout goes to `PUBLIC_APP1_URL`.
 
 ### 7.3 Ticket load and refresh
 
@@ -230,7 +231,7 @@ On `awaiting-approval`, when `useStepUp().needed` (login older than the tenant's
 
 ### 7.6 Sign-out
 
-Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the SDK's global sign-out (ends the Keycloak session; the SDK clears `storage()` for the workspace). If `signOut()` rejects because no shell provides it, `defaultLogout()` runs `window.location.assign(VITE_APP1_URL without a trailing slash)`.
+Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the SDK's global sign-out (ends the Keycloak session; the SDK clears `storage()` for the workspace). If `signOut()` rejects because no shell provides it, `defaultLogout()` runs `window.location.assign(PUBLIC_APP1_URL without a trailing slash)`.
 
 ### 7.7 Theme
 
@@ -282,7 +283,7 @@ No tokens, user data or permissions are stored by this repo. Raw `localStorage` 
 | A row's tender details unavailable | `partial_failure`: banner "Tickets are retained below", right-panel error card; rows stay |
 | Filters match nothing / search matches nothing | "No tickets found" with Clear Filters / "No matching tickets" |
 | No `read:members` / `manage:members` | Link hidden; route redirects to the dashboard |
-| No shell `signOut` | Fallback navigation to `VITE_APP1_URL` |
+| No shell `signOut` | Fallback navigation to `PUBLIC_APP1_URL` |
 | `#app` missing (standalone) | `main.tsx` throws before render |
 | Ticket load fails with an API error | `error` state: alert with the SDK's problem message and Retry; rows cleared |
 | Ticket loader throws anything else (a bug) | `useApi` rethrows; the shell's `RemoteBoundary` shows its error |
@@ -316,7 +317,7 @@ One `rsbuild build` makes two environments into `dist/` (`npm run build` runs `t
 
 ### 12.3 Image
 
-`node:26-bookworm` builder → `nginxinc/nginx-unprivileged:1.31-alpine` (both digest-pinned, `apk upgrade`), uid 101, port 8080, source maps deleted. Build args: `VITE_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`.
+`node:26-bookworm` builder → `nginxinc/nginx-unprivileged:1.31-alpine` (both digest-pinned, `apk upgrade`), uid 101, port 8080, source maps deleted. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`.
 
 | Path | Behaviour (`nginx/default.conf`) |
 |---|---|
@@ -334,7 +335,8 @@ One `rsbuild build` makes two environments into `dist/` (`npm run build` runs `t
 
 | Variable | When | Default | Note |
 |---|---|---|---|
-| `VITE_APP1_URL` | build (`source.define`, Dockerfile `ARG`, CI repository variable) | `http://localhost:5001` | Public in the bundle; logout target without a shell. `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
+| `PUBLIC_APP1_URL` | build (`config/app1Url.ts` → `source.define` as `import.meta.env.PUBLIC_APP1_URL`; Dockerfile `ARG`; CI repository variable) | `http://localhost:5001` | Public in the bundle; logout target without a shell. `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
+| `VITE_APP1_URL` | **Deprecated** alias, read only when `PUBLIC_APP1_URL` is unset or empty (build warning; CI and release fall back to the repository variable of this name, release warns) | — | Remove in a major release |
 
 ## 13. Security
 
@@ -371,7 +373,7 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 4 | Only an English catalog | mfe-dashboard, when locales are agreed |
 | 5 | `tender_admin`'s tender permissions in web-shell's map await Tender Service confirmation | web-shell, Tender Service |
 | 6 | The image serves the remote from nginx; the platform's CloudFront/S3 layout (`/remotes/app2/<version>/`) is not yet wired | Platform deployment |
-| 7 | No Git tag yet; the first release moves `[Unreleased]` into `## [0.1.0]`. Set the repository variable `VITE_APP1_URL` first (the release fails without it) | maintainers |
+| 7 | No Git tag yet; the first release moves `[Unreleased]` into `## [0.1.0]`. Set the repository variable `PUBLIC_APP1_URL` first (the release fails without it) | maintainers |
 | 8 | The remote ships its own Tailwind preflight, every daisyUI theme (~180 kB CSS, a 78 kB theme chunk) and `html, body` styles, and `applyAppTheme` sets `data-theme` on the shell's `<html>`. Theme ownership and shared CSS need a decision with web-shell | web-shell, mfe-dashboard |
 | 9 | Layout uses physical left/right classes and no `dir`; RTL locales (Arabic) need logical classes | mfe-dashboard |
 | 10 | No logs or metrics of its own (`getLogger`, `getServiceMeter`); source maps are deleted, not uploaded for symbolication | mfe-dashboard, platform observability |

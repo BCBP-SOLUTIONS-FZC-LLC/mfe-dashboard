@@ -15,9 +15,13 @@ COPY . .
 
 ARG BUILD_VERSION=dev
 ARG SOURCE_DATE_EPOCH=0
-ARG VITE_APP1_URL=http://localhost:5001
+# Logout target for the standalone page (config/app1Url.ts). Empty means http://localhost:5001.
+# VITE_APP1_URL is the deprecated name, used only when PUBLIC_APP1_URL is empty.
+ARG PUBLIC_APP1_URL=
+ARG VITE_APP1_URL=
 
 ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} \
+    PUBLIC_APP1_URL=${PUBLIC_APP1_URL} \
     VITE_APP1_URL=${VITE_APP1_URL}
 
 # Source maps are not served: they are deleted here (no upload yet; see the LLD's open items).

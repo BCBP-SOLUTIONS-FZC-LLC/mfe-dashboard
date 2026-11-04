@@ -154,3 +154,20 @@ describe('./App loaded through the container', () => {
     await expect(container.get('./Nope')).rejects.toThrow('Module "./Nope" does not exist in container.')
   })
 })
+
+describe('build-time logout target', () => {
+  it.each([
+    [{}, 'http://localhost:5001'],
+    [{ PUBLIC_APP1_URL: 'https://login.example.com' }, 'https://login.example.com'],
+    [{ VITE_APP1_URL: 'https://legacy.example.com' }, 'https://legacy.example.com'],
+  ])('%j is compiled into the remote as %s', (env, url) => {
+    const out = Object.keys(env).length === 0 ? build : buildRemote(env)
+    try {
+      const js = out.files().filter((f) => f.endsWith('.js')).map((f) => out.read(f)).join('\n')
+      expect(js).toContain(JSON.stringify(url))
+      expect(js).not.toContain('import.meta.env')
+    } finally {
+      if (out !== build) out.remove()
+    }
+  }, 120_000)
+})

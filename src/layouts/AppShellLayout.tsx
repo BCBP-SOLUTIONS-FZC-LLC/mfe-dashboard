@@ -90,7 +90,7 @@ function UserMenuItem({
 }
 
 export function defaultLogout() {
-  const app1Url = (import.meta.env.VITE_APP1_URL ?? 'http://localhost:5001').replace(/\/$/, '')
+  const app1Url = (import.meta.env.PUBLIC_APP1_URL ?? 'http://localhost:5001').replace(/\/$/, '')
   window.location.assign(app1Url)
 }
 

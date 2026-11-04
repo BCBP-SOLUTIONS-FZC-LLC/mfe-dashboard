@@ -20,9 +20,6 @@ test
 # Dev-only tooling
 .vscode
 .idea
-.mf
-@mf-types
-keycloak
 scripts
 *.md
 *.log

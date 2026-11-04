@@ -41,15 +41,15 @@ describe('defaultLogout (no shell signOut)', () => {
     vi.restoreAllMocks()
   })
 
-  it('goes to VITE_APP1_URL without a trailing slash', () => {
-    vi.stubEnv('VITE_APP1_URL', 'https://login.example.com/')
+  it('goes to PUBLIC_APP1_URL without a trailing slash', () => {
+    vi.stubEnv('PUBLIC_APP1_URL', 'https://login.example.com/')
     const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
     defaultLogout()
     expect(assign).toHaveBeenCalledWith('https://login.example.com')
   })
 
-  it('falls back to the local sign-in app when VITE_APP1_URL is unset', () => {
-    vi.stubEnv('VITE_APP1_URL', undefined)
+  it('falls back to the local sign-in app when PUBLIC_APP1_URL is unset', () => {
+    vi.stubEnv('PUBLIC_APP1_URL', undefined)
     const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
     defaultLogout()
     expect(assign).toHaveBeenCalledWith('http://localhost:5001')

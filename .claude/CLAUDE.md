@@ -36,6 +36,7 @@ One test: `npx vitest run test/unit/authz/permissions.test.tsx -t "read-only"`. 
 - **Access by permission, never by role name.** `read:tender`, `read:members`, `manage:members`, plus `useReadOnly()`. Roles belong to IAM and web-shell's map.
 - **Every UI string is a key in `src/locales/en.json`, and every key is used** (`test/unit/i18n/catalog.test.ts`).
 - **No raw browser storage, no tokens, no identity headers, no unsafe HTML** (lint). No third-party origins in the standalone page: the image's CSP is same-origin only (fonts are self-hosted).
+- **Build-time config** is `PUBLIC_*` (Rsbuild's public prefix), resolved in `config/app1Url.ts`. `VITE_APP1_URL` is a deprecated fallback: do not add new `VITE_*` names.
 - **Calendar dates** (`YYYY-MM-DD`) go through `calendarDate()` (`src/lib/dates.ts`) before `formatDate`; `new Date('YYYY-MM-DD')` is UTC and shows the previous day west of UTC.
 - **Popups and dialogs** use `useDismiss` (outside press, Escape, menu arrow keys) and `useFocusTrap`; do not hand-roll document listeners.
 - **Diagrams:** edit `docs/architecture/mermaid/*.mmd` and the matching fence in `ARCHITECTURE.md` together; `test/unit/docs/diagrams.test.ts` fails when they differ.

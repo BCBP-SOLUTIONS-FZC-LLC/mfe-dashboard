@@ -35,7 +35,7 @@ Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell
 | Prop | Meaning |
 |---|---|
 | `userLabel` | Display name or email. Initials are derived from it. Default: the SDK user's email, then name, then `User` |
-| `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to `VITE_APP1_URL` |
+| `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to `PUBLIC_APP1_URL` |
 
 `@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.3`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.3`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload.
 
@@ -92,6 +92,7 @@ src/mocks/                       ticket, stats and filter fixtures
 src/theme/                       theme, in SDK storage
 src/types/                       ticket, view, SLA and filter types
 rsbuild.config.ts                Rsbuild + platform plugin (remote app2, standalone)
+config/app1Url.ts                build-time logout target (PUBLIC_APP1_URL, deprecated VITE_APP1_URL)
 nginx/default.conf
 Dockerfile
 .github/                         CI, release, coverage gate
@@ -111,7 +112,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5002`. You land on `/dashboard`. Logout without an `onLogout` prop navigates to `http://localhost:5001` unless you set `VITE_APP1_URL`.
+Open `http://localhost:5002`. You land on `/dashboard`. Logout without an `onLogout` prop navigates to `http://localhost:5001` unless you set `PUBLIC_APP1_URL`.
 
 The shell, when you want them together, is a separate repo and expects this dev server on port 5002.
 
@@ -144,9 +145,10 @@ The gate requires **95%** statements, branches, functions, and lines on `src/**/
 
 | Variable | When | Default |
 |---|---|---|
-| `VITE_APP1_URL` | Build time. Logout target when `onLogout` is omitted. Dockerfile `ARG` | `http://localhost:5001` |
+| `PUBLIC_APP1_URL` | Build time. Logout target when no shell signs the user out (`config/app1Url.ts`). Dockerfile `ARG`, CI repository variable | `http://localhost:5001` |
+| `VITE_APP1_URL` | **Deprecated** (Vite-era name). Read only when `PUBLIC_APP1_URL` is unset or empty; the build prints a warning. Will be removed in a major release | — |
 
-Set the GitHub Actions variable of the same name for any image that should return to a real shell. The value is compiled into the bundle and is public.
+Set the GitHub Actions variable of the same name for any image that should return to a real shell. The value is compiled into the bundle and is public. A repository variable still named `VITE_APP1_URL` works until it is renamed (CI and releases fall back to it; releases warn).
 
 ## Image
 

@@ -56,13 +56,18 @@ jobs:
         run: bash .github/scripts/verify-release-tag.sh
 
       # A release built without the repository variable would send standalone logout to localhost.
-      - name: Verify VITE_APP1_URL is set for releases
+      # VITE_APP1_URL is the deprecated name, accepted when PUBLIC_APP1_URL is not set.
+      - name: Verify PUBLIC_APP1_URL is set for releases
         env:
-          VITE_APP1_URL: ${{ vars.VITE_APP1_URL }}
+          PUBLIC_APP1_URL: ${{ vars.PUBLIC_APP1_URL || vars.VITE_APP1_URL }}
+          DEPRECATED_ONLY: ${{ vars.PUBLIC_APP1_URL == '' && vars.VITE_APP1_URL != '' }}
         run: |
-          case "${VITE_APP1_URL}" in
-            https://*) echo "VITE_APP1_URL=${VITE_APP1_URL}" ;;
-            *) echo "::error title=VITE_APP1_URL::Set the repository variable VITE_APP1_URL to the sign-in app's https:// origin before releasing (now: '${VITE_APP1_URL}')"; exit 1 ;;
+          if [ "${DEPRECATED_ONLY}" = "true" ]; then
+            echo "::warning title=VITE_APP1_URL::The repository variable VITE_APP1_URL is deprecated; rename it to PUBLIC_APP1_URL"
+          fi
+          case "${PUBLIC_APP1_URL}" in
+            https://*) echo "PUBLIC_APP1_URL=${PUBLIC_APP1_URL}" ;;
+            *) echo "::error title=PUBLIC_APP1_URL::Set the repository variable PUBLIC_APP1_URL to the sign-in app's https:// origin before releasing (now: '${PUBLIC_APP1_URL}')"; exit 1 ;;
           esac
 
       - name: Set up Node
@@ -78,7 +83,7 @@ jobs:
         run: bash .github/scripts/prepare-release-asset.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VITE_APP1_URL: ${{ vars.VITE_APP1_URL }}
+          PUBLIC_APP1_URL: ${{ vars.PUBLIC_APP1_URL || vars.VITE_APP1_URL }}
 
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v7.0.2
@@ -153,7 +158,7 @@ jobs:
           build-args: |
             BUILD_VERSION=${{ env.RELEASE_TAG }}
             SOURCE_DATE_EPOCH=${{ steps.sde.outputs.SOURCE_DATE_EPOCH }}
-            VITE_APP1_URL=${{ vars.VITE_APP1_URL }}
+            PUBLIC_APP1_URL=${{ vars.PUBLIC_APP1_URL || vars.VITE_APP1_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

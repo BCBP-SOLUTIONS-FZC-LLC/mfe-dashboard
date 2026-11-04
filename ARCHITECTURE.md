@@ -136,7 +136,7 @@ Load state is `partial_failure` when the view is `my-tickets` and a row has `ten
 
 ## Logout and theme
 
-`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `defaultLogout()` runs: `window.location.assign` of `VITE_APP1_URL` without a trailing slash (default `http://localhost:5001`, inlined at build by `source.define`).
+`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `defaultLogout()` runs: `window.location.assign` of `PUBLIC_APP1_URL` without a trailing slash (default `http://localhost:5001`, inlined at build by `source.define`).
 
 | Key | Values |
 |---|---|
@@ -158,7 +158,7 @@ The SDK clears both on sign-out and workspace switch, refuses token-like keys, a
 
 nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standalone document a same-origin-only CSP (`frame-ancestors 'none'`), `X-Frame-Options: DENY`, `Permissions-Policy` and `X-Robots-Tag: noindex` (`nginx/document-headers.conf`); gzip is on and `server_tokens` off. Fonts are self-hosted (`@fontsource`, standalone only). The smoke script checks the headers.
 
-`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `VITE_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. `.dockerignore` excludes `.env`, so values come in as build args.
+`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. `.dockerignore` excludes `.env`, so values come in as build args.
 
 ## Failure domains
 
@@ -170,7 +170,7 @@ nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standa
 | No member permission | User management link hidden; the route returns to the dashboard |
 | Ticket load fails with an API error (problem, timeout, network) | Alert "Tickets could not be loaded." with the SDK's `problemMessage` for a problem, and Retry |
 | Ticket loader throws anything else | `useApi` rethrows it to the shell's `RemoteBoundary` |
-| No shell `signOut` | Logout navigates to `VITE_APP1_URL` |
+| No shell `signOut` | Logout navigates to `PUBLIC_APP1_URL` |
 | `#app` missing in standalone bootstrap | `main.tsx` throws before render |
 | Shell lacks a shared SDK subpath, or its SDK / React is outside the remote's range | `get('./App')` or the singleton check fails; the shell's `RemoteBoundary` shows the error |
 
@@ -194,7 +194,7 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 
 | Item | Note |
 |---|---|
-| `VITE_APP1_URL` | Fixed at build. Logout is an open navigation to that origin. Do not take it from the query string |
+| `PUBLIC_APP1_URL` | Fixed at build. Logout is an open navigation to that origin. Do not take it from the query string |
 | Theme in SDK storage | Any script in the page origin can read it. It is not a credential, and the SDK clears it on sign-out |
 | Mock data | Sample names and emails. They are not accounts |
 | Remote execution | The shell runs this bundle in the shell origin and pins `remoteEntry.js` by SRI in its manifest; this image is signed (see [VERSIONING.md](VERSIONING.md)) |
