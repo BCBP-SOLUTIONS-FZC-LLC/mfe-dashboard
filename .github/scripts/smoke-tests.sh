@@ -56,9 +56,9 @@ if [ "${remote_code}" != "200" ]; then
   exit 1
 fi
 # The SDK's loadRemote (1.0.0-alpha.4+) reads the container from __platform_mfe_<name>, which the
-# preset's containerName gives the entry; an entry built with an older preset defines bare `app2`.
-if ! head -c 40 /tmp/mfe-dashboard-entry.js | grep -q '^var __platform_mfe_app2;'; then
-  echo "::error file=rsbuild.config.ts,title=Startup gate::remoteEntry.js does not define the container global __platform_mfe_app2 (rebuild with webpack-preset 1.0.0-alpha.4 or later)"
+# preset's containerName gives the entry; an entry built with an older preset defines bare `dashboard`.
+if ! head -c 40 /tmp/mfe-dashboard-entry.js | grep -q '^var __platform_mfe_dashboard;'; then
+  echo "::error file=rsbuild.config.ts,title=Startup gate::remoteEntry.js does not define the container global __platform_mfe_dashboard (rebuild with webpack-preset 1.0.0-alpha.4 or later)"
   exit 1
 fi
 if [ "${map_count}" -ne 0 ]; then

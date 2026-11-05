@@ -4,7 +4,7 @@ import { registerNamespace } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import en from './locales/en.json'
 
 /** The remote's name: its i18n namespace, its storage app id and its MFE label. */
-export const APP_ID = 'app2'
+export const APP_ID = 'dashboard'
 
 /** Registers the catalogs with the SDK runtime (once per runtime; tests start a fresh one each). */
 export function registerMessages(): void {

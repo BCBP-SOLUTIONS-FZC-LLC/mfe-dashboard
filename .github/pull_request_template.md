@@ -29,7 +29,7 @@ Provide a clear description of the changes.
 - [ ] `CHANGELOG.md` updated under `Unreleased` when this PR changes `src/`, dependencies, the Dockerfile, or nginx config
 
 ### Remote contract
-- [ ] Container `app2`, expose `./App`, and the preset version still load in the shell (`rsbuild.config.ts`; preset not newer than web-shell's SDK)
+- [ ] Container `dashboard`, expose `./App`, and the preset version still load in the shell (`rsbuild.config.ts`; preset not newer than web-shell's SDK)
 - [ ] New `PUBLIC_*` variables documented and given a Dockerfile `ARG` default when the image build needs them
 
 ### Security

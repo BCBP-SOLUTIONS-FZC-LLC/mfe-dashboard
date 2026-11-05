@@ -1,13 +1,13 @@
 # mfe-dashboard — Low-Level Design
 
-## Tender Management SaaS Platform — Dashboard Remote (`app2`)
+## Tender Management SaaS Platform — Dashboard Remote (`dashboard`)
 
 | | |
 |---|---|
 | Repository | `BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard` (private) |
 | Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.2.0`); nothing is published to npm |
 | Version | `0.2.0`, released 2026-11-05 ([GitHub Release](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.2.0), [CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
-| Host | `web-shell` (`app1`), which loads this remote as `DASHBOARD_REMOTE = 'app2'` (`web-shell/src/App.tsx`) |
+| Host | `web-shell` (`app1`), which loads this remote as `DASHBOARD_REMOTE = 'dashboard'` (`web-shell/src/App.tsx`) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.5` (peer `^1.0.0-alpha.5`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.5` (§12) |
 | Runtime | React 19, React Router 7, Tailwind 4 + daisyUI 5; built with Rsbuild 2 (Rspack); served by nginx 1.31 on port 8080 |
 | Narrative | [ARCHITECTURE.md](../../ARCHITECTURE.md) (diagrams, failure domains, decisions) |
@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.13 | 2026-11-05 | Remote renamed `app2` → `dashboard` (container, global `__platform_mfe_dashboard`, manifest key, message namespace, storage, log label; §4, §5, §9, §10); open item 15 (switch together with web-shell) |
 | 1.12 | 2026-11-05 | Release `v0.2.0` (alpha.5); open item 14 at its last step |
 | 1.11 | 2026-11-05 | Platform packages `1.0.0-alpha.5`; the standalone page sets its identity and loads `/config/runtime.json`, and logout uses `auth.signInUrl` (§5, §7.2, §7.6, §11, §12.3, §12.4); open item 14 at step 3. Standalone `assetPrefix: '/'` so nested routes reload (§12.1, §11); a config failure is visible on the console in staging and prod (§11) |
 | 1.10 | 2026-11-05 | Logos imported from `src/assets/images` instead of `public/image` (§3, §4.1) |
@@ -67,7 +68,7 @@ The remote has no backend of its own yet. Tickets, KPI counts, notifications, de
 | User management: member table, search, Invite and Edit for managers | `src/pages/UserManagementPage.tsx`, `src/hooks/useMemberAccess.ts` |
 | Chrome inside the remote: sidebar, search box, theme picker, user menu, logout | `src/layouts/AppShellLayout.tsx`, `src/components/ThemePicker.tsx` |
 | Routing under the shell's workspace prefix, and standalone | `src/App.tsx` |
-| The `app2` message catalog | `src/i18n.ts`, `src/locales/en.json` |
+| The `dashboard` message catalog | `src/i18n.ts`, `src/locales/en.json` |
 | Themes (Aura light/dark and daisyUI) | `src/theme/` |
 | Static hosting of `remoteEntry.js`, chunks and the standalone page | `nginx/default.conf`, `Dockerfile` |
 
@@ -90,7 +91,7 @@ src/
 ├── App.tsx                     exposed ./App and standalone root: SDK user/sign-out, routing, workspaceBasename()
 ├── remote.ts                   remote build's placeholder entry (the shell loads remoteEntry.js only)
 ├── main.tsx                    standalone entry: stored theme, then <App /> on #app
-├── i18n.ts                     APP_ID = 'app2', registerMessages()
+├── i18n.ts                     APP_ID = 'dashboard', registerMessages()
 ├── locales/en.json             every UI string
 ├── layouts/AppShellLayout.tsx  sidebar, search, theme, user menu, logout; defaultLogout()
 ├── layouts/appShellContext.ts  outlet context { search }
@@ -101,7 +102,7 @@ src/
 ├── hooks/useDashboardData.ts   tickets through the SDK's useApi (fixture loader)
 ├── hooks/useMemberAccess.ts    canView / canManage from read:members, manage:members, useReadOnly
 ├── mocks/                      dashboardTickets (rows, ticketsForView, filter options), dashboardStats (KPI, notifications, delegation, SLA)
-├── theme/                      themeMode.ts (storage('app2')), daisyThemes.ts, aura.css, daisyAuraBridge.css
+├── theme/                      themeMode.ts (storage('dashboard')), daisyThemes.ts, aura.css, daisyAuraBridge.css
 └── types/ticket.ts             DashboardView, SlaState, TicketItem, DashboardFilters
 ```
 
@@ -115,12 +116,12 @@ This is the SemVer surface ([VERSIONING.md](../../VERSIONING.md)).
 
 | Item | Value |
 |---|---|
-| Container name / global | `app2`, defined synchronously by `remoteEntry.js` as `var __platform_mfe_app2` (Module Federation v1). Since `1.0.0-alpha.4` the preset's `containerName('app2')` and the SDK's `loadRemote` both use `__platform_mfe_<name>`; a bare global could collide with an element `id` or a browser global. An entry built with an older preset defines `var app2`, which the alpha.4 SDK does not read |
+| Container name / global | `dashboard`, defined synchronously by `remoteEntry.js` as `var __platform_mfe_dashboard` (Module Federation v1). Since `1.0.0-alpha.4` the preset's `containerName('dashboard')` and the SDK's `loadRemote` both use `__platform_mfe_<name>`; a bare global could collide with an element `id` or a browser global. An entry built with an older preset defines `var dashboard`, which the alpha.4 SDK does not read |
 | Exposed module | `./App` → `src/App.tsx` (default export `App`, named export `workspaceBasename`) |
-| Chunk loading | Relative to `remoteEntry.js` (`self.rspackChunk_platform_mfe_app2`); CSS is a lazy chunk under `assets/async/` |
+| Chunk loading | Relative to `remoteEntry.js` (`self.rspackChunk_platform_mfe_dashboard`); CSS is a lazy chunk under `assets/async/` |
 | Images and fonts | Imported from `src/`, so they are emitted under `assets/` and resolved against the remote's public path (where `remoteEntry.js` came from). Never root-relative: inside web-shell `/image/…` resolves on the shell's origin (web-shell #29 found the logo broken this way). `public/` holds only the standalone favicons. `dependency-rules.test.ts` and `remote-entry.test.tsx` check it |
-| Split chunks | Async only (`splitChunks: { preset: 'none', chunks: 'async' }`); a split entry would make `window.__platform_mfe_app2` a Promise, which `loadRemote` refuses |
-| Manifest entry (shell side) | `"app2": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`; `integrity` required outside local, dev and test. Every build writes it to `dist/remote-manifest-entry.json` (`config/remote-manifest-entry.mjs`, the preset's `integrityOf` over the built `remoteEntry.js`); the image serves it at `/remote-manifest-entry.json` and each release attaches it as `mfe-dashboard_<tag>_remote-manifest-entry.json`. The deploy makes `entry` absolute |
+| Split chunks | Async only (`splitChunks: { preset: 'none', chunks: 'async' }`); a split entry would make `window.__platform_mfe_dashboard` a Promise, which `loadRemote` refuses |
+| Manifest entry (shell side) | `"dashboard": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`; `integrity` required outside local, dev and test. Every build writes it to `dist/remote-manifest-entry.json` (`config/remote-manifest-entry.mjs`, the preset's `integrityOf` over the built `remoteEntry.js`); the image serves it at `/remote-manifest-entry.json` and each release attaches it as `mfe-dashboard_<tag>_remote-manifest-entry.json`. The deploy makes `entry` absolute |
 | Chunk integrity | Every lazy chunk, scripts and (since `1.0.0-alpha.4`) stylesheets, is pinned by sha384 inside `remoteEntry.js` (the preset's `ChunkIntegrityPlugin`; the runtime sets `link.integrity` for CSS); a swapped chunk is refused |
 
 ### 4.2 Shared modules
@@ -168,11 +169,11 @@ The rule: anything the SDK provides is used from the SDK, through public subpath
 | Step-up MFA | `useStepUp` (`needed`, `reauthenticate()`) (`/react`) | `DashboardPage.tsx` |
 | Data loading | `useApi(loader, deps)` (run on change, abort superseded loads, `reload`) (`/react`) | `useDashboardData.ts` |
 | API errors | `isProblemError` (`/problem`), `problemMessage` (`/i18n`) | `DashboardPage.tsx` |
-| Logs | `getLogger({ mfe: 'app2' })` (`/logging`): a failed ticket load is a `warn` with the error and view (redacted by the SDK, exported by the shell) | `useDashboardData.ts` |
+| Logs | `getLogger({ mfe: 'dashboard' })` (`/logging`): a failed ticket load is a `warn` with the error and view (redacted by the SDK, exported by the shell) | `useDashboardData.ts` |
 | Render errors | `MFEErrorBoundary` (`/react`): around the routed page with `resetKeys={[pathname]}` (embedded and standalone), and around `App` standalone | `AppShellLayout.tsx`, `main.tsx` |
-| Messages and plurals | `registerNamespace` (`/i18n`), `useT('app2')`, `useLocale` (`/react`) | `i18n.ts`, every component |
+| Messages and plurals | `registerNamespace` (`/i18n`), `useT('dashboard')`, `useLocale` (`/react`) | `i18n.ts`, every component |
 | Dates and numbers | `formatDate`, `formatNumber` (`/i18n`) | `TicketRow`, `DashboardRightPanel`, `DashboardPage`, `AppShellLayout`, `UserManagementPage` |
-| Per-app storage | `storage('app2')` (`/storage`) | `theme/themeMode.ts` |
+| Per-app storage | `storage('dashboard')` (`/storage`) | `theme/themeMode.ts` |
 | Standalone host page | `initializeCore` (`/core`), `loadRuntimeConfig`, `setRuntimeConfig` (`/config`), since `1.0.0-alpha.5` | `standalone.ts` (from `main.tsx` only; never in the remote) |
 | Standalone logout target | `tryGetConfig()?.auth.signInUrl` (`/config`) | `AppShellLayout.tsx` `defaultLogout` |
 | Tests | `createTestPlatform` (`/testing`) | `test/fixtures/platform.ts`, `test/setup.ts` |
@@ -224,8 +225,8 @@ KPI numbers are `kpiCounts()`: each view's row count before filters, from the sa
 
 ### 7.1 Mount inside web-shell
 
-1. The shell resolves `app2` from its manifest, injects `remoteEntry.js` (with SRI), calls `app2.init(shareScope)` and `app2.get('./App')` (SDK `loadRemote`), and renders `App` inside `RemoteBoundary` at `/t/:slug/dashboard/*`.
-2. Importing `./App` imports `./i18n`, which calls `registerNamespace('app2', loader)`.
+1. The shell resolves `dashboard` from its manifest, injects `remoteEntry.js` (with SRI), calls `dashboard.init(shareScope)` and `dashboard.get('./App')` (SDK `loadRemote`), and renders `App` inside `RemoteBoundary` at `/t/:slug/dashboard/*`.
+2. Importing `./App` imports `./i18n`, which calls `registerNamespace('dashboard', loader)`.
 3. `App` reads the user (`useCurrentUser`) and builds `onLogout` from `useSignOut`.
 4. No router context (the shell does not share `react-router-dom`), so `App` mounts `BrowserRouter` with `workspaceBasename(location.pathname)`, e.g. `/t/acme`.
 5. `AppShellLayout` renders the chrome and an `<Outlet context={{ search }} />`; the index route renders `DashboardPage`.
@@ -252,7 +253,7 @@ Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the S
 
 ### 7.7 Theme
 
-On start (`main.tsx`) and on mount (`AppShellLayout`), `showAppTheme(readStoredAppTheme())` sets `data-theme` on `<html>` and stores nothing. A user's choice (`ThemePicker`, or the user menu's light/dark toggle) goes through `chooseTheme` → `saveAppTheme`, which writes `appTheme`, and for Aura themes also `themeMode`. `readStoredAppTheme()` prefers `appTheme`, then `themeMode`, then `light`. The logo variant follows `auraModeFromAppTheme`. Who should own `data-theme` when embedded is open (§15 item 8). The SDK `1.0.0-alpha.4` stores keys as `@bcbp-solutions-fzc-llc/frontend-sdk:storage:<namespace>:app2:<key>` and does not read the alpha.3 keys, so after the upgrade a saved theme falls back to `light` once until the user picks it again.
+On start (`main.tsx`) and on mount (`AppShellLayout`), `showAppTheme(readStoredAppTheme())` sets `data-theme` on `<html>` and stores nothing. A user's choice (`ThemePicker`, or the user menu's light/dark toggle) goes through `chooseTheme` → `saveAppTheme`, which writes `appTheme`, and for Aura themes also `themeMode`. `readStoredAppTheme()` prefers `appTheme`, then `themeMode`, then `light`. The logo variant follows `auraModeFromAppTheme`. Who should own `data-theme` when embedded is open (§15 item 8). The SDK `1.0.0-alpha.4` stores keys as `@bcbp-solutions-fzc-llc/frontend-sdk:storage:<namespace>:dashboard:<key>` and does not read the alpha.3 keys, so after the upgrade a saved theme falls back to `light` once until the user picks it again.
 
 ### 7.8 Keyboard and focus
 
@@ -278,7 +279,7 @@ Role names never appear in this repo (IAM's closed set is `member`, `tenant_owne
 
 ## 9. i18n
 
-- Namespace `app2` (`APP_ID`). `registerMessages()` registers a loader that returns `en.json` for any `en*` locale and `{}` otherwise, so other locales fall back to English through the SDK, then to the key.
+- Namespace `dashboard` (`APP_ID`). `registerMessages()` registers a loader that returns `en.json` for any `en*` locale and `{}` otherwise, so other locales fall back to English through the SDK, then to the key.
 - Every UI string is a key in `src/locales/en.json`. Fixture data (tickets, users), brand and theme names are not translated.
 - Keys built at runtime come from closed sets: `views.<view>.label|subtitle`, `sla.<state>`, `users.status.<status>`, `language.<locale>` (the language name; the locale code when missing).
 - ICU-lite: placeholders (`{count}`, `{view}`, …) and `plural` (`lastUpdated.ago`). Numbers inside text go through `formatNumber`, dates through `formatDate`, both in the page locale.
@@ -288,7 +289,7 @@ Role names never appear in this repo (IAM's closed set is `member`, `tenant_owne
 
 | State | Where | Lifetime |
 |---|---|---|
-| `appTheme`, `themeMode` | SDK `storage('app2')`: `localStorage`, namespaced per workspace and tenant | Until sign-out or workspace switch (the SDK clears it); not written while anonymous |
+| `appTheme`, `themeMode` | SDK `storage('dashboard')`: `localStorage`, namespaced per workspace and tenant | Until sign-out or workspace switch (the SDK clears it); not written while anonymous |
 | Search text | `AppShellLayout` state, passed by outlet context | The mount |
 | View, filters, drawer | `DashboardPage` state | The mount |
 | Tickets | `useApi` data, keyed by query | The mount |
@@ -321,7 +322,7 @@ One `rsbuild build` makes two environments into `dist/` (`npm run build` runs `t
 
 | Environment | Entry | Output | SDK |
 |---|---|---|---|
-| `remote` | `src/remote.ts` (placeholder) + `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })` | `remoteEntry.js`, chunks next to it, CSS under `assets/` | from the shell (`import: false`) |
+| `remote` | `src/remote.ts` (placeholder) + `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })` | `remoteEntry.js`, chunks next to it, CSS under `assets/` | from the shell (`import: false`) |
 | `standalone` | `src/main.tsx`, `index.html` | `index.html`, `assets/` | bundled |
 
 The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the installed `frontend-sdk` is not the preset's own version, so the three platform packages move together. Because the container global (§4.1) and the shared range come from that version, a platform upgrade ships as one release with web-shell: a remote built with the alpha.3 preset does not load in an alpha.4 shell, and the reverse.
@@ -387,7 +388,7 @@ Provenance is a BuildKit attestation stored in the image index, not a Cosign att
 
 Tags are added last, so a failed scan, provenance export or signature leaves only an untagged digest in GHCR: no version tag, no `latest`, no GitHub Release. (`v0.1.0` predates this and left an unsigned `0.1.0` tag.) A rerun checks out the same tag and scripts, so a fix to the workflow ships as the next patch version.
 
-There is no deploy job. To deploy, copy the `app2` object from the release's `remote-manifest-entry.json` into the environment's manifest, with `entry` made absolute, and release together with a web-shell on the same platform packages (§12.1).
+There is no deploy job. To deploy, copy the `dashboard` object from the release's `remote-manifest-entry.json` into the environment's manifest, with `entry` made absolute, and release together with a web-shell on the same platform packages (§12.1).
 
 ## 13. Security
 
@@ -410,7 +411,7 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/unit/<area>` (`app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk`) | `npm run test:unit` | One area of `src/` each; the catalog and SDK-rule checks |
 | `test/integration` | `npm run test:integration` | The built `remoteEntry.js` (temp Rsbuild build of the `remote` environment) loaded through `init(shareScope)` / `get('./App')` and rendered with the shell's React and SDK |
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
-| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files, `/config/runtime.json` served as JSON, security headers, no nginx version, gzip |
+| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, security headers, no nginx version, gzip |
 
 Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.4% / 97.3% / 100% / 99.3% with 128 tests in 26 files.
 
@@ -422,11 +423,12 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 3 | Eight controls have no action yet (Invite user, Edit, View details ×2, View all, View Ticket, Notifications, Available) and ticket rows open nothing: they need the ticket, notification and membership APIs and product flows | mfe-dashboard, product |
 | 4 | Only an English catalog | mfe-dashboard, when locales are agreed |
 | 5 | `tender_admin`'s tender permissions in web-shell's map await Tender Service confirmation | web-shell, Tender Service |
-| 6 | The image serves the remote from nginx; the platform's CloudFront/S3 layout (`/remotes/app2/<version>/`) is not yet wired | Platform deployment |
+| 6 | The image serves the remote from nginx; the platform's CloudFront/S3 layout (`/remotes/dashboard/<version>/`) is not yet wired | Platform deployment |
 | 8 | The remote ships its own Tailwind preflight, every daisyUI theme (~180 kB CSS, a 78 kB theme chunk) and `html, body` styles, and `applyAppTheme` sets `data-theme` on the shell's `<html>`. Theme ownership and shared CSS need a decision with web-shell: options in `../mfe-dashboard-theme-and-css-ownership.md` (frontend workspace) | web-shell, mfe-dashboard |
 | 9 | Layout uses logical classes (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`, `rtl:` for the sidebar slide), so it follows `dir`. Still needed for RTL: the shell setting `<html dir>` for the locale, an Arabic catalog, and a check of directional icons (chevrons) | web-shell, mfe-dashboard |
 | 10 | Logs: failed loads only. No metrics (`getServiceMeter`) yet, and source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
-| 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_app2`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
+| 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_dashboard`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
 | 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.2.0` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
 | 13 | The unsigned `0.1.0` image (no GitHub Release) is still in GHCR. Delete package version `1507080606`; that needs a token with `delete:packages` | maintainers |
 | 14 | `auth.signInUrl` rollout: web-shell is on alpha.5 (web-shell #31) and this remote released it in `v0.2.0`. Last step, after both are deployed: each environment's standalone `runtime.json` sets `auth.signInUrl` (deploy check in `docs/runbook-release.md`). Until then standalone logout uses `PUBLIC_APP1_URL` | platform deployment |
+| 15 | The rename `app2` → `dashboard` breaks the shell contract: web-shell sets `DASHBOARD_REMOTE = 'dashboard'`, renames the manifest key (`config/remotes.local.json`, every environment's `/remotes/manifest.json`) and kill-switch entries, and both release together (dev only today, so no user data to migrate). Checklist: `../web-shell-rename-app2-to-dashboard.md` (frontend workspace) | web-shell, mfe-dashboard |

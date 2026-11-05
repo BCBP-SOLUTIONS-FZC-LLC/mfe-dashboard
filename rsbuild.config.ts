@@ -1,4 +1,4 @@
-// Two builds in one: `remote` is the Module Federation remote the shell loads (`app2`,
+// Two builds in one: `remote` is the Module Federation remote the shell loads (`dashboard`,
 // remoteEntry.js, exposing ./App), where React, the OTel API and the platform SDK come from the shell
 // as strict singletons and the SDK is never bundled (import: false). `standalone` is the page served
 // at / (http://localhost:5002 in dev, / in the image): no Module Federation, the SDK bundled, and with
@@ -47,11 +47,11 @@ export default defineConfig({
   tools: { cssLoader: { url: { filter: (url: string) => !url.startsWith('/') } } },
   environments: {
     remote: {
-      plugins: [pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })],
+      plugins: [pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })],
       // The shell loads only remoteEntry.js, which the preset adds; Rsbuild still needs an entry.
       source: { entry: { remote: './src/remote.ts' } },
       // Split only lazily loaded chunks. Rsbuild's default vendor groups also split the entries, and
-      // a remoteEntry.js that needs other chunks starts asynchronously: window.__platform_mfe_app2 becomes a Promise
+      // a remoteEntry.js that needs other chunks starts asynchronously: window.__platform_mfe_dashboard becomes a Promise
       // instead of the container, and the SDK's loadRemote refuses it.
       splitChunks: { preset: 'none', chunks: 'async' },
       tools: { htmlPlugin: false },
@@ -71,6 +71,6 @@ export default defineConfig({
   // The shell (http://localhost:5001) loads remoteEntry.js and its chunks cross-origin in dev.
   server: { port: 5002, strictPort: true, host: 'localhost', cors: { origin: '*' } },
   // No dev client: Rsbuild would inject it into remoteEntry.js too, which makes the container start
-  // asynchronously, and the SDK's loadRemote then finds no window.__platform_mfe_app2. Reload the shell by hand.
+  // asynchronously, and the SDK's loadRemote then finds no window.__platform_mfe_dashboard. Reload the shell by hand.
   dev: { hmr: false, liveReload: false },
 })

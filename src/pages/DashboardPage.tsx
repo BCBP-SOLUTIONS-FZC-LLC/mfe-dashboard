@@ -27,7 +27,7 @@ import { DEPARTMENT_OPTIONS, ROLE_OPTIONS, TENDER_OPTIONS } from '../mocks/dashb
 import type { DashboardFilters, DashboardView } from '../types/ticket'
 import { dashBorderClass, dashSurfaceClass } from '../theme/themeMode'
 
-// Labels and subtitles: `views.<id>.label` and `views.<id>.subtitle` in the app2 catalog.
+// Labels and subtitles: `views.<id>.label` and `views.<id>.subtitle` in the dashboard catalog.
 const VIEWS: { id: DashboardView; adminOnly?: boolean }[] = [
   { id: 'my-tickets' },
   { id: 'awaiting-review' },

@@ -22,7 +22,7 @@ A clear description of the bug.
 - [ ] Dashboard tickets and filters
 - [ ] User management
 - [ ] Theme
-- [ ] Module Federation expose (`app2/App`)
+- [ ] Module Federation expose (`dashboard/App`)
 - [ ] Static hosting (nginx)
 
 ## Steps to reproduce

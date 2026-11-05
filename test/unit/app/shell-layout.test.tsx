@@ -47,14 +47,14 @@ describe('theme', () => {
       </MemoryRouter>,
     )
     expect(document.documentElement.dataset.theme).toBe('light')
-    expect(storage('app2').get('appTheme')).toBeUndefined()
+    expect(storage('dashboard').get('appTheme')).toBeUndefined()
 
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { expanded: false, name: (_, el) => el.hasAttribute('data-user-menu-trigger') }))
     await user.click(screen.getByRole('menuitem', { name: /Theme mode/ }))
     expect(document.documentElement.dataset.theme).toBe('dark')
-    expect(storage('app2').get('appTheme')).toBe('dark')
-    expect(storage('app2').get('themeMode')).toBe('dark')
+    expect(storage('dashboard').get('appTheme')).toBe('dark')
+    expect(storage('dashboard').get('themeMode')).toBe('dark')
   })
 })
 

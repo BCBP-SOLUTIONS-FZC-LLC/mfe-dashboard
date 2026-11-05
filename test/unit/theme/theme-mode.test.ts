@@ -15,7 +15,7 @@ import {
   toggleThemeMode,
 } from '../../../src/theme/themeMode'
 
-const store = () => storage('app2')
+const store = () => storage('dashboard')
 
 describe('theme mode', () => {
   it('defaults to light and keeps a stored dark mode', () => {
