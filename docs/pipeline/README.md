@@ -12,7 +12,7 @@ Five workflow files. Markdown-only pushes and pull requests skip `ci.yml` (`path
 | [`changelog-check.yml`](../../.github/workflows/changelog-check.yml) | Pull request touching `src/`, the lockfile, the Dockerfile, nginx, `rsbuild.config.ts`, or `index.html` | `CHANGELOG.md` is in the diff |
 | [`release.yml`](../../.github/workflows/release.yml) | Tag `vX.Y.Z` or `vX.Y.Z-*`, or a manual run with a tag input | Changelog section, image, SBOM, provenance, GitHub Release |
 
-Dependabot opens pull requests for npm, Docker, and GitHub Actions (`.github/dependabot.yml`).
+Dependabot opens pull requests for npm, Docker, and GitHub Actions (`.github/dependabot.yml`). The npm job reads GitHub Packages through the Dependabot secret `PACKAGES_READ_TOKEN` (a token that can read the organization's packages); without it every npm run fails with `private_source_authentication_failure` (401). It never bumps `@bcbp-solutions-fzc-llc/*`: those move by hand, together and in step with web-shell.
 
 Node on every job is **26** (`node-version: 26`, the same as `.nvmrc` and the Dockerfile's `node:26` builder). `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` is set so JavaScript actions run on the runner's current Node.
 
