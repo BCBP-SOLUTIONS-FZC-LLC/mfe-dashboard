@@ -63,7 +63,7 @@ flowchart TB
 Rsbuild 2 with the SDK's plugin (`rsbuild.config.ts`, `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })`), Module Federation v1. One `rsbuild build` makes two environments: **remote** (`remoteEntry.js` and chunks; the SDK from the shell) and **standalone** (`index.html` and `assets/`; the SDK bundled).
 
 - `remoteEntry.js` defines `var __platform_mfe_dashboard` synchronously. Only async chunks are split: a split entry would start asynchronously and leave `window.__platform_mfe_dashboard` a Promise, which `loadRemote` refuses. The dev server has no HMR or live-reload client for the same reason.
-- The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and seven SDK subpaths (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.4`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
+- The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and eight SDK subpaths (`auth`, `config`, `i18n`, `logging`, `metrics`, `problem`, `react`, `storage`; `^1.0.0-alpha.5`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
 - `react-router-dom` is not shared; the remote runs its own router.
 - `test/integration/remote-entry.test.tsx` builds the remote and loads it through `init(shareScope)` / `get('./App')`, as web-shell does.
 

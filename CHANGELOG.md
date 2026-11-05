@@ -6,6 +6,10 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+### Added
+
+- Metrics per the Enterprise Platform Observability Standard, through the SDK's `/metrics` (`getServiceMeter`), exported by the shell. There are three Tier 3 metrics: `portal_dashboard_ticket_loads_total` (`view`, `trigger`, `outcome`), `portal_dashboard_ticket_load_duration_seconds` (`view`, `outcome`) and `portal_dashboard_step_up_requests_total`. Every label has a closed value set, and the SDK injects `domain`, `service` and `environment`. No Tier 1 or Tier 2 metric applies, and none was invented. `test/unit/metrics` enforces the standard in CI (namespace, suffixes, required and prohibited labels, vocabularies, SDK acceptance) against the inventory in `docs/observability/metrics.md`, which also proposes recording rules, alerts and SLOs and has a runbook. The remote now also consumes the shell's SDK `/metrics` (web-shell already provides it).
+
 ## [0.3.0] - 2026-11-05
 
 The remote is renamed `app2` → `dashboard`. This breaks the shell contract: release and deploy together with web-shell #35, which loads `dashboard`. A shell that asks for `app2` cannot load this release. Dev manifests switch their key to `dashboard`, and the hosting path becomes `/remotes/dashboard/<version>/`.

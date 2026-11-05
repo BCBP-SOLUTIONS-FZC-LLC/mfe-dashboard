@@ -4,6 +4,7 @@ import { formatNumber, problemMessage } from '@bcbp-solutions-fzc-llc/frontend-s
 import { isProblemError } from '@bcbp-solutions-fzc-llc/frontend-sdk/problem'
 import { useHasPermission, useStepUp, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { APP_ID } from '../i18n'
+import { recordMetric } from '../metrics'
 import {
   IconChevronDown,
   IconChevronRight,
@@ -323,7 +324,10 @@ export default function DashboardPage() {
               <span>{t('dashboard.mfaBanner')}</span>
               <button
                 type="button"
-                onClick={() => void stepUp.reauthenticate()}
+                onClick={() => {
+                  recordMetric('stepUpRequests', 1, {})
+                  void stepUp.reauthenticate()
+                }}
                 className="cursor-pointer font-semibold underline"
               >
                 {t('dashboard.reauthenticate')}

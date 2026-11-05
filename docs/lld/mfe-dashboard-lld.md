@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.15 | 2026-11-05 | Metrics per the Enterprise Platform Observability Standard: three Tier 3 `portal_dashboard_*` metrics through SDK `/metrics` (§5, §15 item 10), CI validation in `test/unit/metrics` |
 | 1.14 | 2026-11-05 | Release `v0.3.0` (remote `dashboard`); open item 15 at its deployment step |
 | 1.13 | 2026-11-05 | Remote renamed `app2` → `dashboard` (container, global `__platform_mfe_dashboard`, manifest key, message namespace, storage, log label; §4, §5, §9, §10); open item 15 (switch together with web-shell) |
 | 1.12 | 2026-11-05 | Release `v0.2.0` (alpha.5); open item 14 at its last step |
@@ -132,7 +133,7 @@ The preset's `sharedFor('remote')` configures `react`, `react/jsx-runtime`, `rea
 | Share key | `requiredVersion` | Notes |
 |---|---|---|
 | `react`, `react/jsx-runtime` | `^19.0.0` | strict singleton |
-| `@bcbp-solutions-fzc-llc/frontend-sdk/{auth,config,i18n,logging,problem,react,storage}` | `^1.0.0-alpha.5` (the preset's SDK version) | `import: false`: never bundled, no fallback; the load fails without the shell's copy |
+| `@bcbp-solutions-fzc-llc/frontend-sdk/{auth,config,i18n,logging,metrics,problem,react,storage}` | `^1.0.0-alpha.5` (the preset's SDK version) | `import: false`: never bundled, no fallback; the load fails without the shell's copy |
 
 `react-dom` is used only by the standalone entry (`main.tsx`), and `@opentelemetry/api` not at all, so neither appears in the remote. `react-router-dom` is **not** shared; the remote brings its own router (§7.1). `test/integration/remote-entry.test.tsx` checks that every share key is one the shell provides and that no SDK code is in the bundle.
 
@@ -177,9 +178,10 @@ The rule: anything the SDK provides is used from the SDK, through public subpath
 | Per-app storage | `storage('dashboard')` (`/storage`) | `theme/themeMode.ts` |
 | Standalone host page | `initializeCore` (`/core`), `loadRuntimeConfig`, `setRuntimeConfig` (`/config`), since `1.0.0-alpha.5` | `standalone.ts` (from `main.tsx` only; never in the remote) |
 | Standalone logout target | `tryGetConfig()?.auth.signInUrl` (`/config`) | `AppShellLayout.tsx` `defaultLogout` |
+| Metrics | `getServiceMeter({ mfe: 'dashboard' })` (`/metrics`): Tier 3 `portal_dashboard_ticket_loads_total`, `portal_dashboard_ticket_load_duration_seconds`, `portal_dashboard_step_up_requests_total`; the SDK injects `domain`, `service`, `environment` and enforces the observability standard; the shell exports. Inventory and rules: [`docs/observability/metrics.md`](../observability/metrics.md) | `metrics.ts`, `useDashboardData.ts`, `DashboardPage.tsx` |
 | Tests | `createTestPlatform` (`/testing`) | `test/fixtures/platform.ts`, `test/setup.ts` |
 
-Not used yet, and the place to start when the need arrives: `useApiClient` / `createApiClient` (real APIs, §15), `useFeatureFlag`, `Can`, `useAppUpdate`, `useOnlineStatus`, `getServiceMeter` (metrics).
+Not used yet, and the place to start when the need arrives: `useApiClient` / `createApiClient` (real APIs, §15), `useFeatureFlag`, `Can`, `useAppUpdate`, `useOnlineStatus`.
 
 Standalone, with no shell, every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll`, the default locale, and `storage()` writes nothing. The standalone page does set the page identity and runtime config itself (§7.2), as the SDK allows a remote's own page with no shell since `1.0.0-alpha.5`.
 
@@ -414,7 +416,7 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
 | Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.4% / 97.3% / 100% / 99.3% with 128 tests in 26 files.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.2% / 96.8% / 100% / 99.3% with 139 tests in 27 files.
 
 ## 15. Open Items
 
@@ -427,7 +429,7 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 6 | The image serves the remote from nginx; the platform's CloudFront/S3 layout (`/remotes/dashboard/<version>/`) is not yet wired | Platform deployment |
 | 8 | The remote ships its own Tailwind preflight, every daisyUI theme (~180 kB CSS, a 78 kB theme chunk) and `html, body` styles, and `applyAppTheme` sets `data-theme` on the shell's `<html>`. Theme ownership and shared CSS need a decision with web-shell: options in `../mfe-dashboard-theme-and-css-ownership.md` (frontend workspace) | web-shell, mfe-dashboard |
 | 9 | Layout uses logical classes (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`, `rtl:` for the sidebar slide), so it follows `dir`. Still needed for RTL: the shell setting `<html dir>` for the locale, an Arabic catalog, and a check of directional icons (chevrons) | web-shell, mfe-dashboard |
-| 10 | Logs: failed loads only. No metrics (`getServiceMeter`) yet, and source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
+| 10 | Logs: failed loads only. Metrics: three Tier 3 metrics (ticket loads, load duration, step-up requests; `docs/observability/metrics.md`); the proposed recording rules, alerts and SLOs there need an owner in the platform's Prometheus/Grafana. Source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
 | 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_dashboard`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
 | 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.3.0` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
 | 13 | The unsigned `0.1.0` image (no GitHub Release) is still in GHCR. Delete package version `1507080606`; that needs a token with `delete:packages` | maintainers |

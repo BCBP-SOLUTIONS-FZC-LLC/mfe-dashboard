@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { getLogger } from '@bcbp-solutions-fzc-llc/frontend-sdk/logging'
 import { useApi } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { APP_ID } from '../i18n'
+import { recordMetric } from '../metrics'
 import { calendarDate } from '../lib/dates'
 import { ticketsForView } from '../mocks/dashboardTickets'
 import type { DashboardFilters, DashboardView, TicketItem } from '../types/ticket'
@@ -69,10 +70,23 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
   const { data, error, loading, reload } = useApi(async (_api, signal): Promise<Loaded> => {
     const isRefresh = refreshRequested.current
     refreshRequested.current = false
-    await delay(isRefresh ? 400 : 700, signal)
-    const tickets = filterTickets(view, filters, canSeeAllTenders)
-    const partialFailure = view === 'my-tickets' && tickets.some((t) => t.tenderDetailsUnavailable)
-    return { key, tickets, partialFailure, cachedAt: Date.now() }
+    const started = performance.now()
+    // A finished load is counted and timed; one superseded by a newer load (aborted) is not.
+    const finish = (outcome: 'success' | 'error') => {
+      if (signal.aborted) return
+      recordMetric('ticketLoads', 1, { view, trigger: isRefresh ? 'refresh' : 'initial', outcome })
+      recordMetric('ticketLoadDuration', (performance.now() - started) / 1000, { view, outcome })
+    }
+    try {
+      await delay(isRefresh ? 400 : 700, signal)
+      const tickets = filterTickets(view, filters, canSeeAllTenders)
+      const partialFailure = view === 'my-tickets' && tickets.some((t) => t.tenderDetailsUnavailable)
+      finish('success')
+      return { key, tickets, partialFailure, cachedAt: Date.now() }
+    } catch (failure) {
+      finish('error')
+      throw failure
+    }
   }, [key])
 
   // useApi keeps the last data while it loads: a refresh of the same query shows it, a new query

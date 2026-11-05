@@ -36,6 +36,10 @@ Builds the `remote` environment of `rsbuild.config.ts` into a temporary director
 
 The only stub is the network: `<script>` and `<link>` tags the container appends are answered from the build output.
 
+## Metrics (`unit/metrics/metrics.test.tsx`)
+
+CI validation of the observability standard for `src/metrics.ts`: Tier 3 namespace (`portal_dashboard_*`, not `platform_*`, a registry or a legacy name), `_total` / `_seconds` suffixes, no central or prohibited label and at most 8, closed value sets (registry vocabularies for registry labels), SDK acceptance with `domain="portal"`, `service="dashboard"` injected, and the inventory table in `docs/observability/metrics.md`. Then what is recorded: finished loads by view, trigger and outcome, errors, no superseded loads, the step-up click, dropped out-of-set values, and nothing (one warning) without the manifest.
+
 ## Standalone host page (`unit/app/standalone-*.test.ts`)
 
 `src/standalone.ts` sets the page identity and runtime config, which the SDK allows only once per page. Each test file has its own SDK, and `setup.ts` starts the test platform in `beforeEach`, so these files do their work in `beforeAll`, on an SDK in the same state `main.tsx` sees:

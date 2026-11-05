@@ -12,7 +12,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | Deploy | Not deployed yet. Ships with web-shell's first release (on alpha.5, loading `dashboard` since web-shell #35), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). At deploy, dev manifests switch the key `app2` → `dashboard` (item 15); then each environment's standalone `runtime.json` can set `auth.signInUrl` (item 14) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.5` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.5`, all the same as web-shell. Released from `v0.2.0` |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
-| Tests | 26 files, 128 tests (unit, integration, e2e); coverage 99.4% statements, 97.3% branches, 100% functions, 99.3% lines (gate 95%) |
+| Tests | 27 files, 139 tests (unit, integration, e2e); coverage 99.2% statements, 96.8% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
 
 Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, flows, failure handling) and [ARCHITECTURE.md](ARCHITECTURE.md) (diagrams, decisions). Claude Code guidance: [.claude/CLAUDE.md](.claude/CLAUDE.md).
@@ -60,7 +60,7 @@ Built with Rsbuild 2 (Rspack) and the platform SDK's plugin, `pluginPlatform({ r
 
 - container `dashboard`, defined as the global `var __platform_mfe_dashboard` by `remoteEntry.js`. The shell's SDK (`loadRemote`) injects that script and reads `window.__platform_mfe_dashboard`. Chunks load relative to `remoteEntry.js`.
 - Module Federation v1 (Rspack's webpack-compatible protocol). Do not set Rsbuild's `moduleFederation` option; the plugin refuses it.
-- shared strict singletons from the preset. The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and the SDK subpaths it imports (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.4`, `import: false`: never bundled, no fallback, always the shell's). The shell provides them; web-shell does not need to list anything for this remote. `test/integration/remote-entry.test.tsx` loads the built container exactly this way.
+- shared strict singletons from the preset. The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and the SDK subpaths it imports (`auth`, `config`, `i18n`, `logging`, `metrics`, `problem`, `react`, `storage`; `^1.0.0-alpha.5`, `import: false`: never bundled, no fallback, always the shell's). The shell provides them; web-shell does not need to list anything for this remote. `test/integration/remote-entry.test.tsx` loads the built container exactly this way.
 - `react-router-dom` is **not** shared. The remote runs its own `BrowserRouter`, with the basename the shell computes: `workspacePathPrefix` + `slugFromPath(location)` (`/t/<slug>` inside the shell, empty standalone).
 - `splitChunks: { preset: 'none', chunks: 'async' }`. Rsbuild's default vendor groups split the entries too, and a `remoteEntry.js` that needs other chunks starts asynchronously: `window.__platform_mfe_dashboard` is then a Promise and the SDK refuses it.
 - The dev server runs without Rsbuild's live-reload client for the same reason (it would be injected into `remoteEntry.js`). Reload the shell by hand after a change.
