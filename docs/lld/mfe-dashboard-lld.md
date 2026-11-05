@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.10 | 2026-11-05 | Logos imported from `src/assets/images` instead of `public/image` (§3, §4.1) |
 | 1.9 | 2026-11-05 | Release tags are added after scan, provenance and signature (§12.5); open item 14 (runtime logout target) |
 | 1.8 | 2026-11-05 | `v0.1.1` published (GitHub Release, signed image `sha256:c9e10c06…`); release pipeline described in §12.5; supply chain (§13); open item 13 (the unsigned `0.1.0` tag). web-shell has the same release-script fixes (web-shell #27) |
 | 1.7 | 2026-11-05 | `v0.1.1`: the release workflow's provenance export fixed; `v0.1.0` was not published |
@@ -94,6 +95,7 @@ src/
 ├── pages/DashboardPage.tsx     views, KPI cards, filters, banners, ticket list
 ├── pages/UserManagementPage.tsx member table (fixture rows)
 ├── components/                 BrandLogo, ThemePicker, dashboard/{TicketRow, DashboardRightPanel, DashboardIcons}
+├── assets/images/              logos, imported by BrandLogo (emitted as assets/<name>.<hash>.png)
 ├── hooks/useDashboardData.ts   tickets through the SDK's useApi (fixture loader)
 ├── hooks/useMemberAccess.ts    canView / canManage from read:members, manage:members, useReadOnly
 ├── mocks/                      dashboardTickets (rows, ticketsForView, filter options), dashboardStats (KPI, notifications, delegation, SLA)
@@ -114,6 +116,7 @@ This is the SemVer surface ([VERSIONING.md](../../VERSIONING.md)).
 | Container name / global | `app2`, defined synchronously by `remoteEntry.js` as `var __platform_mfe_app2` (Module Federation v1). Since `1.0.0-alpha.4` the preset's `containerName('app2')` and the SDK's `loadRemote` both use `__platform_mfe_<name>`; a bare global could collide with an element `id` or a browser global. An entry built with an older preset defines `var app2`, which the alpha.4 SDK does not read |
 | Exposed module | `./App` → `src/App.tsx` (default export `App`, named export `workspaceBasename`) |
 | Chunk loading | Relative to `remoteEntry.js` (`self.rspackChunk_platform_mfe_app2`); CSS is a lazy chunk under `assets/async/` |
+| Images and fonts | Imported from `src/`, so they are emitted under `assets/` and resolved against the remote's public path (where `remoteEntry.js` came from). Never root-relative: inside web-shell `/image/…` resolves on the shell's origin (web-shell #29 found the logo broken this way). `public/` holds only the standalone favicons. `dependency-rules.test.ts` and `remote-entry.test.tsx` check it |
 | Split chunks | Async only (`splitChunks: { preset: 'none', chunks: 'async' }`); a split entry would make `window.__platform_mfe_app2` a Promise, which `loadRemote` refuses |
 | Manifest entry (shell side) | `"app2": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`; `integrity` required outside local, dev and test. Every build writes it to `dist/remote-manifest-entry.json` (`config/remote-manifest-entry.mjs`, the preset's `integrityOf` over the built `remoteEntry.js`); the image serves it at `/remote-manifest-entry.json` and each release attaches it as `mfe-dashboard_<tag>_remote-manifest-entry.json`. The deploy makes `entry` absolute |
 | Chunk integrity | Every lazy chunk, scripts and (since `1.0.0-alpha.4`) stylesheets, is pinned by sha384 inside `remoteEntry.js` (the preset's `ChunkIntegrityPlugin`; the runtime sets `link.integrity` for CSS); a swapped chunk is refused |
@@ -397,7 +400,7 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
 | Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files, security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.3% / 97.5% / 100% / 99.3% with 115 tests in 22 files.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.3% / 97.5% / 100% / 99.3% with 117 tests in 22 files.
 
 ## 15. Open Items
 
@@ -414,4 +417,4 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_app2`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
 | 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.1.1` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
 | 13 | The unsigned `0.1.0` image (no GitHub Release) is still in GHCR. Delete package version `1507080606`; that needs a token with `delete:packages` | maintainers |
-| 14 | `PUBLIC_APP1_URL` (standalone logout target) is fixed at build time, so one release serves one environment (`v0.1.1`: `https://app.dev.bcbpsolutions.com`). Read it at runtime once the SDK's runtime config has a sign-in URL field (`../platform-reactcommon-runtime-config-sign-in-url.md`, frontend workspace) | platform-reactcommon, mfe-dashboard |
+| 14 | `PUBLIC_APP1_URL` (standalone logout target) is fixed at build time, so one release serves one environment (`v0.1.1`: `https://app.dev.bcbpsolutions.com`). SDK `1.0.0-alpha.5` adds `auth.signInUrl` and lets a standalone page load the runtime config. Order: (1) web-shell moves to alpha.5; (2) mfe-dashboard moves to alpha.5, and standalone `main.tsx` loads and sets `/config/runtime.json`, with `defaultLogout` using `auth.signInUrl` before `PUBLIC_APP1_URL`; (3) then the deployed `runtime.json` files set `auth.signInUrl`. A remote built on alpha.5 needs `^1.0.0-alpha.5`, so an alpha.4 shell refuses it | web-shell, then mfe-dashboard, then platform deployment |
