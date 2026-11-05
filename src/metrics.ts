@@ -6,8 +6,11 @@
 // prefix is portal_dashboard_. It injects domain, service and environment on every point, checks
 // suffixes, prohibited labels and the label cap, and the shell exports (consent-gated, OTLP).
 //
-// Every label has a closed value set here. test/unit/metrics checks these definitions against the
-// SDK's rules and docs/observability/metrics.md, so the inventory cannot drift from the code.
+// Every label has a closed value set here, enforced by the type of recordMetric's labels at compile
+// time. At run time the SDK validates each point itself (declared labels, registry vocabularies such
+// as outcome, non-negative values, the per-label value cap) and drops what fails: this module does
+// not repeat those checks. test/unit/metrics checks these definitions against the SDK's rules and
+// docs/observability/metrics.md, so the inventory cannot drift from the code.
 import { getServiceMeter, type Counter, type Histogram } from '@bcbp-solutions-fzc-llc/frontend-sdk/metrics'
 import { getLogger } from '@bcbp-solutions-fzc-llc/frontend-sdk/logging'
 import { APP_ID } from './i18n'
@@ -70,12 +73,9 @@ function instrument(def: Definition): Counter | Histogram | undefined {
   }
 }
 
-/** Records one point of metric `key`. A label value outside its declared set is dropped, never sent. */
+/** Records one point of metric `key`; `labels` is typed to the metric's closed value sets. */
 export function recordMetric<K extends keyof Metrics>(key: K, value: number, labels: Labels<K>): void {
   const def: Definition = METRICS[key]
-  for (const [label, allowed] of Object.entries(def.labels)) {
-    if (!allowed.includes((labels as Record<string, string>)[label] ?? '')) return
-  }
   const inst = instrument(def)
   if (!inst) return
   if (def.type === 'counter') (inst as Counter).add(value, labels as Record<string, string>)

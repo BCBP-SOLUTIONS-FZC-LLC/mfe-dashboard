@@ -21,7 +21,7 @@ The Docker image is smoke-tested in CI by `.github/scripts/smoke-tests.sh`: size
 | `theme/` | Theme mode and app theme in `storage('dashboard')` |
 | `i18n/` | `dashboard` messages through the SDK (plurals, fallback), and the `en` catalog against the source: no missing keys, no unused keys, every message formats |
 | `docs/` | `ARCHITECTURE.md`'s mermaid fences equal `docs/architecture/mermaid/*.mmd` |
-| `sdk/` | Dependency rules: the remote uses the platform SDK and does not reimplement it (no `Intl` formatters, `fetch`, token or cookie reading, role-name checks, browser storage, hand-made workspace paths or sign-out; SDK imports only from public subpaths; the SDK stays a peer dependency) |
+| `sdk/` | Dependency rules: the remote uses the platform SDK and does not reimplement it (no `Intl` formatters, `fetch`, token or cookie reading, role-name checks, browser storage, hand-made workspace paths or sign-out, metrics outside `src/metrics.ts` or not through the SDK, OpenTelemetry or Prometheus clients, host-page start-up outside `src/standalone.ts`, shell-only APIs (manifest, remotes, auth, flags), `console` outside the standalone config warning; SDK imports only from public subpaths; the SDK stays a peer dependency) |
 
 ## `integration/remote-entry.test.tsx`
 

@@ -121,9 +121,11 @@ describe('metric definitions (observability standard)', () => {
 })
 
 describe('recording', () => {
-  it('drops a label value outside its declared set', async () => {
+  it('leaves run-time validation to the SDK: it drops a value outside a registry vocabulary', async () => {
     await inShell()
-    recordMetric('ticketLoads', 1, { view: 'unknown-view' as never, trigger: 'initial', outcome: 'success' })
+    // outcome is a registry label (success | failure | error); recordMetric does not check it again.
+    // Other values are closed by recordMetric's types, which tsc checks at every call site in src/.
+    recordMetric('ticketLoads', 1, { view: 'my-tickets', trigger: 'initial', outcome: 'timeout' as never })
     expect(series('portal_dashboard_ticket_loads_total')).toEqual([])
   })
 

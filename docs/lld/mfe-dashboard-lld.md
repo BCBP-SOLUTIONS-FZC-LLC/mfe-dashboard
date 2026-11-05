@@ -158,7 +158,9 @@ web-shell passes neither today. A new required prop is a MAJOR change.
 
 ## 5. Platform SDK Usage
 
-The rule: anything the SDK provides is used from the SDK, through public subpaths only. `npm run lint` (`@bcbp-solutions-fzc-llc/eslint-plugin`: `no-raw-storage`, `no-sdk-deep-import`, `no-sdk-root-import`, `no-unsafe-html`, `no-identity-headers`, `no-eval`, …) and `test/unit/sdk/dependency-rules.test.ts` enforce it.
+The rule: anything the SDK provides is used from the SDK, through public subpaths only. `npm run lint` (`@bcbp-solutions-fzc-llc/eslint-plugin`: `no-raw-storage`, `no-sdk-deep-import`, `no-sdk-root-import`, `no-unsafe-html`, `no-identity-headers`, `no-eval`, …) and `test/unit/sdk/dependency-rules.test.ts` enforce it. The latter also keeps metrics in `src/metrics.ts` through `/metrics` (no OpenTelemetry or Prometheus client), host-page start-up (`initializeCore`, runtime config) in `src/standalone.ts`, shell-only APIs (manifest, `loadRemote`, auth, flags, telemetry start) out of `src/`, and `console` out except for the standalone config warning.
+
+Audit (2026-11-05), every SDK export against `src/`: nothing the SDK provides is reimplemented. Our own helpers have no SDK counterpart: `calendarDate` (the SDK formats a `Date`, it does not parse a calendar day), `workspaceBasename` (composes `slugFromPath` and `workspacePathPrefix`), `useNow`, `useDismiss`, `useFocusTrap`, the theme (stored with `storage()`), and `defaultLogout`'s full navigation to an absolute sign-in URL (`navigate()` takes same-origin paths only). `recordMetric` used to check label values again after the SDK; it now leaves run-time validation to the SDK. One deliberate gap-filler: `standalone.ts`'s `console.warn`, because the SDK logger is silent before logging starts outside local, dev and test.
 
 | Concern | SDK API | Used in |
 |---|---|---|
@@ -416,7 +418,7 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
 | Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.2% / 96.8% / 100% / 99.3% with 139 tests in 27 files.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.2% / 97.1% / 100% / 99.3% with 142 tests in 27 files.
 
 ## 15. Open Items
 

@@ -34,7 +34,7 @@ While tickets are fixtures (LLD §15 item 1), the duration measures the simulate
 | Suffix | Counters end in `_total`, histograms in `_seconds` |
 | Required labels | `domain`, `service`, `environment` are not declared (the SDK injects them) and appear on every recorded series with `portal` / `dashboard` |
 | Prohibited labels | No registry-prohibited name or suffix (`*_id`, `email`, `user`, `path`, …); at most 8 labels |
-| Label vocabulary | Every label has a closed value set; `outcome` values come from the registry's vocabulary; a value outside the set is dropped, not sent |
+| Label vocabulary | Every label has a closed value set, enforced by `recordMetric`'s types; `outcome` values come from the registry's vocabulary, and the SDK drops a value outside it at run time (it also caps any other label at 100 values) |
 | SDK compliance | With the remote in the manifest, the SDK accepts every definition (its own namespace, suffix, label and registry checks) |
 | Inventory | This table matches `src/metrics.ts` |
 

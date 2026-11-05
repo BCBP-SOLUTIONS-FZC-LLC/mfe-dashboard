@@ -56,7 +56,7 @@ flowchart TB
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` |
 | Per-app storage | `storage('dashboard')` |
 
-`npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports.
+`npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports, metrics not through `frontend-sdk/metrics` in `src/metrics.ts`, host-page start-up outside `src/standalone.ts`, shell-only SDK APIs, and `console` logging.
 
 ## Federation
 

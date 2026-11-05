@@ -64,6 +64,24 @@ describe('the SDK is used, not reimplemented', () => {
     expect(offenders(/location\.(assign|replace|href\s*=)/, { 'src/layouts/AppShellLayout.tsx': 'defaultLogout, no shell' })).toEqual([])
   })
 
+  it('records metrics with frontend-sdk/metrics in src/metrics.ts only, never OpenTelemetry or a Prometheus client directly', () => {
+    expect(offenders(/from ['"](@opentelemetry\/[^'"]+|prom-client|web-vitals)['"]/)).toEqual([])
+    expect(offenders(/\b(getServiceMeter|getDomainMeter)\b/, { 'src/metrics.ts': 'the one place metrics are defined' })).toEqual([])
+    // The shell starts exporting and records Core Web Vitals for the whole page.
+    expect(offenders(/\b(initializeMetrics|startWebVitals|initializeTracing|initializeLogging|installGlobalErrorHandlers)\b/)).toEqual([])
+  })
+
+  it('does host-page start-up only on the standalone page, with the SDK, and leaves remotes and auth to the shell', () => {
+    expect(
+      offenders(/\b(initializeCore|loadRuntimeConfig|setRuntimeConfig)\b/, { 'src/standalone.ts': 'standalone host page (SDK alpha.5)' }),
+    ).toEqual([])
+    expect(offenders(/\b(loadManifest|loadRemote|registerNavigator|initializeAuth|createOidcProvider|setTokenSource|setAuthorizer|setFlagProvider|startVersionPolling)\b/)).toEqual([])
+  })
+
+  it('logs with getLogger; console only for the standalone config warning the SDK logger drops in staging and prod', () => {
+    expect(offenders(/\bconsole\.(log|info|warn|error|debug)\(/, { 'src/standalone.ts': 'SDK logger is silent before logging starts' })).toEqual([])
+  })
+
   it('imports the SDK only from its public subpaths', () => {
     const imports = sources.flatMap(({ text }) => [...text.matchAll(/from ['"](@bcbp-solutions-fzc-llc\/frontend-sdk[^'"]*)['"]/g)].map((m) => m[1]!))
     expect(imports.length).toBeGreaterThan(0)
