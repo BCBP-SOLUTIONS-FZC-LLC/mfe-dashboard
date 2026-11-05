@@ -9,10 +9,10 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | | |
 |---|---|
 | Release | [`v0.1.1`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.1.1) (2026-11-05): image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.1`, signed, with SBOM and provenance. `v0.1.0` failed to publish; do not use it. See [CHANGELOG.md](CHANGELOG.md) |
-| Deploy | Not deployed yet. Ships with web-shell's first release (alpha.4), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). web-shell's contract suite passed 9/9 against this release |
-| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4`, all the same as web-shell |
+| Deploy | Not deployed yet. Ships with web-shell's first release (now on alpha.5), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). web-shell's contract suite passed 9/9 against this release |
+| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.5` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.5`, all the same as web-shell. `v0.1.1` was built on alpha.4 and still loads in the alpha.5 shell (`^1.0.0-alpha.4`) |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
-| Tests | 22 files, 117 tests (unit, integration, e2e); coverage 99.3% statements, 97.5% branches, 100% functions, 99.3% lines (gate 95%) |
+| Tests | 24 files, 124 tests (unit, integration, e2e); coverage 99.4% statements, 97.6% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
 
 Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, flows, failure handling) and [ARCHITECTURE.md](ARCHITECTURE.md) (diagrams, decisions). Claude Code guidance: [.claude/CLAUDE.md](.claude/CLAUDE.md).
@@ -38,7 +38,7 @@ Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell
 | `userLabel` | Display name or email. Initials are derived from it. Default: the SDK user's email, then name, then `User` |
 | `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to `PUBLIC_APP1_URL` |
 
-`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.4`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.4`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload.
+`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.5`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.5`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload. The standalone page is its own host page: before rendering, `src/standalone.ts` sets the page identity (`mfe-dashboard`, `portal`) and loads `/config/runtime.json` through the SDK, so logout can use that environment's `auth.signInUrl`.
 
 Use the SDK for anything it covers (storage, dates and numbers, messages, permissions, data loading, navigation) instead of writing it here. `npm run lint` runs the platform's ESLint rules, which reject raw `localStorage`/`sessionStorage`, unsanitised HTML and SDK deep imports.
 
@@ -146,7 +146,9 @@ The gate requires **95%** statements, branches, functions, and lines on `src/**/
 
 | Variable | When | Default |
 |---|---|---|
-| `PUBLIC_APP1_URL` | Build time. Logout target when no shell signs the user out (`config/app1Url.ts`). Dockerfile `ARG`, CI repository variable | `http://localhost:5001` |
+| `auth.signInUrl` in `/config/runtime.json` | Run time, per environment. Standalone logout target; wins over `PUBLIC_APP1_URL`. Mount the environment's file over the image's default (`/usr/share/nginx/html/config/runtime.json`; the default, `public/config/runtime.json`, is web-shell's and has no `signInUrl`). The SDK validates the file strictly (unknown keys are rejected) | none |
+| `PUBLIC_APP1_URL` | Build time. Logout target when no shell signs the user out and the runtime config has no `signInUrl` (`config/app1Url.ts`). Dockerfile `ARG`, CI repository variable | `http://localhost:5001` |
+| `PLATFORM_ENVIRONMENT` | Build time. The standalone page's identity environment (`local`, `dev`, `test`, `staging`, `prod`), as web-shell's. `http` origins in the runtime config are accepted only for `local`, `dev` and `test` | `prod` for a production build, `local` for the dev server |
 | `VITE_APP1_URL` | **Deprecated** (Vite-era name). Read only when `PUBLIC_APP1_URL` is unset or empty; the build prints a warning. Will be removed in a major release | — |
 
 Set the GitHub Actions variable of the same name for any image that should return to a real shell. The value is compiled into the bundle and is public. A repository variable still named `VITE_APP1_URL` works until it is renamed (CI and releases fall back to it; releases warn).

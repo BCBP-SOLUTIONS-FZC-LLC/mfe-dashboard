@@ -8,7 +8,7 @@
 | Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.1.1`); nothing is published to npm |
 | Version | `0.1.1`, released 2026-11-05 ([GitHub Release](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.1.1), [CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
 | Host | `web-shell` (`app1`), which loads this remote as `DASHBOARD_REMOTE = 'app2'` (`web-shell/src/App.tsx`) |
-| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (peer `^1.0.0-alpha.4`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4` (§12) |
+| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.5` (peer `^1.0.0-alpha.5`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.5` (§12) |
 | Runtime | React 19, React Router 7, Tailwind 4 + daisyUI 5; built with Rsbuild 2 (Rspack); served by nginx 1.31 on port 8080 |
 | Narrative | [ARCHITECTURE.md](../../ARCHITECTURE.md) (diagrams, failure domains, decisions) |
 | Upstream contracts | platform-reactcommon LLD and design doc (`docs/lld/platform-reactcommon-lld.md`, `docs/design/frontend-sdk-design.md`); iam-org-membership LLD §5.4 P-35 and §10.4 (roles, member rights) |
@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.11 | 2026-11-05 | Platform packages `1.0.0-alpha.5`; the standalone page sets its identity and loads `/config/runtime.json`, and logout uses `auth.signInUrl` (§5, §7.2, §7.6, §11, §12.3, §12.4); open item 14 at step 3 |
 | 1.10 | 2026-11-05 | Logos imported from `src/assets/images` instead of `public/image` (§3, §4.1) |
 | 1.9 | 2026-11-05 | Release tags are added after scan, provenance and signature (§12.5); open item 14 (runtime logout target) |
 | 1.8 | 2026-11-05 | `v0.1.1` published (GitHub Release, signed image `sha256:c9e10c06…`); release pipeline described in §12.5; supply chain (§13); open item 13 (the unsigned `0.1.0` tag). web-shell has the same release-script fixes (web-shell #27) |
@@ -128,7 +129,7 @@ The preset's `sharedFor('remote')` configures `react`, `react/jsx-runtime`, `rea
 | Share key | `requiredVersion` | Notes |
 |---|---|---|
 | `react`, `react/jsx-runtime` | `^19.0.0` | strict singleton |
-| `@bcbp-solutions-fzc-llc/frontend-sdk/{auth,config,i18n,logging,problem,react,storage}` | `^1.0.0-alpha.4` (the preset's SDK version) | `import: false`: never bundled, no fallback; the load fails without the shell's copy |
+| `@bcbp-solutions-fzc-llc/frontend-sdk/{auth,config,i18n,logging,problem,react,storage}` | `^1.0.0-alpha.5` (the preset's SDK version) | `import: false`: never bundled, no fallback; the load fails without the shell's copy |
 
 `react-dom` is used only by the standalone entry (`main.tsx`), and `@opentelemetry/api` not at all, so neither appears in the remote. `react-router-dom` is **not** shared; the remote brings its own router (§7.1). `test/integration/remote-entry.test.tsx` checks that every share key is one the shell provides and that no SDK code is in the bundle.
 
@@ -171,11 +172,13 @@ The rule: anything the SDK provides is used from the SDK, through public subpath
 | Messages and plurals | `registerNamespace` (`/i18n`), `useT('app2')`, `useLocale` (`/react`) | `i18n.ts`, every component |
 | Dates and numbers | `formatDate`, `formatNumber` (`/i18n`) | `TicketRow`, `DashboardRightPanel`, `DashboardPage`, `AppShellLayout`, `UserManagementPage` |
 | Per-app storage | `storage('app2')` (`/storage`) | `theme/themeMode.ts` |
+| Standalone host page | `initializeCore` (`/core`), `loadRuntimeConfig`, `setRuntimeConfig` (`/config`), since `1.0.0-alpha.5` | `standalone.ts` (from `main.tsx` only; never in the remote) |
+| Standalone logout target | `tryGetConfig()?.auth.signInUrl` (`/config`) | `AppShellLayout.tsx` `defaultLogout` |
 | Tests | `createTestPlatform` (`/testing`) | `test/fixtures/platform.ts`, `test/setup.ts` |
 
 Not used yet, and the place to start when the need arrives: `useApiClient` / `createApiClient` (real APIs, §15), `useFeatureFlag`, `Can`, `useAppUpdate`, `useOnlineStatus`, `getServiceMeter` (metrics).
 
-Standalone, with no shell, every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll`, the default locale, and `storage()` writes nothing.
+Standalone, with no shell, every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll`, the default locale, and `storage()` writes nothing. The standalone page does set the page identity and runtime config itself (§7.2), as the SDK allows a remote's own page with no shell since `1.0.0-alpha.5`.
 
 ## 6. Domain Model
 
@@ -228,7 +231,7 @@ KPI numbers are `kpiCounts()`: each view's row count before filters, from the sa
 
 ### 7.2 Standalone
 
-`src/main.tsx` applies the stored theme (`readStoredAppTheme` → `applyAppTheme`), then renders `<App />` on `#app` (throws if `#app` is missing). There is no runtime config, so the basename is empty, the user is anonymous, permissions deny all (User management and All Tenders are hidden), and logout goes to `PUBLIC_APP1_URL`. `App` renders inside the SDK's `MFEErrorBoundary` (the shell's `RemoteBoundary` does this job when embedded).
+`src/main.tsx` applies the stored theme (`readStoredAppTheme` → `applyAppTheme`), throws if `#app` is missing, then awaits `startStandalone()` (`src/standalone.ts`) and renders `<App />` on `#app`. `startStandalone` is the host-page start a shell would do: `initializeCore({ serviceName: 'mfe-dashboard', domain: 'portal', environment: PLATFORM_ENVIRONMENT, buildVersion: BUILD_VERSION })`, then `loadRuntimeConfig({ timeoutMs: 5000 })` (`/config/runtime.json`) and `setRuntimeConfig`. Any failure (no file, bad JSON, schema, timeout) is a `warn` log and the page still renders without a config; it never rejects. The basename is empty, the user is anonymous, permissions deny all (User management and All Tenders are hidden), and logout goes to `auth.signInUrl` when the config has one, else `PUBLIC_APP1_URL`. `App` renders inside the SDK's `MFEErrorBoundary` (the shell's `RemoteBoundary` does this job when embedded).
 
 ### 7.3 Ticket load and refresh
 
@@ -244,7 +247,7 @@ On `awaiting-approval`, when `useStepUp().needed` (login older than the tenant's
 
 ### 7.6 Sign-out
 
-Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the SDK's global sign-out (ends the Keycloak session; the SDK clears `storage()` for the workspace). Since `1.0.0-alpha.4` it POSTs to Keycloak's end-session endpoint with a hidden form, so **web-shell's CSP `form-action` must allow the IdP origin**; otherwise the browser blocks the POST and the SSO session stays alive. That is web-shell's header; this image's own CSP (`form-action 'self'`) only covers the standalone page, which has no shell sign-out. If `signOut()` rejects because no shell provides it, `defaultLogout()` runs `window.location.assign(PUBLIC_APP1_URL without a trailing slash)`.
+Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the SDK's global sign-out (ends the Keycloak session; the SDK clears `storage()` for the workspace). Since `1.0.0-alpha.4` it POSTs to Keycloak's end-session endpoint with a hidden form, so **web-shell's CSP `form-action` must allow the IdP origin**; otherwise the browser blocks the POST and the SSO session stays alive. That is web-shell's header; this image's own CSP (`form-action 'self'`) only covers the standalone page, which has no shell sign-out. If `signOut()` rejects because no shell provides it, `defaultLogout()` runs `window.location.assign` of the runtime config's `auth.signInUrl`, else `PUBLIC_APP1_URL`, else `http://localhost:5001`, without a trailing slash. Inside web-shell the shell's config has no `signInUrl` (the shell is the sign-in page).
 
 ### 7.7 Theme
 
@@ -298,12 +301,13 @@ No tokens, user data or permissions are stored by this repo. Raw `localStorage` 
 | A row's tender details unavailable | `partial_failure`: banner "Tickets are retained below", right-panel error card; rows stay |
 | Filters match nothing / search matches nothing | "No tickets found" with Clear Filters / "No matching tickets" |
 | No `read:members` / `manage:members` | Link hidden; route redirects to the dashboard |
-| No shell `signOut` | Fallback navigation to `PUBLIC_APP1_URL` |
+| No shell `signOut` | Fallback navigation to `auth.signInUrl`, else `PUBLIC_APP1_URL` |
+| Standalone `/config/runtime.json` missing, invalid or slow (> 5 s) | `warn` log; the page renders with no config and logout uses `PUBLIC_APP1_URL` |
 | `#app` missing (standalone) | `main.tsx` throws before render |
 | Ticket load fails with an API error | `error` state: alert with the SDK's problem message and Retry; rows cleared |
 | Ticket loader throws anything else (a bug) | `useApi` rethrows; the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes) shows its fallback and logs it |
 | Shell does not provide a shared SDK subpath | `get('./App')` rejects ("Shared module … doesn't exist in shared scope default"); the shell's `RemoteBoundary` shows its error |
-| Shell's SDK outside `^1.0.0-alpha.4`, or React outside `^19.0.0` | Strict singleton check fails at load; the shell shows its error |
+| Shell's SDK outside `^1.0.0-alpha.5`, or React outside `^19.0.0` | Strict singleton check fails at load; the shell shows its error |
 | A render error in a page | the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes); the sidebar still navigates |
 | A render error in the chrome (sidebar, header) | Embedded: the shell's `RemoteBoundary`. Standalone: the SDK's `MFEErrorBoundary` in `main.tsx` (logged, fallback shown) |
 
@@ -327,9 +331,9 @@ The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the
 | Package | Version | Note |
 |---|---|---|
 | Node | `26` (`.nvmrc`, CI, the Dockerfile's builder); `engines.node` `>=22` | `>=22` is the platform packages' minimum |
-| `@bcbp-solutions-fzc-llc/frontend-sdk` | dev `1.0.0-alpha.4`, peer `^1.0.0-alpha.4` | Same version as web-shell; never a runtime dependency (checked by `dependency-rules.test.ts`) |
-| `@bcbp-solutions-fzc-llc/webpack-preset` | `1.0.0-alpha.4` | Same as web-shell |
-| `@bcbp-solutions-fzc-llc/eslint-plugin` | `1.0.0-alpha.4` | Same as web-shell |
+| `@bcbp-solutions-fzc-llc/frontend-sdk` | dev `1.0.0-alpha.5`, peer `^1.0.0-alpha.5` | Same version as web-shell; never a runtime dependency (checked by `dependency-rules.test.ts`) |
+| `@bcbp-solutions-fzc-llc/webpack-preset` | `1.0.0-alpha.5` | Same as web-shell |
+| `@bcbp-solutions-fzc-llc/eslint-plugin` | `1.0.0-alpha.5` | Same as web-shell |
 | `@fontsource-variable/geist`, `@fontsource-variable/inter` | `5.3.0` | Standalone page only (CSP `font-src 'self'`). Same packages, family names (`Geist Variable`, `Inter Variable`) and `tailwind.config.js` as web-shell, which provides the fonts when embedded |
 | `overrides.minimatch` | `^11.0.4` | Dev-only toolchain (ESLint, typescript-eslint): fixes GHSA-g3hv-75wg-m249 without downgrading ESLint; `npm audit` reports 0 |
 | `typescript` | `npm:@typescript/typescript6` | for typescript-eslint; `tsc` is `@typescript/native` (TypeScript 7) |
@@ -337,7 +341,7 @@ The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the
 
 ### 12.3 Image
 
-`node:26-bookworm` builder → `nginxinc/nginx-unprivileged:1.31-alpine` (both digest-pinned, `apk upgrade`), uid 101, port 8080, source maps deleted. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`.
+`node:26-bookworm` builder → `nginxinc/nginx-unprivileged:1.31-alpine` (both digest-pinned, `apk upgrade`), uid 101, port 8080, source maps deleted. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `PLATFORM_ENVIRONMENT` (default `prod`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`.
 
 | Path | Behaviour (`nginx/default.conf`) |
 |---|---|
@@ -345,6 +349,7 @@ The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the
 | `/` | standalone document (`id="app"`) |
 | `/remoteEntry.js` | `Cache-Control: no-cache`, `Access-Control-Allow-Origin: *` |
 | hashed chunks next to the entry, `/assets/*` | immutable, 1 year, CORS |
+| `/config/runtime.json` | The standalone page's SDK runtime config, `no-cache`; `404` when absent, never the SPA fallback. The image ships `public/config/runtime.json` (web-shell's defaults, no `signInUrl`); each environment mounts its own over it |
 | anything else | `try_files` → `index.html` |
 | every response | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` (`nginx/security-headers.conf`) |
 | the document (`/`, `/index.html`, the fallback) | CSP `default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`, `X-Frame-Options: DENY`, `Permissions-Policy`, `X-Robots-Tag: noindex, nofollow`, `no-cache` (`nginx/document-headers.conf`) |
@@ -355,7 +360,10 @@ The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the
 
 | Variable | When | Default | Note |
 |---|---|---|---|
-| `PUBLIC_APP1_URL` | build (`config/app1Url.ts` → `source.define` as `import.meta.env.PUBLIC_APP1_URL`; Dockerfile `ARG`; CI repository variable) | `http://localhost:5001` | Public in the bundle; logout target without a shell. Build time only, so one release serves one environment (§15 item 14). `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
+| `auth.signInUrl` | run time (`/config/runtime.json`, SDK `1.0.0-alpha.5`; standalone page only) | none | Standalone logout target per environment; wins over `PUBLIC_APP1_URL`. Absolute `https` (`http` only for local, dev and test) |
+| `PUBLIC_APP1_URL` | build (`config/app1Url.ts` → `source.define` as `import.meta.env.PUBLIC_APP1_URL`; Dockerfile `ARG`; CI repository variable) | `http://localhost:5001` | Public in the bundle; standalone logout target when the runtime config has no `auth.signInUrl`. `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
+| `PLATFORM_ENVIRONMENT` | build (`rsbuild.config.ts` → `import.meta.env.PLATFORM_ENVIRONMENT`; Dockerfile `ARG`, default `prod`) | `prod` (production build), `local` (dev server) | The standalone page identity's environment, as web-shell's; also decides whether `http` origins in the runtime config are accepted |
+| `BUILD_VERSION` | build (release and Dockerfile; else the `package.json` version) | `npm_package_version` | The standalone page identity's build version |
 | `VITE_APP1_URL` | **Deprecated** alias, read only when `PUBLIC_APP1_URL` is unset or empty (build warning; CI and release fall back to the repository variable of this name, release warns) | — | Remove in a major release |
 
 ### 12.5 Release
@@ -398,9 +406,9 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/unit/<area>` (`app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk`) | `npm run test:unit` | One area of `src/` each; the catalog and SDK-rule checks |
 | `test/integration` | `npm run test:integration` | The built `remoteEntry.js` (temp Rsbuild build of the `remote` environment) loaded through `init(shareScope)` / `get('./App')` and rendered with the shell's React and SDK |
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
-| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files, security headers, no nginx version, gzip |
+| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files, `/config/runtime.json` served as JSON, security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.3% / 97.5% / 100% / 99.3% with 117 tests in 22 files.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.4% / 97.6% / 100% / 99.3% with 124 tests in 24 files.
 
 ## 15. Open Items
 
@@ -417,4 +425,4 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_app2`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
 | 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.1.1` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
 | 13 | The unsigned `0.1.0` image (no GitHub Release) is still in GHCR. Delete package version `1507080606`; that needs a token with `delete:packages` | maintainers |
-| 14 | `PUBLIC_APP1_URL` (standalone logout target) is fixed at build time, so one release serves one environment (`v0.1.1`: `https://app.dev.bcbpsolutions.com`). SDK `1.0.0-alpha.5` adds `auth.signInUrl` and lets a standalone page load the runtime config. Order: (1) web-shell moves to alpha.5; (2) mfe-dashboard moves to alpha.5, and standalone `main.tsx` loads and sets `/config/runtime.json`, with `defaultLogout` using `auth.signInUrl` before `PUBLIC_APP1_URL`; (3) then the deployed `runtime.json` files set `auth.signInUrl`. A remote built on alpha.5 needs `^1.0.0-alpha.5`, so an alpha.4 shell refuses it | web-shell, then mfe-dashboard, then platform deployment |
+| 14 | Steps 1 and 2 of the `auth.signInUrl` rollout are done: web-shell is on alpha.5 (web-shell #31), and this remote is on alpha.5 with the standalone page loading `/config/runtime.json`. Step 3: once this ships, each environment's `runtime.json` for the standalone image sets `auth.signInUrl`. Until then logout uses `PUBLIC_APP1_URL` | platform deployment |

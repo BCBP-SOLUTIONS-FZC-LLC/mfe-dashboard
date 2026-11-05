@@ -18,12 +18,19 @@ if (app1.deprecated) {
   console.warn('VITE_APP1_URL is deprecated: set PUBLIC_APP1_URL instead (same value).')
 }
 
+// The standalone page's environment, as web-shell's: PLATFORM_ENVIRONMENT, else prod for a
+// production build and local for the dev server.
+const environment = process.env.PLATFORM_ENVIRONMENT ?? (process.env.NODE_ENV === 'production' ? 'prod' : 'local')
+
 export default defineConfig({
   plugins: [pluginReact()],
   source: {
     define: {
       // Where "Log out" goes when no shell signs the user out (config/app1Url.ts).
       'import.meta.env.PUBLIC_APP1_URL': JSON.stringify(app1.url),
+      // The standalone page's identity (src/standalone.ts), as web-shell sets its own.
+      'import.meta.env.PLATFORM_ENVIRONMENT': JSON.stringify(environment),
+      'import.meta.env.BUILD_VERSION': JSON.stringify(process.env.BUILD_VERSION || process.env.npm_package_version || ''),
     },
   },
   output: {

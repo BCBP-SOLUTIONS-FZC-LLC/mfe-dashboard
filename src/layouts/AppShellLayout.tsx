@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
 import { formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { MFEErrorBoundary, useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
@@ -90,9 +91,14 @@ function UserMenuItem({
   )
 }
 
+/**
+ * Logout without a shell (standalone): to the runtime config's auth.signInUrl (per environment,
+ * set by the standalone page from /config/runtime.json), else the build-time PUBLIC_APP1_URL, else
+ * the local sign-in app.
+ */
 export function defaultLogout() {
-  const app1Url = (import.meta.env.PUBLIC_APP1_URL ?? 'http://localhost:5001').replace(/\/$/, '')
-  window.location.assign(app1Url)
+  const target = tryGetConfig()?.auth.signInUrl ?? import.meta.env.PUBLIC_APP1_URL ?? 'http://localhost:5001'
+  window.location.assign(target.replace(/\/$/, ''))
 }
 
 export default function AppShellLayout({ userLabel: userLabelProp, onLogout = defaultLogout }: AppShellLayoutProps) {

@@ -36,6 +36,15 @@ Builds the `remote` environment of `rsbuild.config.ts` into a temporary director
 
 The only stub is the network: `<script>` and `<link>` tags the container appends are answered from the build output.
 
+## Standalone host page (`unit/app/standalone-*.test.ts`)
+
+`src/standalone.ts` sets the page identity and runtime config, which the SDK allows only once per page. Each test file has its own SDK, and `setup.ts` starts the test platform in `beforeEach`, so these files do their work in `beforeAll`, on an SDK in the same state `main.tsx` sees:
+
+- `standalone-config.test.ts`: the identity is `mfe-dashboard` / `portal`; `/config/runtime.json` is fetched once and set (the shipped `public/config/runtime.json` plus a `signInUrl`, so the strict SDK schema also validates the shipped file); logout goes to `auth.signInUrl`.
+- `standalone-no-config.test.ts`: a 404 is a warning, the page still starts with no config, and logout goes to `PUBLIC_APP1_URL`.
+
+`shell-layout.test.tsx` covers a page that already has a config (nothing is fetched) and `main.test.ts` waits for `startStandalone` before the render.
+
 ## Fixtures and setup
 
 - `setup.ts`: a fresh `createTestPlatform` runtime per test (signed in, `MANAGER` grants, `app2` messages registered), plus DOM and storage cleanup. Since SDK `1.0.0-alpha.3` the test platform sets the storage workspace, so `storage()` is real.

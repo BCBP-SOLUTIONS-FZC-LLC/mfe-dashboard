@@ -8,7 +8,7 @@ A Module Federation **remote**, container `app2`, exposing `./App` (`src/App.tsx
 
 React 19, React Router 7, Tailwind 4 + daisyUI 5, Rsbuild 2 (Rspack) with `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild`, Vitest 5 + happy-dom, nginx 1.31 image on port 8080. Node 26 in CI and the image (`.nvmrc`; `engines` `>=22`), npm. Packages `@bcbp-solutions-fzc-llc/*` come from **GitHub Packages**: `export NODE_AUTH_TOKEN=$(gh auth token)` before `npm ci` / `npm install`.
 
-**Status (2026-11-05):** `v0.1.1` released (GitHub Release, signed image; `v0.1.0` failed to publish, do not use), built with `PUBLIC_APP1_URL` = `https://app.dev.bcbpsolutions.com`. Not deployed yet: it ships with web-shell's alpha.4 release. Platform packages (`frontend-sdk`, `webpack-preset`, `eslint-plugin`) `1.0.0-alpha.4`, all the same as web-shell. Data is fixtures; no backend calls. Open items: [LLD §15](../docs/lld/mfe-dashboard-lld.md#15-open-items).
+**Status (2026-11-05):** `v0.1.1` released (GitHub Release, signed image; `v0.1.0` failed to publish, do not use), built with `PUBLIC_APP1_URL` = `https://app.dev.bcbpsolutions.com`. Not deployed yet: it ships with web-shell's first release. `main` is on platform packages (`frontend-sdk`, `webpack-preset`, `eslint-plugin`) `1.0.0-alpha.5`, all the same as web-shell; the standalone page loads `/config/runtime.json` (logout → `auth.signInUrl`). Data is fixtures; no backend calls. Open items: [LLD §15](../docs/lld/mfe-dashboard-lld.md#15-open-items).
 
 **Owns:** the dashboard (views, KPIs, filters, load states, right panel), user management UI, the remote's chrome (sidebar, search, theme, user menu), the `app2` catalog, themes, the nginx image.
 
@@ -36,7 +36,7 @@ One test: `npx vitest run test/unit/authz/permissions.test.tsx -t "read-only"`. 
 - **Access by permission, never by role name.** `read:tender`, `read:members`, `manage:members`, plus `useReadOnly()`. Roles belong to IAM and web-shell's map.
 - **Every UI string is a key in `src/locales/en.json`, and every key is used** (`test/unit/i18n/catalog.test.ts`).
 - **No raw browser storage, no tokens, no identity headers, no unsafe HTML** (lint). No third-party origins in the standalone page: the image's CSP is same-origin only (fonts are self-hosted).
-- **Build-time config** is `PUBLIC_*` (Rsbuild's public prefix), resolved in `config/app1Url.ts`. `VITE_APP1_URL` is a deprecated fallback: do not add new `VITE_*` names.
+- **Config:** per-environment values come from the SDK runtime config (`/config/runtime.json`, loaded only by the standalone page in `src/standalone.ts`; inside web-shell the shell's applies). Never fetch a config of our own. Build-time config is `PUBLIC_*` (Rsbuild's public prefix, `config/app1Url.ts`) plus `PLATFORM_ENVIRONMENT` and `BUILD_VERSION` (as web-shell's). `VITE_APP1_URL` is a deprecated fallback: do not add new `VITE_*` names.
 - **Calendar dates** (`YYYY-MM-DD`) go through `calendarDate()` (`src/lib/dates.ts`) before `formatDate`; `new Date('YYYY-MM-DD')` is UTC and shows the previous day west of UTC.
 - **Images and fonts are imported** (`import logo from '../assets/images/logo.png'`), never root-relative (`/image/…`, `url(/…)`): inside web-shell those resolve on the shell's origin. `public/` is only the standalone favicons.
 - **Layout classes are logical** (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`), never `pl/pr/left/right/text-left`, so RTL works.

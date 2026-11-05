@@ -18,11 +18,14 @@ ARG SOURCE_DATE_EPOCH=0
 # Logout target for the standalone page (config/app1Url.ts). Empty means http://localhost:5001.
 # VITE_APP1_URL is the deprecated name, used only when PUBLIC_APP1_URL is empty.
 ARG PUBLIC_APP1_URL=
+# The standalone page's identity environment (src/standalone.ts), as web-shell's image.
+ARG PLATFORM_ENVIRONMENT=prod
 ARG VITE_APP1_URL=
 
 ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} \
     PUBLIC_APP1_URL=${PUBLIC_APP1_URL} \
-    VITE_APP1_URL=${VITE_APP1_URL}
+    VITE_APP1_URL=${VITE_APP1_URL} \
+    PLATFORM_ENVIRONMENT=${PLATFORM_ENVIRONMENT}
 
 # Source maps are not served: they are deleted here (no upload yet; see the LLD's open items).
 RUN npm run build && find dist -name '*.map' -delete

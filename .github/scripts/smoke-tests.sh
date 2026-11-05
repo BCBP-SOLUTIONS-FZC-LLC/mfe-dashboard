@@ -67,6 +67,16 @@ if [ "${map_count}" -ne 0 ]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Runtime config"
+# The standalone page loads /config/runtime.json (src/standalone.ts); it must be JSON, not the SPA fallback.
+config_type=$(curl -s -o /dev/null -w '%{content_type}' "http://127.0.0.1:${PORT}/config/runtime.json")
+echo "content-type: ${config_type}"
+if ! curl -sf "http://127.0.0.1:${PORT}/config/runtime.json" | grep -q '"auth"' || [[ "${config_type}" != application/json* ]]; then
+  echo "::error file=nginx/default.conf,title=Runtime config::/config/runtime.json is missing or not served as JSON"
+  exit 1
+fi
+echo "::endgroup::"
+
 echo "::group::Remote manifest entry"
 # web-shell's manifest pins remoteEntry.js by this integrity; it must match the file the image serves.
 manifest_integrity=$(curl -sf "http://127.0.0.1:${PORT}/remote-manifest-entry.json" | sed -n 's/.*"integrity": *"\(sha384-[^"]*\)".*/\1/p')

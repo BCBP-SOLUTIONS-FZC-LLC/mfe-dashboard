@@ -8,6 +8,7 @@ import '@fontsource-variable/inter'
 import { MFEErrorBoundary } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import App from './App'
 import { APP_ID } from './i18n'
+import { startStandalone } from './standalone'
 import { readStoredAppTheme, showAppTheme } from './theme/themeMode'
 
 showAppTheme(readStoredAppTheme())
@@ -17,11 +18,14 @@ if (!root) {
   throw new Error('Root element #app not found')
 }
 
-createRoot(root).render(
-  <StrictMode>
-    {/* Standalone has no shell RemoteBoundary: the SDK's boundary logs a render error and shows its fallback instead of a blank page. */}
-    <MFEErrorBoundary mfe={APP_ID}>
-      <App />
-    </MFEErrorBoundary>
-  </StrictMode>,
+// No shell here: set the page identity and runtime config first (startStandalone never rejects).
+void startStandalone().then(() =>
+  createRoot(root).render(
+    <StrictMode>
+      {/* Standalone has no shell RemoteBoundary: the SDK's boundary logs a render error and shows its fallback instead of a blank page. */}
+      <MFEErrorBoundary mfe={APP_ID}>
+        <App />
+      </MFEErrorBoundary>
+    </StrictMode>,
+  ),
 )
