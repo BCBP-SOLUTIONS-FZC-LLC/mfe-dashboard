@@ -1,14 +1,21 @@
 flowchart TD
-    start["App props\nuserLabel, onLogout"]
+    start["App\nprops or SDK user and sign-out"]
     embedded{"Already inside\na router?"}
-    relative["Index: DashboardPage\nuser-management: UserManagementPage"]
-    browser["BrowserRouter"]
-    dash["/dashboard/* → same pages"]
+    relative["Host's router\nindex: DashboardPage\nuser-management"]
+    basename["BrowserRouter\nbasename = workspacePathPrefix + slugFromPath\n(/t/acme in web-shell, empty standalone)"]
+    dash["/dashboard/* → AppShellLayout"]
     root["/ and * → /dashboard"]
+    access{"read:members or\nmanage:members?"}
+    users["UserManagementPage\nInvite, Edit: manage:members, not read-only"]
+    back["Navigate back to the dashboard"]
 
     start --> embedded
     embedded -->|yes| relative
-    embedded -->|no| browser
-    browser --> dash
-    browser --> root
+    embedded -->|no| basename
+    basename --> dash
+    basename --> root
     root --> dash
+    dash -->|user-management| access
+    relative -->|user-management| access
+    access -->|yes| users
+    access -->|no| back

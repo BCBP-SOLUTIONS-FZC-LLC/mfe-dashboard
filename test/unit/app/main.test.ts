@@ -12,7 +12,7 @@ describe('main', () => {
   it('applies the stored theme and mounts #app', async () => {
     document.body.innerHTML = '<div id="app"></div>'
     storage('app2').set('appTheme', 'dark')
-    await import('../../src/main')
+    await import('../../../src/main')
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(createRoot).toHaveBeenCalledWith(document.getElementById('app'))
     expect(render).toHaveBeenCalled()
@@ -21,6 +21,6 @@ describe('main', () => {
   it('throws when #app is missing', async () => {
     vi.resetModules()
     document.body.innerHTML = ''
-    await expect(import('../../src/main')).rejects.toThrow('Root element #app not found')
+    await expect(import('../../../src/main')).rejects.toThrow('Root element #app not found')
   })
 })

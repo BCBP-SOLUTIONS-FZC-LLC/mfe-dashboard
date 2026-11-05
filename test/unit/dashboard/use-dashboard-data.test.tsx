@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useDashboardData } from '../../src/hooks/useDashboardData'
+import { useDashboardData } from '../../../src/hooks/useDashboardData'
 
 const filters = { status: 'all', role: 'all', department: 'all', deadline: 'all', tender: 'all' }
 const approverFilters = { ...filters, role: 'Approver' }

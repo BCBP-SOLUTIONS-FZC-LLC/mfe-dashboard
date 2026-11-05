@@ -1,12 +1,16 @@
 sequenceDiagram
     participant Page as DashboardPage
     participant Hook as useDashboardData
+    participant Api as SDK useApi
     participant Mock as ticketsForView
 
-    Page->>Hook: view + filters
-    Hook-->>Page: loadState loading
-    Note over Hook: 700 ms, or 400 ms on refresh
-    Hook->>Mock: ticketsForView(view)
-    Mock-->>Hook: rows
+    Page->>Hook: view, filters, canSeeAllTenders (read:tender)
+    Hook->>Api: loader, deps [query key]
+    Api-->>Page: loading (no data for this key)
+    Note over Api: abortable delay: 700 ms, 400 ms on refresh
+    Api->>Mock: ticketsForView(view) + filters
+    Mock-->>Api: rows
+    Api-->>Hook: { key, tickets, partialFailure, cachedAt }
     Hook-->>Page: ready, empty, or partial_failure
-    Page->>Page: search box filters the rows again
+    Page->>Page: header search filters the rows again
+    Page->>Api: refresh → reload() (rows stay while refreshing)

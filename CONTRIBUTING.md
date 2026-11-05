@@ -37,8 +37,11 @@ The hook rejects:
 
 | Layer | Directory | Use it for |
 |---|---|---|
-| Unit | `test/unit` | Theme helpers, `ticketsForView`, `useDashboardData` (fake timers), presentational components |
+| Unit | `test/unit/<area>` | One area of `src/`: `app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk`; `docs` checks the diagrams |
+| Integration | `test/integration` | The built remote container, loaded as web-shell loads it |
 | End to end | `test/e2e` | Render `App` inside `MemoryRouter` (embedded) and without one (standalone `BrowserRouter`) |
+
+[test/README.md](test/README.md) lists what each folder covers. New UI text needs a catalog key (`test/unit/i18n/catalog.test.ts`), and code that would reimplement the platform SDK fails `test/unit/sdk/dependency-rules.test.ts`.
 
 `useDashboardData` waits 700 ms to load and 400 ms to refresh. Pass a **stable** filters object into `renderHook`. A new object on every render retriggers the effect.
 
@@ -51,6 +54,10 @@ The hook rejects:
 | `src/`, dependencies, Dockerfile, nginx, `rsbuild.config.ts`, `index.html` | `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md). The changelog workflow fails the PR otherwise |
 | A route, prop, or `VITE_*` name | [README.md](README.md) and, if the contract moved, [VERSIONING.md](VERSIONING.md) |
 | A pipeline job | [docs/pipeline/README.md](docs/pipeline/README.md) and the matching runbook |
+| The contract, a flow, an SDK API in use, a failure mode, an open item | [the LLD](docs/lld/mfe-dashboard-lld.md) |
+| Module structure, a diagram, a decision | [ARCHITECTURE.md](ARCHITECTURE.md) and `docs/architecture/mermaid/*.mmd` together (`test/unit/docs/diagrams.test.ts`) |
+| Commands, versions, rules, layout | [.claude/](.claude/CLAUDE.md) (`CLAUDE.md`, `architecture.md`, `operations.md`) |
+| Tests | [test/README.md](test/README.md) |
 
 ## Branches and commits
 

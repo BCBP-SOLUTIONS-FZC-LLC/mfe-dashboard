@@ -1,9 +1,8 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { DEPARTMENT_OPTIONS } from '../../src/mocks/dashboardTickets'
 import { describe, expect, it } from 'vitest'
-import App from '../../src/App'
-import { MANAGE_ONLY, MANAGER, NO_MEMBER_ACCESS, VIEWER, startPlatform } from '../platform'
+import App from '../../../src/App'
+import { MANAGE_ONLY, MANAGER, NO_MEMBER_ACCESS, VIEWER, startPlatform } from '../../fixtures/platform'
 
 function openUserManagement(permissions: readonly `${string}:${string}`[]) {
   startPlatform({ permissions })
@@ -19,6 +18,12 @@ describe('user management (read:members / manage:members, as IAM allows)', () =>
     expect(screen.queryByRole('button', { name: 'Invite user' })).not.toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: 'Actions' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+  })
+
+  it('spans the empty row over the five columns a viewer sees', async () => {
+    openUserManagement(VIEWER)
+    await userEvent.setup().type(await screen.findByPlaceholderText('Search users by name or email…'), 'zzz-nobody')
+    expect(screen.getByRole('cell', { name: 'No users match your search.' })).toHaveAttribute('colspan', '5')
   })
 
   it('gives manage:members the actions', async () => {
@@ -49,25 +54,5 @@ describe('read-only tenant (SDK useReadOnly)', () => {
     expect(await screen.findByRole('heading', { name: 'User management' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Invite user' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
-  })
-})
-
-describe('filters', () => {
-  it('offers every department in the data', async () => {
-    window.history.replaceState({}, '', '/t/acme/dashboard')
-    render(<App userLabel="Ada" />)
-    await userEvent.click(await screen.findByRole('button', { name: /^Filters/ }))
-    const department = screen.getByRole('combobox', { name: 'Department' })
-    const options = within(department).getAllByRole('option').map((o) => o.textContent)
-    expect(options).toEqual(['All Departments', ...DEPARTMENT_OPTIONS])
-    expect(options).toEqual(expect.arrayContaining(['MEP', 'Compliance', 'Estimating']))
-  })
-})
-
-describe('delegation panel', () => {
-  it('formats the coverage period in the page locale', async () => {
-    window.history.replaceState({}, '', '/t/acme/dashboard')
-    render(<App userLabel="Ada" />)
-    expect(await screen.findByText('Oct 12, 2026 – Oct 16, 2026')).toBeInTheDocument()
   })
 })
