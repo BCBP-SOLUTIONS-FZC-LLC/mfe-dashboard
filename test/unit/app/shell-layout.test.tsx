@@ -6,7 +6,7 @@ import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppShellLayout, { defaultLogout } from '../../../src/layouts/AppShellLayout'
-import { STANDALONE_IDENTITY, startStandalone } from '../../../src/standalone'
+import { FALLBACK_ENVIRONMENT, standaloneIdentity, startStandalone } from '../../../src/standalone'
 import { startPlatform } from '../../fixtures/platform'
 
 function userButton(userLabel?: string) {
@@ -94,7 +94,7 @@ describe('startStandalone when the page already has a config', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('keeps it and fetches nothing (one page, one config)', async () => {
-    startPlatform({ identity: STANDALONE_IDENTITY })
+    startPlatform({ identity: standaloneIdentity(FALLBACK_ENVIRONMENT) })
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)
     await startStandalone()

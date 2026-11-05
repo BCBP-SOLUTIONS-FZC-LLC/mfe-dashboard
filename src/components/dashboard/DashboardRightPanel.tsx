@@ -2,7 +2,6 @@ import { formatDate, formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i
 import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { IconAlertCircle, IconBell, IconUser } from './DashboardIcons'
 import { APP_ID } from '../../i18n'
-import { calendarDate } from '../../lib/dates'
 import { DELEGATION_COVERAGE, slaOverviewForMyTickets } from '../../mocks/dashboardStats'
 
 const DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
@@ -31,8 +30,8 @@ export function DashboardRightPanel({ unreadCount, showTenderError }: Props) {
             <p className="text-sm font-semibold text-aura-text">{DELEGATION_COVERAGE.coveredBy}</p>
             <p className="mt-1 text-xs text-aura-muted">
               {t('panel.delegation.period', {
-                from: formatDate(calendarDate(DELEGATION_COVERAGE.from), DAY),
-                to: formatDate(calendarDate(DELEGATION_COVERAGE.to), DAY),
+                from: formatDate(DELEGATION_COVERAGE.from, DAY),
+                to: formatDate(DELEGATION_COVERAGE.to, DAY),
               })}
             </p>
             <button

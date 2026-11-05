@@ -74,7 +74,7 @@ One `rsbuild build`, two environments into `dist/`:
 | `remote` | `remoteEntry.js` (`var __platform_mfe_dashboard`), chunks beside it, CSS in `assets/async/` | shell's (`import: false`) |
 | `standalone` | `index.html`, `assets/` | bundled; anonymous defaults with no shell |
 
-The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `logging`, `metrics`, `problem`, `react`, `storage` (`^1.0.0-alpha.5`, the preset's SDK version); `core` only in the standalone build. `react-router-dom` is not shared.
+The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `logging`, `metrics`, `problem`, `react`, `storage` (`^1.0.0-alpha.6`, the preset's SDK version); `core` only in the standalone build. `react-router-dom` is not shared.
 
 ## Access
 

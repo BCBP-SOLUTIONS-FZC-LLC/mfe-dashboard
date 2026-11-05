@@ -7,7 +7,6 @@
 import { defineConfig } from '@rsbuild/core'
 import { pluginReact } from '@rsbuild/plugin-react'
 import { pluginPlatform } from '@bcbp-solutions-fzc-llc/webpack-preset/rsbuild'
-import { ENVIRONMENTS } from '@bcbp-solutions-fzc-llc/frontend-sdk/core'
 import { resolveApp1Url } from './config/app1Url'
 
 // Hashed CSS, fonts and images live under /assets/ (served immutable); the remote's JS stays next to
@@ -19,23 +18,13 @@ if (app1.deprecated) {
   console.warn('VITE_APP1_URL is deprecated: set PUBLIC_APP1_URL instead (same value).')
 }
 
-// The standalone page's environment, as web-shell's: PLATFORM_ENVIRONMENT, else prod for a
-// production build and local for the dev server.
-const environment = process.env.PLATFORM_ENVIRONMENT || (process.env.NODE_ENV === 'production' ? 'prod' : 'local')
-// The SDK's own list (frontend-sdk/core ENVIRONMENTS): a typo would otherwise reach initializeCore,
-// which throws at run time and leaves the standalone page without its runtime config.
-if (!(ENVIRONMENTS as readonly string[]).includes(environment)) {
-  throw new Error(`PLATFORM_ENVIRONMENT="${environment}" is not one of ${ENVIRONMENTS.join(', ')}`)
-}
-
 export default defineConfig({
   plugins: [pluginReact()],
   source: {
     define: {
       // Where "Log out" goes when no shell signs the user out (config/app1Url.ts).
       'import.meta.env.PUBLIC_APP1_URL': JSON.stringify(app1.url),
-      // The standalone page's identity (src/standalone.ts), as web-shell sets its own.
-      'import.meta.env.PLATFORM_ENVIRONMENT': JSON.stringify(environment),
+      // The standalone page identity's build version (src/standalone.ts); its environment comes from runtime.json.
       'import.meta.env.BUILD_VERSION': JSON.stringify(process.env.BUILD_VERSION || process.env.npm_package_version || ''),
     },
   },

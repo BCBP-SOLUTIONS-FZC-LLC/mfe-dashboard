@@ -33,6 +33,11 @@ describe('the SDK is used, not reimplemented', () => {
     expect(offenders(/new Intl\.|\.toLocale(Date|Time)?String\(|\.toLocaleUpperCase\(|\.toLocaleLowerCase\(/)).toEqual([])
   })
 
+  it('formats calendar days with formatDate(\'YYYY-MM-DD\'), never by building a Date from one', () => {
+    // new Date('YYYY-MM-DD') is midnight UTC (a day early west of UTC); the SDK formats the day itself.
+    expect(offenders(/new Date\(\s*['"`]?\d{4}-\d{2}-\d{2}|calendarDate\(/)).toEqual([])
+  })
+
   it('takes UI text from the catalog through useT, not a home-made translator', () => {
     expect(offenders(/navigator\.languages?\b|document\.documentElement\.lang\b/)).toEqual([])
     expect(offenders(/from ['"](i18next|react-i18next|react-intl|@formatjs\/[^'"]+)['"]/)).toEqual([])
@@ -78,8 +83,8 @@ describe('the SDK is used, not reimplemented', () => {
     expect(offenders(/\b(loadManifest|loadRemote|registerNavigator|initializeAuth|createOidcProvider|setTokenSource|setAuthorizer|setFlagProvider|startVersionPolling)\b/)).toEqual([])
   })
 
-  it('logs with getLogger; console only for the standalone config warning the SDK logger drops outside local and dev', () => {
-    expect(offenders(/\bconsole\.(log|info|warn|error|debug)\(/, { 'src/standalone.ts': 'SDK logger is silent before logging starts' })).toEqual([])
+  it('logs with getLogger only, never console (the SDK writes warn and error to the console while logging is off)', () => {
+    expect(offenders(/\bconsole\.(log|info|warn|error|debug)\(/)).toEqual([])
   })
 
   it('imports the SDK only from its public subpaths', () => {

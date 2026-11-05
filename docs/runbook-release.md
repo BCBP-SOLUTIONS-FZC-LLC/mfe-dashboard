@@ -48,15 +48,15 @@ OIDC issuer: `https://token.actions.githubusercontent.com`.
 
 ## Standalone runtime config (`auth.signInUrl`)
 
-The standalone image serves `/config/runtime.json` (web-shell's defaults, no `signInUrl`). For logout to return to that environment's sign-in page, mount the environment's file over `/usr/share/nginx/html/config/runtime.json`, with `auth.signInUrl` an absolute `https` URL. The SDK validates it strictly: an unknown key or an `http` origin outside local and dev makes the page ignore the whole file.
+The standalone image serves `/config/runtime.json` (web-shell's defaults, no `signInUrl`). Mount the environment's file over `/usr/share/nginx/html/config/runtime.json`, with `environment` (`dev`, `test`, `staging` or `prod`; since this remote runs SDK alpha.6) and `auth.signInUrl` (an absolute `https` URL, where logout returns). The SDK validates it strictly: an unknown key or an `http` origin outside local and dev makes the page ignore the whole file.
 
 Check after each deploy:
 
 ```bash
-curl -fsS https://<standalone-host>/config/runtime.json | jq -e '.auth.signInUrl | startswith("https://")'
+curl -fsS https://<standalone-host>/config/runtime.json | jq -e '(.environment | IN("dev","test","staging","prod")) and (.auth.signInUrl | startswith("https://"))'
 ```
 
-A failure in the browser shows as a console warning `[dashboard] runtime config unavailable; logout uses the build-time sign-in URL`. In test, staging and prod that console line is the only trace: the standalone page sends no telemetry.
+A failure in the browser shows as a console warning `[dashboard] runtime config unavailable; logout uses the build-time sign-in URL`. It comes from the SDK logger, which writes warnings to the console while logging is off; that line is the only trace, since the standalone page sends no telemetry. Without `environment` the page runs as `prod`.
 
 ## Web-shell's manifest entry
 

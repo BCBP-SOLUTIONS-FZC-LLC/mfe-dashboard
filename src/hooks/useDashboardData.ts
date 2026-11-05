@@ -3,7 +3,6 @@ import { getLogger } from '@bcbp-solutions-fzc-llc/frontend-sdk/logging'
 import { useApi } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { APP_ID } from '../i18n'
 import { recordMetric } from '../metrics'
-import { calendarDate } from '../lib/dates'
 import { ticketsForView } from '../mocks/dashboardTickets'
 import type { DashboardFilters, DashboardView, TicketItem } from '../types/ticket'
 
@@ -25,15 +24,21 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000
+/** The local calendar day of `d` as `YYYY-MM-DD`, comparable as a string with a ticket's due day. */
+function dayKey(d: Date): string {
+  return [d.getFullYear(), d.getMonth() + 1, d.getDate()].map((n, i) => String(n).padStart(i === 0 ? 4 : 2, '0')).join('-')
+}
 
-/** Deadline filter on a ticket's due day, against the local day of `now`: 'overdue' is before today, 'week' is today and the next six days. */
+/**
+ * Deadline filter on a ticket's due day (`YYYY-MM-DD`), against the local day of `now`: 'overdue' is
+ * before today, 'week' is today and the next six days. Calendar days compare as strings, so no due
+ * date is turned into an instant (which would shift it a day west of UTC).
+ */
 export function matchesDeadline(dueDate: string, deadline: string, now: Date): boolean {
   if (deadline === 'all') return true
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const due = calendarDate(dueDate).getTime()
-  if (deadline === 'overdue') return due < today
-  if (deadline === 'week') return due >= today && due < today + 7 * DAY_MS
+  const today = dayKey(now)
+  if (deadline === 'overdue') return dueDate < today
+  if (deadline === 'week') return dueDate >= today && dueDate < dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7))
   return true
 }
 

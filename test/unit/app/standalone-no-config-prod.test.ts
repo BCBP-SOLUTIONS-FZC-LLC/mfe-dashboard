@@ -1,15 +1,16 @@
-// A production standalone page whose /config/runtime.json is missing. Before logging starts, the
-// SDK logger is a no-op outside local and dev, so src/standalone.ts also warns on the console;
-// otherwise a bad mount would leave no trace. See standalone-config.test.ts for why this is beforeAll.
+// A built (production) standalone page whose /config/runtime.json is missing: it runs as the
+// fallback environment, prod, and its warning still reaches the console, because the SDK (alpha.6)
+// writes warn and error there while logging is off, in every environment. No console call of our
+// own. See standalone-config.test.ts for why this is beforeAll.
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 
 const seen: { environment?: string; warnings: string[] } = { warnings: [] }
 
 beforeAll(async () => {
-  vi.stubEnv('PLATFORM_ENVIRONMENT', 'prod')
+  vi.stubEnv('DEV', false)
   vi.stubGlobal('fetch', async () => new Response('not found', { status: 404 }))
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  // Imported after stubbing: the identity reads PLATFORM_ENVIRONMENT when the module loads.
+  // Imported after stubbing: FALLBACK_ENVIRONMENT reads import.meta.env.DEV when the module loads.
   const { startStandalone } = await import('../../../src/standalone')
   const { getIdentity } = await import('@bcbp-solutions-fzc-llc/frontend-sdk/core')
   await startStandalone()
@@ -21,11 +22,11 @@ beforeAll(async () => {
 })
 
 describe('production standalone page without a runtime config', () => {
-  it('runs as prod', () => {
+  it('runs as the fallback environment, prod', () => {
     expect(seen.environment).toBe('prod')
   })
 
-  it('warns on the console once, where the SDK logger stays silent', () => {
-    expect(seen.warnings).toEqual(['[dashboard] runtime config unavailable; logout uses the build-time sign-in URL'])
+  it('warns on the console once, through the SDK logger', () => {
+    expect(seen.warnings.filter((w) => w.includes('runtime config unavailable'))).toHaveLength(1)
   })
 })

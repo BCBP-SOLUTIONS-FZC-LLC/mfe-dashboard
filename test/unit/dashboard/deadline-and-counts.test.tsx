@@ -23,6 +23,13 @@ describe('matchesDeadline', () => {
   ])('%s with %s → %s', (due, deadline, expected) => {
     expect(matchesDeadline(due, deadline, now)).toBe(expected)
   })
+
+  it('counts the week across a year end, by calendar day', () => {
+    const dec29 = new Date(2026, 11, 29, 23, 59)
+    expect(matchesDeadline('2027-01-04', 'week', dec29)).toBe(true)
+    expect(matchesDeadline('2027-01-05', 'week', dec29)).toBe(false)
+    expect(matchesDeadline('2026-12-28', 'overdue', dec29)).toBe(true)
+  })
 })
 
 describe('deadline filter in useDashboardData', () => {

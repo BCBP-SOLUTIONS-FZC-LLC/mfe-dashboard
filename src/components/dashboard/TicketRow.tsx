@@ -12,7 +12,6 @@ import {
   TicketTypeIcon,
 } from './DashboardIcons'
 import type { TicketItem } from '../../types/ticket'
-import { calendarDate } from '../../lib/dates'
 
 const slaDot = {
   on_track: 'bg-emerald-500',
@@ -20,8 +19,9 @@ const slaDot = {
   breached: 'bg-red-500',
 } as const
 
-function formatDue(iso: string) {
-  return formatDate(calendarDate(iso), { day: 'numeric', month: 'short', year: 'numeric' })
+/** A due date is a calendar day (`YYYY-MM-DD`): the SDK formats it as that day in every time zone. */
+function formatDue(day: string) {
+  return formatDate(day, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export function TicketRow({ ticket }: { ticket: TicketItem }) {
