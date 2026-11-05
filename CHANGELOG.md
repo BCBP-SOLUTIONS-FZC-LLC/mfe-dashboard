@@ -2,9 +2,13 @@
 
 All notable changes to this remote are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as described in [VERSIONING.md](VERSIONING.md).
 
-Nothing is tagged yet. `package.json` `version` is `0.0.0`. Everything that is true of the tree today is listed under `[Unreleased]`. The first Git tag will move those notes into a dated `## [X.Y.Z]` section. Pull requests that change `src/`, dependencies, the Dockerfile, or nginx config add a line under `[Unreleased]` (`.github/workflows/changelog-check.yml`).
+Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` `version` matches the latest one. Pull requests that change `src/`, dependencies, the Dockerfile, or nginx config add a line under `[Unreleased]` (`.github/workflows/changelog-check.yml`).
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-11-05
+
+First release. Built on the platform packages `1.0.0-alpha.4`, so it loads only in a web-shell on alpha.4 (web-shell #23); release the two together. Built with `PUBLIC_APP1_URL=https://app.dev.bcbpsolutions.com`.
 
 ### Added
 

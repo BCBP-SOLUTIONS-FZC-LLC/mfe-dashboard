@@ -8,7 +8,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 
 | | |
 |---|---|
-| Release | Untagged; everything is under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) |
+| Release | `v0.1.0` (2026-11-05); see [CHANGELOG.md](CHANGELOG.md) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4`, all the same as web-shell |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
 | Tests | 22 files, 110 tests (unit, integration, e2e); coverage 99.3% statements, 97.8% branches, 100% functions, 99.3% lines (gate 95%) |

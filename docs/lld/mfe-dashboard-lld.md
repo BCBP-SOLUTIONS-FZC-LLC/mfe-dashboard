@@ -5,8 +5,8 @@
 | | |
 |---|---|
 | Repository | `BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard` (private) |
-| Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.0.0`); nothing is published to npm |
-| Version | Untagged (`[Unreleased]` in [CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
+| Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.1.0`); nothing is published to npm |
+| Version | `0.1.0` ([CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
 | Host | `web-shell` (`app1`), which loads this remote as `DASHBOARD_REMOTE = 'app2'` (`web-shell/src/App.tsx`) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (peer `^1.0.0-alpha.4`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4` (§12) |
 | Runtime | React 19, React Router 7, Tailwind 4 + daisyUI 5; built with Rsbuild 2 (Rspack); served by nginx 1.31 on port 8080 |
@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.6 | 2026-11-05 | First release `v0.1.0`, together with web-shell on alpha.4; open item 7 (tag and `PUBLIC_APP1_URL`) closed |
 | 1.5 | 2026-11-05 | Theme picker as a menu of radio items and `aria-pressed` on the view switches (§7.8); loading announced as a busy status (§6.3); a page error boundary that resets on navigation (§5, §11); Node 26 / `engines >=22` (§12.2) |
 | 1.4 | 2026-11-05 | Platform packages `1.0.0-alpha.4`: container global `__platform_mfe_app2` (§4.1), lazily loaded CSS pinned by sha384 (§4.1), sign-out as a form POST that needs the shell's CSP `form-action` (§7.6), storage keys renamed so a saved theme resets once (§7.7), deploy together with web-shell (§12.1) |
 | 1.3 | 2026-11-04 | Remote manifest entry with `remoteEntry.js` integrity (§4.1, §12.1); deadline filter applied and KPI counts from the rows (§6.2); load errors logged (§5); "Last updated" keeps counting (§7.3); standalone `MFEErrorBoundary` (§7.2, §11); logical (RTL-ready) layout classes and labelled search (§7.8); fonts and Tailwind stack identical to web-shell (§12.2); `minimatch` override (§12.2) |
@@ -385,7 +386,6 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 4 | Only an English catalog | mfe-dashboard, when locales are agreed |
 | 5 | `tender_admin`'s tender permissions in web-shell's map await Tender Service confirmation | web-shell, Tender Service |
 | 6 | The image serves the remote from nginx; the platform's CloudFront/S3 layout (`/remotes/app2/<version>/`) is not yet wired | Platform deployment |
-| 7 | No Git tag yet; the first release moves `[Unreleased]` into `## [0.1.0]`. Set the repository variable `PUBLIC_APP1_URL` first (the release fails without it) | maintainers |
 | 8 | The remote ships its own Tailwind preflight, every daisyUI theme (~180 kB CSS, a 78 kB theme chunk) and `html, body` styles, and `applyAppTheme` sets `data-theme` on the shell's `<html>`. Theme ownership and shared CSS need a decision with web-shell: options in `../mfe-dashboard-theme-and-css-ownership.md` (frontend workspace) | web-shell, mfe-dashboard |
 | 9 | Layout uses logical classes (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`, `rtl:` for the sidebar slide), so it follows `dir`. Still needed for RTL: the shell setting `<html dir>` for the locale, an Arabic catalog, and a check of directional icons (chevrons) | web-shell, mfe-dashboard |
 | 10 | Logs: failed loads only. No metrics (`getServiceMeter`) yet, and source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
