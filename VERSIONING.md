@@ -41,8 +41,7 @@ This remote has no package for another app to import from npm. Its public contra
 
 | Version | Status | Image tag | Notes |
 |---------|--------|-----------|-------|
-| *(none tagged)* | **Unreleased** | — | [CHANGELOG.md](CHANGELOG.md) lives entirely under `[Unreleased]`. `package.json` `version` is `0.0.0` and is not a published release. No support window has started |
-| `< v0.1.0` | — | — | No tagged Git releases |
+| `v0.1.0` | **Current** (pre-1.0) | `0.1.0`, `0.1`, `0`, `latest` | First release; platform packages `1.0.0-alpha.4`, so it needs web-shell on alpha.4. No support window has started |
 
 This remote has no formal support-window policy yet, since nothing is running in production against a tagged release. Once a `v1.0.0` ships, this section will define how long a superseded major line receives security-only fixes.
 
