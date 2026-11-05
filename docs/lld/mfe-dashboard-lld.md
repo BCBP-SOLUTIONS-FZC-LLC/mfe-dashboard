@@ -5,8 +5,8 @@
 | | |
 |---|---|
 | Repository | `BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard` (private) |
-| Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.1.0`); nothing is published to npm |
-| Version | `0.1.0` ([CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
+| Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.1.1`); nothing is published to npm |
+| Version | `0.1.1` ([CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
 | Host | `web-shell` (`app1`), which loads this remote as `DASHBOARD_REMOTE = 'app2'` (`web-shell/src/App.tsx`) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (peer `^1.0.0-alpha.4`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4` (§12) |
 | Runtime | React 19, React Router 7, Tailwind 4 + daisyUI 5; built with Rsbuild 2 (Rspack); served by nginx 1.31 on port 8080 |
@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.7 | 2026-11-05 | `v0.1.1`: the release workflow's provenance export fixed; `v0.1.0` was not published |
 | 1.6 | 2026-11-05 | First release `v0.1.0`, together with web-shell on alpha.4; open item 7 (tag and `PUBLIC_APP1_URL`) closed |
 | 1.5 | 2026-11-05 | Theme picker as a menu of radio items and `aria-pressed` on the view switches (§7.8); loading announced as a busy status (§6.3); a page error boundary that resets on navigation (§5, §11); Node 26 / `engines >=22` (§12.2) |
 | 1.4 | 2026-11-05 | Platform packages `1.0.0-alpha.4`: container global `__platform_mfe_app2` (§4.1), lazily loaded CSS pinned by sha384 (§4.1), sign-out as a form POST that needs the shell's CSP `form-action` (§7.6), storage keys renamed so a saved theme resets once (§7.7), deploy together with web-shell (§12.1) |
