@@ -8,7 +8,8 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 
 | | |
 |---|---|
-| Release | `v0.1.1` (2026-11-05); see [CHANGELOG.md](CHANGELOG.md) |
+| Release | [`v0.1.1`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.1.1) (2026-11-05): image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.1`, signed, with SBOM and provenance. `v0.1.0` failed to publish; do not use it. See [CHANGELOG.md](CHANGELOG.md) |
+| Deploy | Not deployed yet. Ships together with web-shell's alpha.4 release, once web-shell's CSP allows the IdP in `form-action` ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items)) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4`, all the same as web-shell |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
 | Tests | 22 files, 110 tests (unit, integration, e2e); coverage 99.3% statements, 97.8% branches, 100% functions, 99.3% lines (gate 95%) |
@@ -161,7 +162,7 @@ docker run --rm -p 18080:8080 mfe-dashboard:dev
 
 Bases are digest-pinned in the Dockerfile (`node:26-bookworm`, `nginxinc/nginx-unprivileged:1.31-alpine`, with `apk upgrade`). `npm ci` reads the GitHub Packages token from the BuildKit secret `npm_token` (`docker build --secret id=npm_token,env=NODE_AUTH_TOKEN .`). Source maps are deleted from the image. The process runs as uid **101**.
 
-Published name: `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard`. A Git tag `v0.1.0` becomes the image tag `0.1.0` (no `v`). See [VERSIONING.md](VERSIONING.md).
+Published name: `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard`. A Git tag `v0.1.1` becomes the image tags `0.1.1`, `0.1`, `0` and `latest` (no `v`). Each GitHub Release carries the `dist` tarball, `remote-manifest-entry.json` (web-shell's manifest entry with the `remoteEntry.js` integrity), `checksums.txt`, the SBOM and the SLSA provenance; the image is Cosign-signed. See [VERSIONING.md](VERSIONING.md) and [LLD §12.5](docs/lld/mfe-dashboard-lld.md#125-release).
 
 ## CI
 

@@ -42,7 +42,11 @@ Port 5002 may already be taken on this machine by another process; preview on an
 
 ## Release
 
-Tag `vX.Y.Z` after `CHANGELOG.md` has `## [X.Y.Z] - YYYY-MM-DD`. `release.yml` builds the image (tags without `v`), SBOM, provenance, Cosign signature and a GitHub Release with the `dist` tarball. No deploy job. [`docs/runbook-release.md`](../docs/runbook-release.md).
+1. On a branch: move `[Unreleased]` into `## [X.Y.Z] - YYYY-MM-DD`, set `package.json` `version` (`npm version X.Y.Z --no-git-tag-version`), and update VERSIONING's table, README Status, the LLD header and `CLAUDE.md` Status. PR, merge.
+2. The repository variable `PUBLIC_APP1_URL` must be `https://` (now `https://app.dev.bcbpsolutions.com`).
+3. Tag the merge commit: `git tag -a vX.Y.Z -m vX.Y.Z <sha>` and push the tag (ask first). Watch `gh run list --workflow release.yml`.
+
+`release.yml` builds the image (tags without `v`), SBOM, provenance (read from the image index), Cosign signature and a GitHub Release with the `dist` tarball and `remote-manifest-entry.json`. No deploy job. A failed run cannot be fixed by rerunning or moving the tag: ship the fix as the next patch. Detail: [LLD §12.5](../docs/lld/mfe-dashboard-lld.md#125-release), [`docs/runbook-release.md`](../docs/runbook-release.md).
 
 ## Upgrading the Platform Packages
 
