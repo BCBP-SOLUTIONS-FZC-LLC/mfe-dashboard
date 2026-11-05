@@ -38,7 +38,8 @@ mfe-dashboard/
 ├── eslint.config.js               @bcbp-solutions-fzc-llc/eslint-plugin + React hooks (as web-shell)
 └── .github/                       ci.yml, validate-test.yml, validate-quality.yml, changelog-check.yml, release.yml,
                                    scripts/ (coverage gate, smoke, release: verify-*, prepare-release-asset,
-                                   export-image-provenance, extract-release-notes, create-github-release)
+                                   export-image-provenance, tag-signed-image, extract-release-notes,
+                                   create-github-release)
 ```
 
 ## Layers

@@ -46,7 +46,7 @@ Port 5002 may already be taken on this machine by another process; preview on an
 2. The repository variable `PUBLIC_APP1_URL` must be `https://` (now `https://app.dev.bcbpsolutions.com`).
 3. Tag the merge commit: `git tag -a vX.Y.Z -m vX.Y.Z <sha>` and push the tag (ask first). Watch `gh run list --workflow release.yml`.
 
-`release.yml` builds the image (tags without `v`), SBOM, provenance (read from the image index), Cosign signature and a GitHub Release with the `dist` tarball and `remote-manifest-entry.json`. No deploy job. A failed run cannot be fixed by rerunning or moving the tag: ship the fix as the next patch. Detail: [LLD §12.5](../docs/lld/mfe-dashboard-lld.md#125-release), [`docs/runbook-release.md`](../docs/runbook-release.md).
+`release.yml` builds the image (tags without `v`), SBOM, provenance (read from the image index), Cosign signature, version tags and a GitHub Release with the `dist` tarball and `remote-manifest-entry.json`. No deploy job. The image is pushed by digest and tagged only after Trivy, provenance and the signature (`tag-signed-image.sh`). A flaky failure can be re-run; a bug in the workflow cannot (the rerun uses the tag's scripts) and ships as the next patch, never by moving the tag. Detail: [LLD §12.5](../docs/lld/mfe-dashboard-lld.md#125-release), [`docs/runbook-release.md`](../docs/runbook-release.md).
 
 ## Upgrading the Platform Packages
 

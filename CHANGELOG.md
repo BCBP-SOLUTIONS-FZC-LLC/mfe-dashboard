@@ -6,6 +6,10 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+### Changed
+
+- Release: the image is pushed by digest and gets its version tags and `latest` only after the Trivy scan, the provenance export and the Cosign signature (`.github/scripts/tag-signed-image.sh`), so a failed release no longer leaves a tag on an unscanned or unsigned image.
+
 ## [0.1.1] - 2026-11-05
 
 The first published release. The application is the same as 0.1.0; only the release workflow changed.

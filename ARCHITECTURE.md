@@ -163,7 +163,7 @@ nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standa
 
 ## Release
 
-A tag `vX.Y.Z` runs `release.yml`: validate, build the `dist` tarball and `remote-manifest-entry.json`, push the image (`X.Y.Z`, `X.Y`, `X`, `latest`) with BuildKit SBOM and SLSA provenance, scan it with Trivy, export the provenance, sign it with Cosign, then create the GitHub Release. No deploy job: an environment takes the manifest entry from the same release and ships it with a web-shell on the same platform packages. Job detail: [LLD §12.5](docs/lld/mfe-dashboard-lld.md#125-release), [docs/pipeline/README.md](docs/pipeline/README.md).
+A tag `vX.Y.Z` runs `release.yml`: validate, build the `dist` tarball and `remote-manifest-entry.json`, push the image by digest with BuildKit SBOM and SLSA provenance, scan it with Trivy, export the provenance, sign it with Cosign, then tag it (`X.Y.Z`, `X.Y`, `X`, `latest`) and create the GitHub Release. No deploy job: an environment takes the manifest entry from the same release and ships it with a web-shell on the same platform packages. Job detail: [LLD §12.5](docs/lld/mfe-dashboard-lld.md#125-release), [docs/pipeline/README.md](docs/pipeline/README.md).
 
 ## Failure domains
 
@@ -218,6 +218,7 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 | `USER 101` | The unprivileged nginx image's uid. `USER nginx` fails Hadolint DL3066 |
 | Coverage script instead of a Vitest threshold | Same gate the shell uses, overridable with `COVERAGE_THRESHOLD` |
 | Provenance read from the image index (`imagetools inspect`), not with `cosign download attestation` | `build-push-action` writes provenance as a BuildKit attestation, not a Cosign one; the Cosign call found nothing and failed `v0.1.0` |
+| Release images are pushed by digest and tagged only after scan, provenance and signature | A version tag or `latest` never points at an unscanned or unsigned image (`v0.1.0` did) |
 | A failed release is fixed by the next patch version, not by moving the tag | A rerun checks out the same tag and scripts, and moving a tag needs a force push |
 
 ## Documentation

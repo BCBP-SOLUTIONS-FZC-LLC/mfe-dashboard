@@ -66,7 +66,7 @@ flowchart LR
     test["validate-test"]
     quality["validate-quality"]
     build["build\ntag matches HEAD\nchangelog section\ndist tarball"]
-    docker["docker\nsemver tags, Trivy,\nSBOM, provenance, Cosign"]
+    docker["docker\npush by digest, Trivy, SBOM,\nprovenance, Cosign,\nthen semver tags"]
     publish["publish\nGitHub Release"]
 
     test --> build
@@ -78,7 +78,7 @@ flowchart LR
 
 Source: [`mermaid/release-flow.mmd`](mermaid/release-flow.mmd).
 
-`verify-release-tag.sh` requires `RELEASE_TAG` to equal `git describe --tags --exact-match`. `extract-release-notes.sh` prints the body under `## [X.Y.Z]` and fails when that section is empty. The image tags drop the leading `v` (`{{version}}`). `latest` is applied only when the tag has no `-`. Release Trivy is **CRITICAL** and **HIGH** (it does not include `UNKNOWN`). `export-image-provenance.sh` reads the BuildKit SLSA provenance from the image index (`docker buildx imagetools inspect --format '{{ json .Provenance }}'`); it is not a Cosign attestation. The image is signed after that step. The GitHub Release assets are `mfe-dashboard_<tag>_dist.tar.gz`, `mfe-dashboard_<tag>_remote-manifest-entry.json`, `checksums.txt` (sha256 of those two), `provenance.slsa.json` and `sbom.cyclonedx.json`. Publish waits for the image job, and the image is pushed before scan, provenance and signing: a failure there leaves pushed tags with no release (see the [runbook](../runbook-release.md)). There is no deploy job.
+`verify-release-tag.sh` requires `RELEASE_TAG` to equal `git describe --tags --exact-match`. `extract-release-notes.sh` prints the body under `## [X.Y.Z]` and fails when that section is empty. The image tags drop the leading `v` (`{{version}}`). `latest` is applied only when the tag has no `-`. Release Trivy is **CRITICAL** and **HIGH** (it does not include `UNKNOWN`). `export-image-provenance.sh` reads the BuildKit SLSA provenance from the image index (`docker buildx imagetools inspect --format '{{ json .Provenance }}'`); it is not a Cosign attestation. The image is pushed by digest only, then scanned, its provenance exported, and signed; `tag-signed-image.sh` adds the version tags and `latest` last and checks each resolves to the signed digest. The GitHub Release assets are `mfe-dashboard_<tag>_dist.tar.gz`, `mfe-dashboard_<tag>_remote-manifest-entry.json`, `checksums.txt` (sha256 of those two), `provenance.slsa.json` and `sbom.cyclonedx.json`. Publish waits for the image job. A failure before tagging leaves only an untagged digest (see the [runbook](../runbook-release.md)). There is no deploy job.
 
 Checkout uses `secrets.CI_REPO_READ_TOKEN` when set, otherwise `github.token`.
 

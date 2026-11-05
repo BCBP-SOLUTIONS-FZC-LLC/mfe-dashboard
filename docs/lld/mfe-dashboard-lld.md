@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.9 | 2026-11-05 | Release tags are added after scan, provenance and signature (§12.5) |
 | 1.8 | 2026-11-05 | `v0.1.1` published (GitHub Release, signed image `sha256:c9e10c06…`); release pipeline described in §12.5; supply chain (§13); open item 13 (the unsigned `0.1.0` tag). web-shell has the same release-script fixes (web-shell #27) |
 | 1.7 | 2026-11-05 | `v0.1.1`: the release workflow's provenance export fixed; `v0.1.0` was not published |
 | 1.6 | 2026-11-05 | First release `v0.1.0`, together with web-shell on alpha.4; open item 7 (tag and `PUBLIC_APP1_URL`) closed |
@@ -362,14 +363,14 @@ A tag `vX.Y.Z` (or a manual run with a tag input) runs `.github/workflows/releas
 |---|---|---|
 | `validate-test`, `validate-quality` | Same as CI | Tests, the 95% gate, lint, audit |
 | `build` | `verify-release-tag.sh` (tag equals the checked-out HEAD), `verify-changelog-entry.sh`, `PUBLIC_APP1_URL` check, `prepare-release-asset.sh` (`dist` tarball, checksum, `remote-manifest-entry.json`) | The tag is not HEAD; no `## [X.Y.Z]` section; `PUBLIC_APP1_URL` is not `https://` |
-| `docker` | `build-push-action` with `provenance: mode=max` and `sbom: true`; image tags `X.Y.Z`, `X.Y`, `X`, and `latest` (no `-` in the tag); Trivy CRITICAL/HIGH; CycloneDX SBOM; `export-image-provenance.sh`; Cosign keyless sign and verify | Trivy finds a fixable CRITICAL/HIGH; no provenance in the image index; signing fails |
+| `docker` | `build-push-action` pushes **by digest only** (`push-by-digest=true`, `provenance: mode=max`, `sbom: true`); Trivy CRITICAL/HIGH and the CycloneDX SBOM on that digest; `export-image-provenance.sh`; Cosign keyless sign and verify; then `tag-signed-image.sh` adds `X.Y.Z`, `X.Y`, `X` and `latest` (no `-` in the tag) with `docker buildx imagetools create` and checks that each resolves to the signed digest | Trivy finds a fixable CRITICAL/HIGH; no provenance in the image index; signing fails; a tag resolves to another digest |
 | `publish` | `extract-release-notes.sh` (the CHANGELOG section plus image and digest), then `create-github-release.sh` | Any asset missing |
 
 Release assets: `mfe-dashboard_<tag>_dist.tar.gz`, `mfe-dashboard_<tag>_remote-manifest-entry.json`, `checksums.txt` (sha256 of those two), `provenance.slsa.json`, `sbom.cyclonedx.json`.
 
 Provenance is a BuildKit attestation stored in the image index, not a Cosign attestation. `export-image-provenance.sh` reads it with `docker buildx imagetools inspect --format '{{ json .Provenance }}'` (an SLSA v1 predicate: `buildDefinition`, `runDetails`). Check it with the same command; check the signature with `cosign verify` and the tag identity in the runbook.
 
-The image is pushed before the scan, provenance and signing steps. When one of them fails, the tags already point at an unsigned image with no GitHub Release (`v0.1.0`). A rerun checks out the same tag, so the fix ships as the next patch version.
+Tags are added last, so a failed scan, provenance export or signature leaves only an untagged digest in GHCR: no version tag, no `latest`, no GitHub Release. (`v0.1.0` predates this and left an unsigned `0.1.0` tag.) A rerun checks out the same tag and scripts, so a fix to the workflow ships as the next patch version.
 
 There is no deploy job. To deploy, copy the `app2` object from the release's `remote-manifest-entry.json` into the environment's manifest, with `entry` made absolute, and release together with a web-shell on the same platform packages (§12.1).
 
