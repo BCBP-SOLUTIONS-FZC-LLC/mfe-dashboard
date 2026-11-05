@@ -1,6 +1,6 @@
 import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { describe, expect, it, vi } from 'vitest'
-import { STANDALONE_IDENTITY } from '../../../src/standalone'
+import { FALLBACK_ENVIRONMENT, standaloneIdentity } from '../../../src/standalone'
 import { startPlatform } from '../../fixtures/platform'
 
 const render = vi.fn()
@@ -13,7 +13,7 @@ vi.mock('react-dom/client', () => ({
 describe('main', () => {
   it('applies the stored theme and mounts #app', async () => {
     // The standalone page's own identity; the test platform's config stands in for runtime.json.
-    startPlatform({ identity: STANDALONE_IDENTITY })
+    startPlatform({ identity: standaloneIdentity(FALLBACK_ENVIRONMENT) })
     document.body.innerHTML = '<div id="app"></div>'
     storage('dashboard').set('appTheme', 'dark')
     await import('../../../src/main')

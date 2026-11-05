@@ -41,6 +41,7 @@ This remote has no package for another app to import from npm. Its public contra
 
 | Version | Status | Image tag | Notes |
 |---------|--------|-----------|-------|
+| *next* | Unreleased | — | Platform packages `1.0.0-alpha.6`: requires the shell's SDK `^1.0.0-alpha.6` (web-shell is on alpha.6 since web-shell #44). Metrics, standalone environment from `runtime.json` |
 | `v0.3.0` | **Current** (pre-1.0) | `0.3.0`, `0.3`, `0`, `latest` | **Breaking for the shell:** remote renamed `app2` → `dashboard` (global `__platform_mfe_dashboard`, manifest key `dashboard`). Needs web-shell #35 or later, platform packages alpha.5 |
 | `v0.2.0` | Superseded | `0.2.0`, `0.2` | Platform packages `1.0.0-alpha.5`: requires the shell's SDK `^1.0.0-alpha.5`, so web-shell must be on alpha.5. Standalone runtime config (`auth.signInUrl`), logo fix inside the shell |
 | `v0.1.1` | Superseded | `0.1.1`, `0.1` | Platform packages `1.0.0-alpha.4` (`^1.0.0-alpha.4`, so it also loads in web-shell on alpha.5; checked by web-shell's contract suite). Logo broken inside the shell |

@@ -17,7 +17,8 @@ const requested: string[] = []
 const seen: { identity?: ReturnType<typeof getIdentity>; signInUrl?: string; logoutTo?: unknown } = {}
 
 beforeAll(async () => {
-  const config = { ...shipped, auth: { ...shipped.auth, signInUrl: 'https://app.test.example.com/' } }
+  // A deployed file: it names its environment (SDK alpha.6) and where logout goes.
+  const config = { ...shipped, environment: 'staging', auth: { ...shipped.auth, signInUrl: 'https://app.test.example.com/' } }
   vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
     requested.push(String(input instanceof Request ? input.url : input))
     return new Response(JSON.stringify(config), { headers: { 'content-type': 'application/json' } })
@@ -33,8 +34,8 @@ beforeAll(async () => {
 })
 
 describe('standalone page with a runtime config', () => {
-  it('sets the page identity as mfe-dashboard in the portal domain', () => {
-    expect(seen.identity).toMatchObject({ serviceName: 'mfe-dashboard', domain: 'portal', environment: 'local' })
+  it('sets the page identity as mfe-dashboard in the portal domain, in the environment runtime.json names', () => {
+    expect(seen.identity).toMatchObject({ serviceName: 'mfe-dashboard', domain: 'portal', environment: 'staging' })
   })
 
   it('loads /config/runtime.json once and sets it', () => {
