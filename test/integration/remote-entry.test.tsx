@@ -19,6 +19,9 @@ import * as Problem from '@bcbp-solutions-fzc-llc/frontend-sdk/problem'
 import * as SdkReact from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import * as Storage from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import sdkPackage from '@bcbp-solutions-fzc-llc/frontend-sdk/package.json'
+import { containerName, integrityOf } from '@bcbp-solutions-fzc-llc/webpack-preset'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { buildRemote, type RemoteBuild } from '../fixtures/remote-build'
 import { startPlatform } from '../fixtures/platform'
@@ -27,6 +30,8 @@ type Container = { init(scope: ShareScope): Promise<void> | void; get(module: st
 type ShareScope = Record<string, Record<string, { get: () => Promise<() => unknown>; from: string; loaded?: number; eager?: boolean }>>
 
 const SDK = '@bcbp-solutions-fzc-llc/frontend-sdk'
+/** The global remoteEntry.js defines and the SDK's loadRemote reads (`__platform_mfe_app2` since 1.0.0-alpha.4). */
+const GLOBAL = containerName('app2')
 const ORIGIN = 'http://localhost:5002/'
 
 /** What web-shell shares: its singletons, by share key and version. */
@@ -77,12 +82,12 @@ function serveBuild() {
   })
 }
 
-/** Runs remoteEntry.js as the page would: a classic script that defines `var app2`. */
+/** Runs remoteEntry.js as the page would: a classic script that defines `var __platform_mfe_app2`. */
 function loadEntry(): Container {
   Object.defineProperty(document, 'currentScript', { configurable: true, value: { src: `${ORIGIN}remoteEntry.js`, tagName: 'SCRIPT' } })
   ;(0, eval)(build.read('remoteEntry.js'))
   Reflect.deleteProperty(document, 'currentScript')
-  return (globalThis as unknown as { app2: Container }).app2
+  return (globalThis as unknown as Record<string, Container>)[GLOBAL]
 }
 
 beforeAll(() => {
@@ -93,13 +98,14 @@ afterAll(() => build?.remove())
 
 afterEach(() => {
   vi.restoreAllMocks()
-  Reflect.deleteProperty(globalThis, 'app2')
-  Reflect.deleteProperty(globalThis, 'rspackChunkapp2')
+  Reflect.deleteProperty(globalThis, GLOBAL)
+  Reflect.deleteProperty(globalThis, `rspackChunk${GLOBAL.slice(1)}`)
 })
 
 describe('remoteEntry.js', () => {
   it('defines the app2 container synchronously, as loadRemote reads it', () => {
-    expect(build.read('remoteEntry.js').startsWith('var app2;')).toBe(true)
+    expect(GLOBAL).toBe('__platform_mfe_app2')
+    expect(build.read('remoteEntry.js').startsWith(`var ${GLOBAL};`)).toBe(true)
     const container = loadEntry()
     expect(typeof container.init).toBe('function')
     expect(typeof container.get).toBe('function')
@@ -118,6 +124,15 @@ describe('remoteEntry.js', () => {
     const { scope } = shellScope()
     expect(keys.length).toBeGreaterThan(0)
     for (const key of keys) expect(Object.keys(scope)).toContain(key)
+  })
+
+  it('pins every lazily loaded stylesheet by its sha384, as it pins scripts', () => {
+    // Since webpack-preset 1.0.0-alpha.4 the runtime sets link.integrity for CSS chunks; a missing or
+    // stale hash makes the browser refuse the stylesheet inside the shell.
+    const entry = build.read('remoteEntry.js')
+    const css = build.files().filter((f) => f.endsWith('.css'))
+    expect(css.length).toBeGreaterThan(0)
+    for (const file of css) expect(entry, file).toContain(integrityOf(readFileSync(join(build.dir, file))))
   })
 })
 

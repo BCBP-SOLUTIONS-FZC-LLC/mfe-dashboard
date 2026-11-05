@@ -4,7 +4,7 @@ Changes land through a pull request. CI on `main` and `master` is the gate that 
 
 ## Setup
 
-Node **22**.
+Node **26** (`.nvmrc`, as CI and the image). `engines` allows `>=22`, the platform packages' minimum.
 
 ```bash
 npm ci

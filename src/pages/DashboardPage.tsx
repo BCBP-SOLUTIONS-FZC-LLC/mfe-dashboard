@@ -159,6 +159,7 @@ export default function DashboardPage() {
                 key={v.id}
                 type="button"
                 onClick={() => setView(v.id)}
+                aria-pressed={view === v.id}
                 className={`cursor-pointer rounded-2xl border p-4 text-start shadow-sm transition-all hover:shadow-md ${
                   KPI_CARD_STYLE[v.id].surface
                 } ${view === v.id ? KPI_CARD_STYLE[v.id].active : ''}`}
@@ -183,6 +184,7 @@ export default function DashboardPage() {
                   key={v.id}
                   type="button"
                   onClick={() => setView(v.id)}
+                  aria-pressed={view === v.id}
                   className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm transition-colors ${
                     view === v.id
                       ? 'bg-aura-secondary font-semibold text-white shadow-sm'
@@ -374,13 +376,17 @@ export default function DashboardPage() {
                 </p>
               ) : null}
 
+              {/* A live region that is always on the page and changes its text, so screen readers
+                  announce it (a region inserted with its text already in it is often skipped). */}
+              <p role="status" className="sr-only">
+                {loadState === 'loading' ? t('states.loading.body') : ''}
+              </p>
+
               {loadState === 'loading' ? (
-                <div className="space-y-3">
+                // Decorative: the status above says what is happening.
+                <div aria-hidden className="space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="h-28 animate-pulse rounded-xl bg-aura-border/60"
-                    />
+                    <div key={i} className="h-28 animate-pulse rounded-xl bg-aura-border/60" />
                   ))}
                 </div>
               ) : null}

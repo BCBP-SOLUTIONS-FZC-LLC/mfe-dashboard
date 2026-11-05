@@ -8,19 +8,26 @@ Nothing is tagged yet. `package.json` `version` is `0.0.0`. Everything that is t
 
 ### Added
 
-- Module Federation remote `app2` exposing `./App` (`remoteEntry.js`, global `var app2`), built with Rsbuild 2 and `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild` (`pluginPlatform({ role: 'remote' })`). React, React DOM, the OTel API and the SDK are strict singletons from the shell.
-- Dashboard and user-management UI. Tickets and users are in-repo fixtures (`src/mocks/dashboardTickets.ts`, `src/pages/UserManagementPage.tsx`). Views: My Tickets, Awaiting My Review, Awaiting My Approval, Delegated To Me, All Tenders In Flight. Filters cover status, role, department, deadline, and tender text. Deadline is counted in the filter badge and is not applied to the row list.
-- Host contract: optional `userLabel` and `onLogout`. Without `onLogout`, logout navigates to `VITE_APP1_URL` (default `http://localhost:5001`).
+- Module Federation remote `app2` exposing `./App` (`remoteEntry.js`, global `var __platform_mfe_app2`), built with Rsbuild 2 and `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild` (`pluginPlatform({ role: 'remote' })`). React, React DOM, the OTel API and the SDK are strict singletons from the shell.
+- Dashboard and user-management UI. Tickets and users are in-repo fixtures (`src/mocks/dashboardTickets.ts`, `src/pages/UserManagementPage.tsx`). Views: My Tickets, Awaiting My Review, Awaiting My Approval, Delegated To Me, All Tenders In Flight. Filters cover status, role, department, deadline, and tender text. The deadline filter (overdue, this week) is applied by local calendar day, and the KPI counts are the rows each view lists.
+- Host contract: optional `userLabel` and `onLogout`. Without `onLogout`, logout is the SDK's global sign-out; with no shell it navigates to `PUBLIC_APP1_URL` (default `http://localhost:5001`).
 - Standalone routing on port **5002**: `/` and unknown paths redirect to `/dashboard`. Inside the shell's router the same pages are the index route and `user-management`.
-- Theme stored in `localStorage` under `bcbp.appTheme` and `bcbp.themeMode` (Aura light/dark plus daisyUI themes).
-- Unprivileged nginx image on port **8080** (`GET /healthz` returns `ok`, `remoteEntry.js` is not cached, hashed chunks and `/assets/` are immutable, all with CORS). Build arg `VITE_APP1_URL`.
+- Theme (Aura light/dark plus daisyUI themes) stored as `appTheme` and `themeMode` through the SDK's `storage('app2')`, per workspace and cleared on sign-out.
+- Unprivileged nginx image on port **8080** (`GET /healthz` returns `ok`, `remoteEntry.js` is not cached, hashed chunks and `/assets/` are immutable, all with CORS). Build arg `PUBLIC_APP1_URL` (`VITE_APP1_URL` is a deprecated fallback).
 - CI (2026-10-27): typecheck and Rsbuild build, Vitest with a 95% coverage gate, production `npm audit`, digest-pinned bases, Hadolint, Trivy, nginx smoke, Cosign on `main`/`master`, changelog check, and a semver release of the image plus `mfe-dashboard_<tag>_dist.tar.gz`.
-- Tests under `test/unit` and `test/e2e`. `npm run test:ci` is the local gate.
+- Tests under `test/unit`, `test/integration` (the built remote loaded through its container) and `test/e2e`. `npm run test:ci` is the local gate.
 - Pre-commit hook (`.githooks/pre-commit`, installed with `npm run hooks:install`): refuses staged `.env` files, HTML entities in workflows, CRLF in pipeline files, an unpinned `FROM`, a missing `.dockerignore`, and a failing `tsc --noEmit`.
 - Operator docs: this changelog, [README.md](README.md), [VERSIONING.md](VERSIONING.md), [CONTRIBUTING.md](CONTRIBUTING.md), [ARCHITECTURE.md](ARCHITECTURE.md), and [docs/](docs/README.md).
 
 ### Changed
 
+- **Accessibility, error isolation and Node (`2026-11-05`).**
+  - The theme picker is a menu of radio items in two labelled groups (`role="menu"`, `menuitemradio`, `aria-checked`): focus starts on the current theme, and arrows, Home, End and Escape work. `useDismiss` handles radio and checkbox menu items.
+  - The view cards and view buttons expose the selected view (`aria-pressed`).
+  - Loading is announced: a visually hidden `role="status"` that stays on the page reads "Loading your tickets…" while tickets load and empties after; the skeleton is `aria-hidden`.
+  - A page's render error replaces only the page: `AppShellLayout` wraps the routed page in the SDK's `MFEErrorBoundary`, reset when the path changes (`resetKeys`), so the sidebar keeps working, in the shell and standalone.
+  - `.nvmrc` is `26`, as CI and the image; `engines.node` is `>=22`, the platform packages' minimum. README, CONTRIBUTING, the pipeline doc and `.claude` said 22.
+- **Breaking: platform packages `1.0.0-alpha.4` (`2026-11-05`), with web-shell.** `frontend-sdk` (dev and peer `^1.0.0-alpha.4`), `webpack-preset` and `eslint-plugin` are `1.0.0-alpha.4`, as in web-shell. `remoteEntry.js` now defines `var __platform_mfe_app2` (the preset's `containerName`), which only the alpha.4 SDK's `loadRemote` reads: deploy this remote and web-shell alpha.4 together. Lazily loaded CSS is pinned by sha384 like the scripts. Storage keys moved under the SDK's prefix and are not migrated, so a saved theme resets once. Global sign-out is a form POST to Keycloak, which needs web-shell's CSP `form-action` to allow the IdP origin. The smoke and integration tests check the new global and the CSS integrity.
 - **Remaining production gaps fixed (`2026-11-04`).**
   - Every build writes `dist/remote-manifest-entry.json`: web-shell's manifest entry with the sha384 integrity of `remoteEntry.js`. The image serves it, releases attach it, and the smoke test compares it with the served file.
   - The deadline filter is applied (overdue / this week, by local day).

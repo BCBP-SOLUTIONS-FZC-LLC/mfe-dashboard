@@ -8,7 +8,7 @@
 | Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.0.0`); nothing is published to npm |
 | Version | Untagged (`[Unreleased]` in [CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
 | Host | `web-shell` (`app1`), which loads this remote as `DASHBOARD_REMOTE = 'app2'` (`web-shell/src/App.tsx`) |
-| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.3` (peer `^1.0.0-alpha.3`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.3` (§12) |
+| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (peer `^1.0.0-alpha.4`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4` (§12) |
 | Runtime | React 19, React Router 7, Tailwind 4 + daisyUI 5; built with Rsbuild 2 (Rspack); served by nginx 1.31 on port 8080 |
 | Narrative | [ARCHITECTURE.md](../../ARCHITECTURE.md) (diagrams, failure domains, decisions) |
 | Upstream contracts | platform-reactcommon LLD and design doc (`docs/lld/platform-reactcommon-lld.md`, `docs/design/frontend-sdk-design.md`); iam-org-membership LLD §5.4 P-35 and §10.4 (roles, member rights) |
@@ -18,6 +18,8 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.5 | 2026-11-05 | Theme picker as a menu of radio items and `aria-pressed` on the view switches (§7.8); loading announced as a busy status (§6.3); a page error boundary that resets on navigation (§5, §11); Node 26 / `engines >=22` (§12.2) |
+| 1.4 | 2026-11-05 | Platform packages `1.0.0-alpha.4`: container global `__platform_mfe_app2` (§4.1), lazily loaded CSS pinned by sha384 (§4.1), sign-out as a form POST that needs the shell's CSP `form-action` (§7.6), storage keys renamed so a saved theme resets once (§7.7), deploy together with web-shell (§12.1) |
 | 1.3 | 2026-11-04 | Remote manifest entry with `remoteEntry.js` integrity (§4.1, §12.1); deadline filter applied and KPI counts from the rows (§6.2); load errors logged (§5); "Last updated" keeps counting (§7.3); standalone `MFEErrorBoundary` (§7.2, §11); logical (RTL-ready) layout classes and labelled search (§7.8); fonts and Tailwind stack identical to web-shell (§12.2); `minimatch` override (§12.2) |
 | 1.2 | 2026-11-04 | `VITE_APP1_URL` renamed `PUBLIC_APP1_URL` with the old name as a deprecated fallback (§12.4) |
 | 1.1 | 2026-11-04 | Production gaps: ticket-load error state (§6.3, §7.3, §11), local calendar dates (§6.1), keyboard and focus handling (§7.8), nginx security headers, gzip and self-hosted fonts (§12.3, §13), `webpack-preset` / `eslint-plugin` `1.0.0-alpha.3` (§4.2, §12.2), release guard for `PUBLIC_APP1_URL` (§12.4) |
@@ -105,12 +107,12 @@ This is the SemVer surface ([VERSIONING.md](../../VERSIONING.md)).
 
 | Item | Value |
 |---|---|
-| Container name / global | `app2`, defined synchronously by `remoteEntry.js` as `var app2` (Module Federation v1) |
+| Container name / global | `app2`, defined synchronously by `remoteEntry.js` as `var __platform_mfe_app2` (Module Federation v1). Since `1.0.0-alpha.4` the preset's `containerName('app2')` and the SDK's `loadRemote` both use `__platform_mfe_<name>`; a bare global could collide with an element `id` or a browser global. An entry built with an older preset defines `var app2`, which the alpha.4 SDK does not read |
 | Exposed module | `./App` → `src/App.tsx` (default export `App`, named export `workspaceBasename`) |
-| Chunk loading | Relative to `remoteEntry.js` (`self.rspackChunkapp2`); CSS is a lazy chunk under `assets/async/` |
-| Split chunks | Async only (`splitChunks: { preset: 'none', chunks: 'async' }`); a split entry would make `window.app2` a Promise, which `loadRemote` refuses |
+| Chunk loading | Relative to `remoteEntry.js` (`self.rspackChunk_platform_mfe_app2`); CSS is a lazy chunk under `assets/async/` |
+| Split chunks | Async only (`splitChunks: { preset: 'none', chunks: 'async' }`); a split entry would make `window.__platform_mfe_app2` a Promise, which `loadRemote` refuses |
 | Manifest entry (shell side) | `"app2": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`; `integrity` required outside local, dev and test. Every build writes it to `dist/remote-manifest-entry.json` (`config/remote-manifest-entry.mjs`, the preset's `integrityOf` over the built `remoteEntry.js`); the image serves it at `/remote-manifest-entry.json` and each release attaches it as `mfe-dashboard_<tag>_remote-manifest-entry.json`. The deploy makes `entry` absolute |
-| Chunk integrity | Every lazy chunk is pinned by sha384 inside `remoteEntry.js` (the preset's `ChunkIntegrityPlugin`); a swapped chunk is refused |
+| Chunk integrity | Every lazy chunk, scripts and (since `1.0.0-alpha.4`) stylesheets, is pinned by sha384 inside `remoteEntry.js` (the preset's `ChunkIntegrityPlugin`; the runtime sets `link.integrity` for CSS); a swapped chunk is refused |
 
 ### 4.2 Shared modules
 
@@ -119,7 +121,7 @@ The preset's `sharedFor('remote')` configures `react`, `react/jsx-runtime`, `rea
 | Share key | `requiredVersion` | Notes |
 |---|---|---|
 | `react`, `react/jsx-runtime` | `^19.0.0` | strict singleton |
-| `@bcbp-solutions-fzc-llc/frontend-sdk/{auth,config,i18n,logging,problem,react,storage}` | `^1.0.0-alpha.3` (the preset's SDK version) | `import: false`: never bundled, no fallback; the load fails without the shell's copy |
+| `@bcbp-solutions-fzc-llc/frontend-sdk/{auth,config,i18n,logging,problem,react,storage}` | `^1.0.0-alpha.4` (the preset's SDK version) | `import: false`: never bundled, no fallback; the load fails without the shell's copy |
 
 `react-dom` is used only by the standalone entry (`main.tsx`), and `@opentelemetry/api` not at all, so neither appears in the remote. `react-router-dom` is **not** shared; the remote brings its own router (§7.1). `test/integration/remote-entry.test.tsx` checks that every share key is one the shell provides and that no SDK code is in the bundle.
 
@@ -158,7 +160,7 @@ The rule: anything the SDK provides is used from the SDK, through public subpath
 | Data loading | `useApi(loader, deps)` (run on change, abort superseded loads, `reload`) (`/react`) | `useDashboardData.ts` |
 | API errors | `isProblemError` (`/problem`), `problemMessage` (`/i18n`) | `DashboardPage.tsx` |
 | Logs | `getLogger({ mfe: 'app2' })` (`/logging`): a failed ticket load is a `warn` with the error and view (redacted by the SDK, exported by the shell) | `useDashboardData.ts` |
-| Render errors (standalone) | `MFEErrorBoundary` (`/react`) around `App` | `main.tsx` |
+| Render errors | `MFEErrorBoundary` (`/react`): around the routed page with `resetKeys={[pathname]}` (embedded and standalone), and around `App` standalone | `AppShellLayout.tsx`, `main.tsx` |
 | Messages and plurals | `registerNamespace` (`/i18n`), `useT('app2')`, `useLocale` (`/react`) | `i18n.ts`, every component |
 | Dates and numbers | `formatDate`, `formatNumber` (`/i18n`) | `TicketRow`, `DashboardRightPanel`, `DashboardPage`, `AppShellLayout`, `UserManagementPage` |
 | Per-app storage | `storage('app2')` (`/storage`) | `theme/themeMode.ts` |
@@ -199,8 +201,8 @@ KPI numbers are `kpiCounts()`: each view's row count before filters, from the sa
 
 | State | When |
 |---|---|
-| `loading` | No data for the current query key (`JSON.stringify([view, filters, canSeeAllTenders])`) |
-| `error` | The load failed with an SDK `ApiError` (problem, timeout, network). `useApi` drops the rows; `error` is returned until a reload succeeds. Any other exception is rethrown by `useApi` to the shell's `RemoteBoundary` |
+| `loading` | No data for the current query key (`JSON.stringify([view, filters, canSeeAllTenders])`). A visually hidden `role="status"`, always on the page, reads "Loading your tickets…" while loading and is empty otherwise (a live region inserted with its text is often not announced); the skeleton is `aria-hidden` |
+| `error` | The load failed with an SDK `ApiError` (problem, timeout, network). `useApi` drops the rows; `error` is returned until a reload succeeds. Any other exception is rethrown by `useApi` to the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes) |
 | `partial_failure` | View `my-tickets` and a row has `tenderDetailsUnavailable` (fixture `T-1015`) |
 | `empty` | Zero rows |
 | `ready` | Otherwise |
@@ -235,18 +237,19 @@ On `awaiting-approval`, when `useStepUp().needed` (login older than the tenant's
 
 ### 7.6 Sign-out
 
-Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the SDK's global sign-out (ends the Keycloak session; the SDK clears `storage()` for the workspace). If `signOut()` rejects because no shell provides it, `defaultLogout()` runs `window.location.assign(PUBLIC_APP1_URL without a trailing slash)`.
+Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the SDK's global sign-out (ends the Keycloak session; the SDK clears `storage()` for the workspace). Since `1.0.0-alpha.4` it POSTs to Keycloak's end-session endpoint with a hidden form, so **web-shell's CSP `form-action` must allow the IdP origin**; otherwise the browser blocks the POST and the SSO session stays alive. That is web-shell's header; this image's own CSP (`form-action 'self'`) only covers the standalone page, which has no shell sign-out. If `signOut()` rejects because no shell provides it, `defaultLogout()` runs `window.location.assign(PUBLIC_APP1_URL without a trailing slash)`.
 
 ### 7.7 Theme
 
-On start (`main.tsx`) and on mount (`AppShellLayout`), `showAppTheme(readStoredAppTheme())` sets `data-theme` on `<html>` and stores nothing. A user's choice (`ThemePicker`, or the user menu's light/dark toggle) goes through `chooseTheme` → `saveAppTheme`, which writes `appTheme`, and for Aura themes also `themeMode`. `readStoredAppTheme()` prefers `appTheme`, then `themeMode`, then `light`. The logo variant follows `auraModeFromAppTheme`. Who should own `data-theme` when embedded is open (§15 item 8).
+On start (`main.tsx`) and on mount (`AppShellLayout`), `showAppTheme(readStoredAppTheme())` sets `data-theme` on `<html>` and stores nothing. A user's choice (`ThemePicker`, or the user menu's light/dark toggle) goes through `chooseTheme` → `saveAppTheme`, which writes `appTheme`, and for Aura themes also `themeMode`. `readStoredAppTheme()` prefers `appTheme`, then `themeMode`, then `light`. The logo variant follows `auraModeFromAppTheme`. Who should own `data-theme` when embedded is open (§15 item 8). The SDK `1.0.0-alpha.4` stores keys as `@bcbp-solutions-fzc-llc/frontend-sdk:storage:<namespace>:app2:<key>` and does not read the alpha.3 keys, so after the upgrade a saved theme falls back to `light` once until the user picks it again.
 
 ### 7.8 Keyboard and focus
 
 | Popup | Behaviour |
 |---|---|
 | User menu (`role="menu"`) | Opens with focus on the first item; ArrowDown / ArrowUp wrap, Home / End jump; Escape or an outside press closes; Escape returns focus to the trigger (`useDismiss`, `menu: true`) |
-| Theme picker (`role="listbox"`) | Escape or an outside press closes (`useDismiss`) |
+| Theme picker (`role="menu"`, two labelled `group`s of `menuitemradio` with `aria-checked`) | Opens with focus on the current theme; ArrowDown / ArrowUp wrap, Home / End jump; Escape or an outside press closes; Escape returns focus to the trigger (`useDismiss`, `menu: true`) |
+| View cards and view buttons | `aria-pressed` marks the selected view |
 | Filter drawer (`role="dialog"`, `aria-modal`) | Focus moves inside on open, Tab and Shift+Tab wrap inside, Escape or the overlay closes, focus returns to the Filters button (`useFocusTrap`) |
 | Header search | `type="search"` with an `aria-label` (the placeholder text), so screen readers name it |
 
@@ -291,10 +294,11 @@ No tokens, user data or permissions are stored by this repo. Raw `localStorage` 
 | No shell `signOut` | Fallback navigation to `PUBLIC_APP1_URL` |
 | `#app` missing (standalone) | `main.tsx` throws before render |
 | Ticket load fails with an API error | `error` state: alert with the SDK's problem message and Retry; rows cleared |
-| Ticket loader throws anything else (a bug) | `useApi` rethrows; the shell's `RemoteBoundary` shows its error |
+| Ticket loader throws anything else (a bug) | `useApi` rethrows; the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes) shows its fallback and logs it |
 | Shell does not provide a shared SDK subpath | `get('./App')` rejects ("Shared module … doesn't exist in shared scope default"); the shell's `RemoteBoundary` shows its error |
-| Shell's SDK outside `^1.0.0-alpha.3`, or React outside `^19.0.0` | Strict singleton check fails at load; the shell shows its error |
-| A render error inside the remote | Embedded: the shell's `RemoteBoundary`. Standalone: the SDK's `MFEErrorBoundary` in `main.tsx` (logged, fallback shown) |
+| Shell's SDK outside `^1.0.0-alpha.4`, or React outside `^19.0.0` | Strict singleton check fails at load; the shell shows its error |
+| A render error in a page | the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes); the sidebar still navigates |
+| A render error in the chrome (sidebar, header) | Embedded: the shell's `RemoteBoundary`. Standalone: the SDK's `MFEErrorBoundary` in `main.tsx` (logged, fallback shown) |
 
 ## 12. Build, Image and Configuration
 
@@ -307,15 +311,18 @@ One `rsbuild build` makes two environments into `dist/` (`npm run build` runs `t
 | `remote` | `src/remote.ts` (placeholder) + `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })` | `remoteEntry.js`, chunks next to it, CSS under `assets/` | from the shell (`import: false`) |
 | `standalone` | `src/main.tsx`, `index.html` | `index.html`, `assets/` | bundled |
 
+The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the installed `frontend-sdk` is not the preset's own version, so the three platform packages move together. Because the container global (§4.1) and the shared range come from that version, a platform upgrade ships as one release with web-shell: a remote built with the alpha.3 preset does not load in an alpha.4 shell, and the reverse.
+
 `inlineScripts`/`inlineStyles` are off (CSP `script-src 'self'`). The dev server (port 5002, `strictPort`, CORS `*`) runs without HMR or live reload, which would otherwise be injected into `remoteEntry.js`.
 
 ### 12.2 Dependencies
 
 | Package | Version | Note |
 |---|---|---|
-| `@bcbp-solutions-fzc-llc/frontend-sdk` | dev `1.0.0-alpha.3`, peer `^1.0.0-alpha.3` | Same version as web-shell; never a runtime dependency (checked by `dependency-rules.test.ts`) |
-| `@bcbp-solutions-fzc-llc/webpack-preset` | `1.0.0-alpha.3` | Same as web-shell |
-| `@bcbp-solutions-fzc-llc/eslint-plugin` | `1.0.0-alpha.3` | Same as web-shell |
+| Node | `26` (`.nvmrc`, CI, the Dockerfile's builder); `engines.node` `>=22` | `>=22` is the platform packages' minimum |
+| `@bcbp-solutions-fzc-llc/frontend-sdk` | dev `1.0.0-alpha.4`, peer `^1.0.0-alpha.4` | Same version as web-shell; never a runtime dependency (checked by `dependency-rules.test.ts`) |
+| `@bcbp-solutions-fzc-llc/webpack-preset` | `1.0.0-alpha.4` | Same as web-shell |
+| `@bcbp-solutions-fzc-llc/eslint-plugin` | `1.0.0-alpha.4` | Same as web-shell |
 | `@fontsource-variable/geist`, `@fontsource-variable/inter` | `5.3.0` | Standalone page only (CSP `font-src 'self'`). Same packages, family names (`Geist Variable`, `Inter Variable`) and `tailwind.config.js` as web-shell, which provides the fonts when embedded |
 | `overrides.minimatch` | `^11.0.4` | Dev-only toolchain (ESLint, typescript-eslint): fixes GHSA-g3hv-75wg-m249 without downgrading ESLint; `npm audit` reports 0 |
 | `typescript` | `npm:@typescript/typescript6` | for typescript-eslint; `tsc` is `@typescript/native` (TypeScript 7) |
@@ -365,7 +372,7 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/unit/<area>` (`app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk`) | `npm run test:unit` | One area of `src/` each; the catalog and SDK-rule checks |
 | `test/integration` | `npm run test:integration` | The built `remoteEntry.js` (temp Rsbuild build of the `remote` environment) loaded through `init(shareScope)` / `get('./App')` and rendered with the shell's React and SDK |
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
-| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var app2`, no `.map` files, security headers, no nginx version, gzip |
+| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files, security headers, no nginx version, gzip |
 
 Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.3% / 97.8% / 100% / 99.3% with 110 tests in 22 files.
 
@@ -382,3 +389,5 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 8 | The remote ships its own Tailwind preflight, every daisyUI theme (~180 kB CSS, a 78 kB theme chunk) and `html, body` styles, and `applyAppTheme` sets `data-theme` on the shell's `<html>`. Theme ownership and shared CSS need a decision with web-shell: options in `../mfe-dashboard-theme-and-css-ownership.md` (frontend workspace) | web-shell, mfe-dashboard |
 | 9 | Layout uses logical classes (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`, `rtl:` for the sidebar slide), so it follows `dir`. Still needed for RTL: the shell setting `<html dir>` for the locale, an Arabic catalog, and a check of directional icons (chevrons) | web-shell, mfe-dashboard |
 | 10 | Logs: failed loads only. No metrics (`getServiceMeter`) yet, and source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
+| 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_app2`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
+| 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6) | web-shell, platform deployment |

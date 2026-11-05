@@ -52,7 +52,7 @@ flowchart TB
 | Workspace basename, route names | `slugFromPath`, `tryGetConfig().auth.workspacePathPrefix`, `useRouteTemplate` |
 | Access | `useHasPermission`, `useReadOnly`, `useStepUp` |
 | Data loading, errors | `useApi`, `isProblemError` (`/problem`), `problemMessage`, `getLogger` (a failed load is logged) |
-| Standalone render errors | `MFEErrorBoundary` |
+| Render errors | `MFEErrorBoundary`: around the routed page (reset on path change) and, standalone, around `App` |
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` |
 | Per-app storage | `storage('app2')` |
 
@@ -62,8 +62,8 @@ flowchart TB
 
 Rsbuild 2 with the SDK's plugin (`rsbuild.config.ts`, `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })`), Module Federation v1. One `rsbuild build` makes two environments: **remote** (`remoteEntry.js` and chunks; the SDK from the shell) and **standalone** (`index.html` and `assets/`; the SDK bundled).
 
-- `remoteEntry.js` defines `var app2` synchronously. Only async chunks are split: a split entry would start asynchronously and leave `window.app2` a Promise, which `loadRemote` refuses. The dev server has no HMR or live-reload client for the same reason.
-- The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and seven SDK subpaths (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.3`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
+- `remoteEntry.js` defines `var __platform_mfe_app2` synchronously. Only async chunks are split: a split entry would start asynchronously and leave `window.__platform_mfe_app2` a Promise, which `loadRemote` refuses. The dev server has no HMR or live-reload client for the same reason.
+- The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and seven SDK subpaths (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.4`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
 - `react-router-dom` is not shared; the remote runs its own router.
 - `test/integration/remote-entry.test.tsx` builds the remote and loads it through `init(shareScope)` / `get('./App')`, as web-shell does.
 
@@ -170,14 +170,14 @@ nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standa
 | Search matches nothing | "No matching tickets" |
 | No member permission | User management link hidden; the route returns to the dashboard |
 | Ticket load fails with an API error (problem, timeout, network) | Alert "Tickets could not be loaded." with the SDK's `problemMessage` for a problem, and Retry |
-| Ticket loader throws anything else | `useApi` rethrows it to the shell's `RemoteBoundary` |
+| Ticket loader throws anything else | `useApi` rethrows it to the page's `MFEErrorBoundary` (`AppShellLayout`); the sidebar keeps working and the error clears on navigation |
 | No shell `signOut` | Logout navigates to `PUBLIC_APP1_URL` |
 | `#app` missing in standalone bootstrap | `main.tsx` throws before render |
 | Shell lacks a shared SDK subpath, or its SDK / React is outside the remote's range | `get('./App')` or the singleton check fails; the shell's `RemoteBoundary` shows the error |
 
 ## Invariants
 
-- Container `app2`, expose `./App`, `var app2` defined synchronously.
+- Container `app2`, expose `./App`, `var __platform_mfe_app2` defined synchronously. The global's name comes from the preset and must match the shell's SDK, so this remote and web-shell upgrade the platform packages together.
 - The SDK is never bundled into the remote and never a runtime dependency; its dev version equals web-shell's.
 - `onLogout` and `userLabel` are optional.
 - No role names in `src/`; access is by permission.

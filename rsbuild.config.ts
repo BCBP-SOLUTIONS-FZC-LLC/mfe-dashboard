@@ -44,7 +44,7 @@ export default defineConfig({
       // The shell loads only remoteEntry.js, which the preset adds; Rsbuild still needs an entry.
       source: { entry: { remote: './src/remote.ts' } },
       // Split only lazily loaded chunks. Rsbuild's default vendor groups also split the entries, and
-      // a remoteEntry.js that needs other chunks starts asynchronously: window.app2 becomes a Promise
+      // a remoteEntry.js that needs other chunks starts asynchronously: window.__platform_mfe_app2 becomes a Promise
       // instead of the container, and the SDK's loadRemote refuses it.
       splitChunks: { preset: 'none', chunks: 'async' },
       tools: { htmlPlugin: false },
@@ -59,6 +59,6 @@ export default defineConfig({
   // The shell (http://localhost:5001) loads remoteEntry.js and its chunks cross-origin in dev.
   server: { port: 5002, strictPort: true, host: 'localhost', cors: { origin: '*' } },
   // No dev client: Rsbuild would inject it into remoteEntry.js too, which makes the container start
-  // asynchronously, and the SDK's loadRemote then finds no window.app2. Reload the shell by hand.
+  // asynchronously, and the SDK's loadRemote then finds no window.__platform_mfe_app2. Reload the shell by hand.
   dev: { hmr: false, liveReload: false },
 })

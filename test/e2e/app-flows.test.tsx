@@ -95,7 +95,7 @@ describe('dashboard flows', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Choose theme' }))
-    await user.click(screen.getByRole('option', { name: 'Light mode' }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Light mode' }))
     expect(document.documentElement.dataset.theme).toBe('light')
 
     await user.click(screen.getByRole('button', { name: 'Show sidebar' }))

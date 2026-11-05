@@ -3,7 +3,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
-import { MemoryRouter } from 'react-router-dom'
+import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppShellLayout, { defaultLogout } from '../../../src/layouts/AppShellLayout'
 
@@ -85,5 +85,33 @@ describe('defaultLogout (no shell signOut)', () => {
     const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
     defaultLogout()
     expect(assign).toHaveBeenCalledWith('http://localhost:5001')
+  })
+})
+
+describe('page error boundary', () => {
+  function Broken(): never {
+    throw new Error('page render failed')
+  }
+
+  it('replaces only the page, keeps the chrome, and clears when the path changes', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(
+      <MemoryRouter initialEntries={['/broken']}>
+        <Routes>
+          <Route element={<AppShellLayout userLabel="Ada" />}>
+            <Route path="broken" element={<Broken />} />
+            <Route path="ok" element={<p>Healthy page</p>} />
+          </Route>
+        </Routes>
+        <Link to="/ok">go ok</Link>
+      </MemoryRouter>,
+    )
+    const main = screen.getByRole('main')
+    expect(within(main).queryByText('Healthy page')).not.toBeInTheDocument()
+    expect(main.textContent).not.toBe('')
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('link', { name: 'go ok' }))
+    expect(within(screen.getByRole('main')).getByText('Healthy page')).toBeInTheDocument()
   })
 })
