@@ -52,14 +52,14 @@ Do not add this repository as an npm dependency. The shell loads `remoteEntry.js
 
 ### Pull and verify the image
 
-Once a tag exists:
-
 ```bash
-# Git tag v0.1.0 publishes the image as 0.1.0 (the v prefix is not part of the image tag)
-docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.0
+# Git tag v0.1.1 publishes the image as 0.1.1 (the v prefix is not part of the image tag)
+docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.1
+# the SLSA provenance BuildKit stored in the image index (also attached to the GitHub Release)
+docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.1 --format '{{ json .Provenance }}'
 ```
 
-**Today** only images from a push to `main` or `master` are published (see CI below). Every image pushed from `ci.yml` is signed keylessly via Sigstore/Cosign (no long-lived key). Verify before deploying:
+Tagged releases (from `v0.1.1`) and every push to `main` or `master` publish images. Each is signed keylessly via Sigstore/Cosign (no long-lived key). Verify before deploying:
 
 ```bash
 # main-branch builds (signed by ci.yml's push job)

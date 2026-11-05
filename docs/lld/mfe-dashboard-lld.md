@@ -6,7 +6,7 @@
 |---|---|
 | Repository | `BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard` (private) |
 | Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.1.1`); nothing is published to npm |
-| Version | `0.1.1` ([CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
+| Version | `0.1.1`, released 2026-11-05 ([GitHub Release](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.1.1), [CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
 | Host | `web-shell` (`app1`), which loads this remote as `DASHBOARD_REMOTE = 'app2'` (`web-shell/src/App.tsx`) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (peer `^1.0.0-alpha.4`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4` (§12) |
 | Runtime | React 19, React Router 7, Tailwind 4 + daisyUI 5; built with Rsbuild 2 (Rspack); served by nginx 1.31 on port 8080 |
@@ -18,6 +18,8 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.9 | 2026-11-05 | Release tags are added after scan, provenance and signature (§12.5); open item 14 (runtime logout target) |
+| 1.8 | 2026-11-05 | `v0.1.1` published (GitHub Release, signed image `sha256:c9e10c06…`); release pipeline described in §12.5; supply chain (§13); open item 13 (the unsigned `0.1.0` tag). web-shell has the same release-script fixes (web-shell #27) |
 | 1.7 | 2026-11-05 | `v0.1.1`: the release workflow's provenance export fixed; `v0.1.0` was not published |
 | 1.6 | 2026-11-05 | First release `v0.1.0`, together with web-shell on alpha.4; open item 7 (tag and `PUBLIC_APP1_URL`) closed |
 | 1.5 | 2026-11-05 | Theme picker as a menu of radio items and `aria-pressed` on the view switches (§7.8); loading announced as a busy status (§6.3); a page error boundary that resets on navigation (§5, §11); Node 26 / `engines >=22` (§12.2) |
@@ -39,7 +41,7 @@
 9. [i18n](#9-i18n)
 10. [State and Storage](#10-state-and-storage)
 11. [Failure Handling](#11-failure-handling)
-12. [Build, Image and Configuration](#12-build-image-and-configuration)
+12. [Build, Image, Configuration and Release](#12-build-image-configuration-and-release)
 13. [Security](#13-security)
 14. [Testing](#14-testing)
 15. [Open Items](#15-open-items)
@@ -302,7 +304,7 @@ No tokens, user data or permissions are stored by this repo. Raw `localStorage` 
 | A render error in a page | the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes); the sidebar still navigates |
 | A render error in the chrome (sidebar, header) | Embedded: the shell's `RemoteBoundary`. Standalone: the SDK's `MFEErrorBoundary` in `main.tsx` (logged, fallback shown) |
 
-## 12. Build, Image and Configuration
+## 12. Build, Image, Configuration and Release
 
 ### 12.1 Build (`rsbuild.config.ts`)
 
@@ -350,8 +352,27 @@ The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the
 
 | Variable | When | Default | Note |
 |---|---|---|---|
-| `PUBLIC_APP1_URL` | build (`config/app1Url.ts` → `source.define` as `import.meta.env.PUBLIC_APP1_URL`; Dockerfile `ARG`; CI repository variable) | `http://localhost:5001` | Public in the bundle; logout target without a shell. `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
+| `PUBLIC_APP1_URL` | build (`config/app1Url.ts` → `source.define` as `import.meta.env.PUBLIC_APP1_URL`; Dockerfile `ARG`; CI repository variable) | `http://localhost:5001` | Public in the bundle; logout target without a shell. Build time only, so one release serves one environment (§15 item 14). `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
 | `VITE_APP1_URL` | **Deprecated** alias, read only when `PUBLIC_APP1_URL` is unset or empty (build warning; CI and release fall back to the repository variable of this name, release warns) | — | Remove in a major release |
+
+### 12.5 Release
+
+A tag `vX.Y.Z` (or a manual run with a tag input) runs `.github/workflows/release.yml`. Runbook: [`docs/runbook-release.md`](../runbook-release.md).
+
+| Job | Does | Fails when |
+|---|---|---|
+| `validate-test`, `validate-quality` | Same as CI | Tests, the 95% gate, lint, audit |
+| `build` | `verify-release-tag.sh` (tag equals the checked-out HEAD), `verify-changelog-entry.sh`, `PUBLIC_APP1_URL` check, `prepare-release-asset.sh` (`dist` tarball, checksum, `remote-manifest-entry.json`) | The tag is not HEAD; no `## [X.Y.Z]` section; `PUBLIC_APP1_URL` is not `https://` |
+| `docker` | `build-push-action` pushes **by digest only** (`push-by-digest=true`, `provenance: mode=max`, `sbom: true`); Trivy CRITICAL/HIGH and the CycloneDX SBOM on that digest; `export-image-provenance.sh`; Cosign keyless sign and verify; then `tag-signed-image.sh` adds `X.Y.Z`, `X.Y`, `X` and `latest` (no `-` in the tag) with `docker buildx imagetools create` and checks that each resolves to the signed digest | Trivy finds a fixable CRITICAL/HIGH; no provenance in the image index; signing fails; a tag resolves to another digest |
+| `publish` | `extract-release-notes.sh` (the CHANGELOG section plus image and digest), then `create-github-release.sh` | Any asset missing |
+
+Release assets: `mfe-dashboard_<tag>_dist.tar.gz`, `mfe-dashboard_<tag>_remote-manifest-entry.json`, `checksums.txt` (sha256 of those two), `provenance.slsa.json`, `sbom.cyclonedx.json`.
+
+Provenance is a BuildKit attestation stored in the image index, not a Cosign attestation. `export-image-provenance.sh` reads it with `docker buildx imagetools inspect --format '{{ json .Provenance }}'` (an SLSA v1 predicate: `buildDefinition`, `runDetails`). Check it with the same command; check the signature with `cosign verify` and the tag identity in the runbook.
+
+Tags are added last, so a failed scan, provenance export or signature leaves only an untagged digest in GHCR: no version tag, no `latest`, no GitHub Release. (`v0.1.0` predates this and left an unsigned `0.1.0` tag.) A rerun checks out the same tag and scripts, so a fix to the workflow ships as the next patch version.
+
+There is no deploy job. To deploy, copy the `app2` object from the release's `remote-manifest-entry.json` into the environment's manifest, with `entry` made absolute, and release together with a web-shell on the same platform packages (§12.1).
 
 ## 13. Security
 
@@ -362,7 +383,7 @@ The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the
 | HTML injection | No `dangerouslySetInnerHTML` (lint `no-unsafe-html`); all text is React-escaped |
 | CSP | No inline scripts or styles in the build; no `eval` / `new Function` (lint); no third-party origins (fonts self-hosted). The image's document CSP is same-origin only and was checked in Chrome with no violations |
 | Clickjacking, sniffing, indexing | `frame-ancestors 'none'` + `X-Frame-Options: DENY`, `nosniff`, `X-Robots-Tag: noindex` on the demo document |
-| Supply chain | Image digest-pinned, Trivy (CRITICAL/HIGH/UNKNOWN on PRs), SBOM, Cosign keyless signature; the shell pins `remoteEntry.js` by SRI in its manifest |
+| Supply chain | Base images digest-pinned; Trivy (CRITICAL/HIGH/UNKNOWN on PRs, CRITICAL/HIGH on tags); CycloneDX SBOM; BuildKit SLSA provenance in the image index, exported to the GitHub Release; Cosign keyless signature (§12.5); the shell pins `remoteEntry.js` by SRI in its manifest |
 | Fixture data | Sample names and emails only; not accounts |
 
 ## 14. Testing
@@ -376,7 +397,7 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
 | Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files, security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.3% / 97.8% / 100% / 99.3% with 110 tests in 22 files.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.3% / 97.5% / 100% / 99.3% with 115 tests in 22 files.
 
 ## 15. Open Items
 
@@ -391,4 +412,6 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 9 | Layout uses logical classes (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`, `rtl:` for the sidebar slide), so it follows `dir`. Still needed for RTL: the shell setting `<html dir>` for the locale, an Arabic catalog, and a check of directional icons (chevrons) | web-shell, mfe-dashboard |
 | 10 | Logs: failed loads only. No metrics (`getServiceMeter`) yet, and source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
 | 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_app2`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
-| 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6) | web-shell, platform deployment |
+| 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.1.1` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
+| 13 | The unsigned `0.1.0` image (no GitHub Release) is still in GHCR. Delete package version `1507080606`; that needs a token with `delete:packages` | maintainers |
+| 14 | `PUBLIC_APP1_URL` (standalone logout target) is fixed at build time, so one release serves one environment (`v0.1.1`: `https://app.dev.bcbpsolutions.com`). Read it at runtime once the SDK's runtime config has a sign-in URL field (`../platform-reactcommon-runtime-config-sign-in-url.md`, frontend workspace) | platform-reactcommon, mfe-dashboard |

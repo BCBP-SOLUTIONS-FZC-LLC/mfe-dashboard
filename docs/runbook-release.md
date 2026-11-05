@@ -18,6 +18,22 @@
 
 The Git tag keeps the `v`. `docker/metadata-action` `{{version}}` strips it. `v1.2.3` publishes `1.2.3`, `1.2`, `1`, and `latest`. A pre-release `v1.2.3-rc.1` publishes `1.2.3-rc.1` only.
 
+## Export SLSA provenance failed
+
+`build-push-action` (`provenance: mode=max`) stores provenance as a BuildKit attestation in the image index. `export-image-provenance.sh` reads it with `docker buildx imagetools inspect <image>@<digest> --format '{{ json .Provenance }}'` and fails when the result is empty. Run the same command locally (after `docker login ghcr.io`) to see what the image has. `cosign download attestation` finds nothing here: Cosign attestations are a different store.
+
+## The docker job failed after the push
+
+The docker job pushes the image **by digest only**, then scans, exports provenance and signs; `tag-signed-image.sh` adds `X.Y.Z`, `X.Y`, `X` and `latest` last. A failure before that step leaves an untagged version in GHCR and no GitHub Release; nothing a consumer pulls by tag changed. Delete the untagged package version if you want it gone.
+
+- **A flaky step (registry, Sigstore, Trivy DB download):** re-run the failed jobs.
+- **Trivy found a fixable CRITICAL/HIGH:** see [runbook-image-scan.md](runbook-image-scan.md); the fix is a code change, so it ships as the next patch version.
+- **A bug in the workflow or scripts:** a rerun checks out the same tag with the same scripts, and moving a tag needs a force push. Fix it on `main`, add `## [X.Y.Z+1]`, and tag that. Mark the failed version "do not use" in VERSIONING (`v0.1.0`, from before tags were added last, is the example).
+
+## `Tag the signed image` failed
+
+A tag resolved to a digest other than the signed one. `docker buildx imagetools create` with one source should copy the index unchanged; inspect it with `docker buildx imagetools inspect <tag>`. Do not re-tag by hand with a different digest: the Cosign signature covers only the signed one.
+
 ## Publish did not create the GitHub Release
 
 `publish` waits for the docker job. A Trivy failure, a Cosign failure, or an empty changelog section stops it. The release asset name is `mfe-dashboard_<tag>_dist.tar.gz`. There is no cluster deploy after publish.

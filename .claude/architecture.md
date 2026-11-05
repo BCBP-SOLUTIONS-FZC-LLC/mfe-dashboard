@@ -36,7 +36,10 @@ mfe-dashboard/
 ├── config/app1Url.ts              PUBLIC_APP1_URL → deprecated VITE_APP1_URL → http://localhost:5001
 ├── vitest.config.ts               happy-dom; test/{unit,integration,e2e}; coverage on src/
 ├── eslint.config.js               @bcbp-solutions-fzc-llc/eslint-plugin + React hooks (as web-shell)
-└── .github/                       ci.yml, validate-test.yml, validate-quality.yml, changelog-check.yml, release.yml, scripts/
+└── .github/                       ci.yml, validate-test.yml, validate-quality.yml, changelog-check.yml, release.yml,
+                                   scripts/ (coverage gate, smoke, release: verify-*, prepare-release-asset,
+                                   export-image-provenance, tag-signed-image, extract-release-notes,
+                                   create-github-release)
 ```
 
 ## Layers
