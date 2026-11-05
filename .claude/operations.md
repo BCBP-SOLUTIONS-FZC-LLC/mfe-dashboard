@@ -48,6 +48,10 @@ Port 5002 may already be taken on this machine by another process; preview on an
 
 `release.yml` builds the image (tags without `v`), SBOM, provenance (read from the image index), Cosign signature, version tags and a GitHub Release with the `dist` tarball and `remote-manifest-entry.json`. No deploy job. The image is pushed by digest and tagged only after Trivy, provenance and the signature (`tag-signed-image.sh`). A flaky failure can be re-run; a bug in the workflow cannot (the rerun uses the tag's scripts) and ships as the next patch, never by moving the tag. Detail: [LLD §12.5](../docs/lld/mfe-dashboard-lld.md#125-release), [`docs/runbook-release.md`](../docs/runbook-release.md).
 
+## Dependabot
+
+`.github/dependabot.yml`: weekly npm, Docker and Actions updates. The npm job needs the Dependabot secret `PACKAGES_READ_TOKEN` (reads `npm.pkg.github.com`; created by a repo or org admin), or it fails with a 401 on the platform packages. It ignores `@bcbp-solutions-fzc-llc/*`: upgrade those by hand (below).
+
 ## Upgrading the Platform Packages
 
 1. Check web-shell's versions (`../web-shell/package.json`); the SDK dev dependency must equal web-shell's.

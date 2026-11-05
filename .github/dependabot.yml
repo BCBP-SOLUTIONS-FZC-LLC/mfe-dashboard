@@ -1,12 +1,30 @@
 version: 2
 
+# @bcbp-solutions-fzc-llc/* come from GitHub Packages (.npmrc). Dependabot has no access of its own:
+# without this registry every npm run fails with a 401 (private_source_authentication_failure),
+# also for public packages, since regenerating package-lock.json resolves the private ones too.
+# PACKAGES_READ_TOKEN is a Dependabot secret (Settings → Secrets and variables → Dependabot; or an
+# organization Dependabot secret): a token that can read the org's packages (classic PAT with
+# read:packages, or a fine-grained token with Packages: read on the organization).
+registries:
+  github-packages:
+    type: npm-registry
+    url: https://npm.pkg.github.com
+    token: ${{secrets.PACKAGES_READ_TOKEN}}
+
 updates:
   - package-ecosystem: npm
     directory: /
+    registries: [github-packages]
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
     labels: [dependencies, npm]
+    ignore:
+      # The platform packages move together and in step with web-shell (all three on web-shell's
+      # version; the preset's SdkVersionPlugin fails the build otherwise). Upgrade them by hand
+      # (.claude/operations.md "Upgrading the Platform Packages"), never one at a time.
+      - dependency-name: "@bcbp-solutions-fzc-llc/*"
 
   - package-ecosystem: docker
     directory: /
