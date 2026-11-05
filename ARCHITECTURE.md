@@ -56,14 +56,14 @@ flowchart TB
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` |
 | Per-app storage | `storage('dashboard')` |
 
-`npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports.
+`npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports, metrics not through `frontend-sdk/metrics` in `src/metrics.ts`, host-page start-up outside `src/standalone.ts`, shell-only SDK APIs, and `console` logging.
 
 ## Federation
 
 Rsbuild 2 with the SDK's plugin (`rsbuild.config.ts`, `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })`), Module Federation v1. One `rsbuild build` makes two environments: **remote** (`remoteEntry.js` and chunks; the SDK from the shell) and **standalone** (`index.html` and `assets/`; the SDK bundled).
 
 - `remoteEntry.js` defines `var __platform_mfe_dashboard` synchronously. Only async chunks are split: a split entry would start asynchronously and leave `window.__platform_mfe_dashboard` a Promise, which `loadRemote` refuses. The dev server has no HMR or live-reload client for the same reason.
-- The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and seven SDK subpaths (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.4`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
+- The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and eight SDK subpaths (`auth`, `config`, `i18n`, `logging`, `metrics`, `problem`, `react`, `storage`; `^1.0.0-alpha.5`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
 - `react-router-dom` is not shared; the remote runs its own router.
 - `test/integration/remote-entry.test.tsx` builds the remote and loads it through `init(shareScope)` / `get('./App')`, as web-shell does.
 
@@ -157,7 +157,7 @@ The SDK clears both on sign-out and workspace switch, refuses token-like keys, a
 
 ## Image
 
-nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standalone document a same-origin-only CSP (`frame-ancestors 'none'`), `X-Frame-Options: DENY`, `Permissions-Policy` and `X-Robots-Tag: noindex` (`nginx/document-headers.conf`); gzip is on and `server_tokens` off. Fonts are self-hosted (`@fontsource-variable/geist` and `/inter`, standalone only; the same packages and Tailwind font stack as web-shell). Each build writes `remote-manifest-entry.json`: web-shell's manifest entry for this build with `remoteEntry.js`'s sha384 integrity, which the smoke script compares with the served file. The smoke script checks the headers.
+nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standalone document a same-origin-only CSP (`frame-ancestors 'none'`), `X-Frame-Options: DENY`, `Permissions-Policy` and `X-Robots-Tag: noindex` (`nginx/document-headers.conf`); gzip is on and `server_tokens` off. Routing follows the platform's SPA rule (platform-reactcommon `examples/cloudfront/spa-rewrite.js`): only a path without a static-asset extension gets `index.html`; a missing file, anything under `/api`, `/otel`, `/csp-report`, `/config`, `/remotes`, and dotfiles are `404`. Fonts are self-hosted (`@fontsource-variable/geist` and `/inter`, standalone only; the same packages and Tailwind font stack as web-shell). Each build writes `remote-manifest-entry.json`: web-shell's manifest entry for this build with `remoteEntry.js`'s sha384 integrity, which the smoke script compares with the served file. The smoke script checks the headers.
 
 `Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `PLATFORM_ENVIRONMENT` (default `prod`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. `/config/runtime.json` is served `no-cache` and is a 404 when absent; an environment mounts its own file over the shipped default to set `auth.signInUrl`. `.dockerignore` excludes `.env`, so values come in as build args.
 

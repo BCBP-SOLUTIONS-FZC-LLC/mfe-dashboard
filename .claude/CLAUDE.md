@@ -44,6 +44,7 @@ One test: `npx vitest run test/unit/authz/permissions.test.tsx -t "read-only"`. 
 - **Popups and dialogs** use `useDismiss` (outside press, Escape, menu arrow keys) and `useFocusTrap`; do not hand-roll document listeners.
 - **Diagrams:** edit `docs/architecture/mermaid/*.mmd` and the matching fence in `ARCHITECTURE.md` together; `test/unit/docs/diagrams.test.ts` fails when they differ.
 - **Changelog:** a PR touching `src/`, dependencies, the Dockerfile, nginx, `rsbuild.config.ts` or `index.html` adds a line under `[Unreleased]` (`changelog` check).
+- **Metrics** go through the SDK's `getServiceMeter` only, defined in `src/metrics.ts` (Tier 3 `portal_dashboard_*`, closed label value sets) and listed in `docs/observability/metrics.md` in the same PR; `test/unit/metrics` enforces the observability standard. Never a `platform_*` or `portal_*` name without registry approval.
 - **Coverage gate** is 95% on all four metrics; do not lower it.
 - **Sibling repos are read-only** from here (`../web-shell`, platform-reactcommon, IAM). Cross-team asks go in a `.md` in `/Users/vijayaragavan/XPertPMS/frontend/` for the user to share.
 

@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.15 | 2026-11-05 | Metrics per the Enterprise Platform Observability Standard: three Tier 3 `portal_dashboard_*` metrics through SDK `/metrics` (§5, §15 item 10), CI validation in `test/unit/metrics`; SDK and platform-reactcommon audit (§5), nginx follows the platform SPA rule (§12.3); second audit fixes (standalone `test` logging, `useDismiss`, build-time `ENVIRONMENTS`/`DOMAINS` checks, CORP) |
 | 1.14 | 2026-11-05 | Release `v0.3.0` (remote `dashboard`); open item 15 at its deployment step |
 | 1.13 | 2026-11-05 | Remote renamed `app2` → `dashboard` (container, global `__platform_mfe_dashboard`, manifest key, message namespace, storage, log label; §4, §5, §9, §10); open item 15 (switch together with web-shell) |
 | 1.12 | 2026-11-05 | Release `v0.2.0` (alpha.5); open item 14 at its last step |
@@ -122,7 +123,7 @@ This is the SemVer surface ([VERSIONING.md](../../VERSIONING.md)).
 | Chunk loading | Relative to `remoteEntry.js` (`self.rspackChunk_platform_mfe_dashboard`); CSS is a lazy chunk under `assets/async/` |
 | Images and fonts | Imported from `src/`, so they are emitted under `assets/` and resolved against the remote's public path (where `remoteEntry.js` came from). Never root-relative: inside web-shell `/image/…` resolves on the shell's origin (web-shell #29 found the logo broken this way). `public/` holds only the standalone favicons. `dependency-rules.test.ts` and `remote-entry.test.tsx` check it |
 | Split chunks | Async only (`splitChunks: { preset: 'none', chunks: 'async' }`); a split entry would make `window.__platform_mfe_dashboard` a Promise, which `loadRemote` refuses |
-| Manifest entry (shell side) | `"dashboard": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`; `integrity` required outside local, dev and test. Every build writes it to `dist/remote-manifest-entry.json` (`config/remote-manifest-entry.mjs`, the preset's `integrityOf` over the built `remoteEntry.js`); the image serves it at `/remote-manifest-entry.json` and each release attaches it as `mfe-dashboard_<tag>_remote-manifest-entry.json`. The deploy makes `entry` absolute |
+| Manifest entry (shell side) | `"dashboard": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`; `integrity` required outside local and dev. Every build writes it to `dist/remote-manifest-entry.json` (`config/remote-manifest-entry.mjs`, the preset's `integrityOf` over the built `remoteEntry.js`); the image serves it at `/remote-manifest-entry.json` and each release attaches it as `mfe-dashboard_<tag>_remote-manifest-entry.json`. The deploy makes `entry` absolute |
 | Chunk integrity | Every lazy chunk, scripts and (since `1.0.0-alpha.4`) stylesheets, is pinned by sha384 inside `remoteEntry.js` (the preset's `ChunkIntegrityPlugin`; the runtime sets `link.integrity` for CSS); a swapped chunk is refused |
 
 ### 4.2 Shared modules
@@ -132,7 +133,7 @@ The preset's `sharedFor('remote')` configures `react`, `react/jsx-runtime`, `rea
 | Share key | `requiredVersion` | Notes |
 |---|---|---|
 | `react`, `react/jsx-runtime` | `^19.0.0` | strict singleton |
-| `@bcbp-solutions-fzc-llc/frontend-sdk/{auth,config,i18n,logging,problem,react,storage}` | `^1.0.0-alpha.5` (the preset's SDK version) | `import: false`: never bundled, no fallback; the load fails without the shell's copy |
+| `@bcbp-solutions-fzc-llc/frontend-sdk/{auth,config,i18n,logging,metrics,problem,react,storage}` | `^1.0.0-alpha.5` (the preset's SDK version) | `import: false`: never bundled, no fallback; the load fails without the shell's copy |
 
 `react-dom` is used only by the standalone entry (`main.tsx`), and `@opentelemetry/api` not at all, so neither appears in the remote. `react-router-dom` is **not** shared; the remote brings its own router (§7.1). `test/integration/remote-entry.test.tsx` checks that every share key is one the shell provides and that no SDK code is in the bundle.
 
@@ -157,7 +158,9 @@ web-shell passes neither today. A new required prop is a MAJOR change.
 
 ## 5. Platform SDK Usage
 
-The rule: anything the SDK provides is used from the SDK, through public subpaths only. `npm run lint` (`@bcbp-solutions-fzc-llc/eslint-plugin`: `no-raw-storage`, `no-sdk-deep-import`, `no-sdk-root-import`, `no-unsafe-html`, `no-identity-headers`, `no-eval`, …) and `test/unit/sdk/dependency-rules.test.ts` enforce it.
+The rule: anything the SDK provides is used from the SDK, through public subpaths only. `npm run lint` (`@bcbp-solutions-fzc-llc/eslint-plugin`: `no-raw-storage`, `no-sdk-deep-import`, `no-sdk-root-import`, `no-unsafe-html`, `no-identity-headers`, `no-eval`, …) and `test/unit/sdk/dependency-rules.test.ts` enforce it. The latter also keeps metrics in `src/metrics.ts` through `/metrics` (no OpenTelemetry or Prometheus client), host-page start-up (`initializeCore`, runtime config) in `src/standalone.ts`, shell-only APIs (manifest, `loadRemote`, auth, flags, telemetry start) out of `src/`, and `console` out except for the standalone config warning.
+
+Audit (2026-11-05), every SDK export against `src/`: nothing the SDK provides is reimplemented. Our own helpers have no SDK counterpart: `calendarDate` (the SDK formats a `Date`, it does not parse a calendar day), `workspaceBasename` (composes `slugFromPath` and `workspacePathPrefix`), `useNow`, `useDismiss`, `useFocusTrap`, the theme (stored with `storage()`), and `defaultLogout`'s full navigation to an absolute sign-in URL (`navigate()` takes same-origin paths only). `recordMetric` used to check label values again after the SDK; it now leaves run-time validation to the SDK. One deliberate gap-filler: `standalone.ts`'s `console.warn`, because the SDK logger is silent before logging starts outside local and dev. The rest of platform-reactcommon: `webpack-preset` is used for the build (`pluginPlatform`), the container name and SRI (`containerName`, `integrityOf` in `config/remote-manifest-entry.mjs`; the preset has no manifest-entry generator); `eslint-plugin` as is; the SDK's `/testing` for every test; the observability registry is read from the SDK, not copied. One divergence was fixed: nginx's SPA fallback now follows `examples/cloudfront/spa-rewrite.js` (§12.3). An independent second audit (library source and docs, not only its types) found and fixed: `standalone.ts` treated `test` as an environment where the SDK logger writes to the console (the SDK's rule is no identity, `local` or `dev`), so a config failure in `test` was silent; `DashboardPage` closed the filter drawer with its own Escape listener instead of `useDismiss`; `PLATFORM_ENVIRONMENT` and `ownerDomain` are now checked against the SDK's `ENVIRONMENTS` and `DOMAINS` at build time; remote assets send `Cross-Origin-Resource-Policy: cross-origin`. Kept on purpose: `src/metrics.ts` makes instruments per call, not once at module scope (the SDK binds an instrument to the runtime it was made in, so module-scope instruments would outlive a test platform or a standalone start-up; the SDK keeps one per name). Copies the library only offers as examples, not as code to import: nginx's SPA lists (`spa-rewrite.js`, checked by the smoke script) and the standalone page's CSP (stricter than none, but not `buildCsp()`'s: no Trusted Types policy or `/csp-report` on the standalone page, which is not deployed behind CloudFront). The CI scripts under `.github/scripts/` started as copies of platform-reactcommon's; they are this repository's own CI (its workflows are for its pnpm monorepo, not published for reuse).
 
 | Concern | SDK API | Used in |
 |---|---|---|
@@ -177,9 +180,10 @@ The rule: anything the SDK provides is used from the SDK, through public subpath
 | Per-app storage | `storage('dashboard')` (`/storage`) | `theme/themeMode.ts` |
 | Standalone host page | `initializeCore` (`/core`), `loadRuntimeConfig`, `setRuntimeConfig` (`/config`), since `1.0.0-alpha.5` | `standalone.ts` (from `main.tsx` only; never in the remote) |
 | Standalone logout target | `tryGetConfig()?.auth.signInUrl` (`/config`) | `AppShellLayout.tsx` `defaultLogout` |
+| Metrics | `getServiceMeter({ mfe: 'dashboard' })` (`/metrics`): Tier 3 `portal_dashboard_ticket_loads_total`, `portal_dashboard_ticket_load_duration_seconds`, `portal_dashboard_step_up_requests_total`; the SDK injects `domain`, `service`, `environment` and enforces the observability standard; the shell exports. Inventory and rules: [`docs/observability/metrics.md`](../observability/metrics.md) | `metrics.ts`, `useDashboardData.ts`, `DashboardPage.tsx` |
 | Tests | `createTestPlatform` (`/testing`) | `test/fixtures/platform.ts`, `test/setup.ts` |
 
-Not used yet, and the place to start when the need arrives: `useApiClient` / `createApiClient` (real APIs, §15), `useFeatureFlag`, `Can`, `useAppUpdate`, `useOnlineStatus`, `getServiceMeter` (metrics).
+Not used yet, and the place to start when the need arrives: `useApiClient` / `createApiClient` (real APIs, §15), `useFeatureFlag`, `Can`, `useAppUpdate`, `useOnlineStatus`.
 
 Standalone, with no shell, every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll`, the default locale, and `storage()` writes nothing. The standalone page does set the page identity and runtime config itself (§7.2), as the SDK allows a remote's own page with no shell since `1.0.0-alpha.5`.
 
@@ -305,7 +309,7 @@ No tokens, user data or permissions are stored by this repo. Raw `localStorage` 
 | Filters match nothing / search matches nothing | "No tickets found" with Clear Filters / "No matching tickets" |
 | No `read:members` / `manage:members` | Link hidden; route redirects to the dashboard |
 | No shell `signOut` | Fallback navigation to `auth.signInUrl`, else `PUBLIC_APP1_URL` |
-| Standalone `/config/runtime.json` missing, invalid or slow (> 5 s) | `warn` log (SDK logger; plus `console.warn` in staging and prod, where the SDK logger is silent before logging starts); the page renders with no config and logout uses `PUBLIC_APP1_URL`. Deploy check in `docs/runbook-release.md` |
+| Standalone `/config/runtime.json` missing, invalid or slow (> 5 s) | `warn` log (SDK logger; plus `console.warn` in test, staging and prod, where the SDK logger is silent before logging starts); the page renders with no config and logout uses `PUBLIC_APP1_URL`. Deploy check in `docs/runbook-release.md` |
 | Reload of a nested standalone route (`/dashboard/user-management`) | Works: the standalone HTML links `/assets/…` and `/favicon.png` root-absolute (`assetPrefix: '/'`); the CI smoke script checks it |
 | `#app` missing (standalone) | `main.tsx` throws before render |
 | Ticket load fails with an API error | `error` state: alert with the SDK's problem message and Retry; rows cleared |
@@ -353,10 +357,14 @@ The preset sets `assetPrefix: 'auto'`: the remote's chunks and images resolve fr
 |---|---|
 | `/healthz` | `200 ok` |
 | `/` | standalone document (`id="app"`) |
-| `/remoteEntry.js` | `Cache-Control: no-cache`, `Access-Control-Allow-Origin: *` |
-| hashed chunks next to the entry, `/assets/*` | immutable, 1 year, CORS |
+| `/remoteEntry.js` | `Cache-Control: no-cache`, `Access-Control-Allow-Origin: *`, `Cross-Origin-Resource-Policy: cross-origin` |
+| hashed chunks next to the entry, `/assets/*` (`^~`) | immutable, 1 year, CORS, `Cross-Origin-Resource-Policy: cross-origin` (platform guidance for a remote on another origin; `*` rather than the shell's origin because loads carry no credentials); `404` when absent |
 | `/config/runtime.json` | The standalone page's SDK runtime config, `no-cache`; `404` when absent, never the SPA fallback. The image ships `public/config/runtime.json` (web-shell's defaults, no `signInUrl`); each environment mounts its own over it |
-| anything else | `try_files` → `index.html` |
+| `/api`, `/otel`, `/csp-report`, `/config`, `/remotes` (other files), and any dotfile (`/.env`, `/.git/…`) | `404` |
+| a path whose last segment ends in a static-asset extension (`.js`, `.css`, `.json`, `.png`, `.woff2`, … : the list in `spa-rewrite.js`) | the file, `no-cache` (favicons, `remote-manifest-entry.json`); `404` when absent, never `index.html` |
+| any other path (app routes, including dotted ones such as `/users/john.doe`) | `index.html` |
+
+The last three rows are the platform's SPA rule, as CloudFront applies it (platform-reactcommon `examples/cloudfront/spa-rewrite.js`); the CI smoke script checks them. Until 0.3.0 this image fell back to `index.html` for every missing path, so a missing chunk or JSON file came back as HTML.
 | every response | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` (`nginx/security-headers.conf`) |
 | the document (`/`, `/index.html`, the fallback) | CSP `default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`, `X-Frame-Options: DENY`, `Permissions-Policy`, `X-Robots-Tag: noindex, nofollow`, `no-cache` (`nginx/document-headers.conf`) |
 
@@ -412,9 +420,9 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/unit/<area>` (`app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk`) | `npm run test:unit` | One area of `src/` each; the catalog and SDK-rule checks |
 | `test/integration` | `npm run test:integration` | The built `remoteEntry.js` (temp Rsbuild build of the `remote` environment) loaded through `init(shareScope)` / `get('./App')` and rendered with the shell's React and SDK |
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
-| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, security headers, no nginx version, gzip |
+| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, the platform SPA rule (8 cases), security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.4% / 97.3% / 100% / 99.3% with 128 tests in 26 files.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.4% / 97.6% / 100% / 99.5% with 144 tests in 28 files.
 
 ## 15. Open Items
 
@@ -427,7 +435,7 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 6 | The image serves the remote from nginx; the platform's CloudFront/S3 layout (`/remotes/dashboard/<version>/`) is not yet wired | Platform deployment |
 | 8 | The remote ships its own Tailwind preflight, every daisyUI theme (~180 kB CSS, a 78 kB theme chunk) and `html, body` styles, and `applyAppTheme` sets `data-theme` on the shell's `<html>`. Theme ownership and shared CSS need a decision with web-shell: options in `../mfe-dashboard-theme-and-css-ownership.md` (frontend workspace) | web-shell, mfe-dashboard |
 | 9 | Layout uses logical classes (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`, `rtl:` for the sidebar slide), so it follows `dir`. Still needed for RTL: the shell setting `<html dir>` for the locale, an Arabic catalog, and a check of directional icons (chevrons) | web-shell, mfe-dashboard |
-| 10 | Logs: failed loads only. No metrics (`getServiceMeter`) yet, and source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
+| 10 | Logs: failed loads only. Metrics: three Tier 3 metrics (ticket loads, load duration, step-up requests; `docs/observability/metrics.md`); the proposed recording rules, alerts and SLOs there need an owner in the platform's Prometheus/Grafana. Source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
 | 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_dashboard`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
 | 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.3.0` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
 | 13 | The unsigned `0.1.0` image (no GitHub Release) is still in GHCR. Delete package version `1507080606`; that needs a token with `delete:packages` | maintainers |

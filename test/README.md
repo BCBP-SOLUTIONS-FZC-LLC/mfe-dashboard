@@ -21,7 +21,7 @@ The Docker image is smoke-tested in CI by `.github/scripts/smoke-tests.sh`: size
 | `theme/` | Theme mode and app theme in `storage('dashboard')` |
 | `i18n/` | `dashboard` messages through the SDK (plurals, fallback), and the `en` catalog against the source: no missing keys, no unused keys, every message formats |
 | `docs/` | `ARCHITECTURE.md`'s mermaid fences equal `docs/architecture/mermaid/*.mmd` |
-| `sdk/` | Dependency rules: the remote uses the platform SDK and does not reimplement it (no `Intl` formatters, `fetch`, token or cookie reading, role-name checks, browser storage, hand-made workspace paths or sign-out; SDK imports only from public subpaths; the SDK stays a peer dependency) |
+| `sdk/` | Dependency rules: the remote uses the platform SDK and does not reimplement it (no `Intl` formatters, `fetch`, token or cookie reading, role-name checks, browser storage, hand-made workspace paths or sign-out, metrics outside `src/metrics.ts` or not through the SDK, OpenTelemetry or Prometheus clients, host-page start-up outside `src/standalone.ts`, shell-only APIs (manifest, remotes, auth, flags), `console` outside the standalone config warning; SDK imports only from public subpaths; the SDK stays a peer dependency) |
 
 ## `integration/remote-entry.test.tsx`
 
@@ -36,13 +36,17 @@ Builds the `remote` environment of `rsbuild.config.ts` into a temporary director
 
 The only stub is the network: `<script>` and `<link>` tags the container appends are answered from the build output.
 
+## Metrics (`unit/metrics/metrics.test.tsx`)
+
+CI validation of the observability standard for `src/metrics.ts`: Tier 3 namespace (`portal_dashboard_*`, not `platform_*`, a registry or a legacy name), `_total` / `_seconds` suffixes, no central or prohibited label and at most 8, closed value sets (registry vocabularies for registry labels), SDK acceptance with `domain="portal"`, `service="dashboard"` injected, and the inventory table in `docs/observability/metrics.md`. Then what is recorded: finished loads by view, trigger and outcome, errors, no superseded loads, the step-up click, dropped out-of-set values, and nothing (one warning) without the manifest.
+
 ## Standalone host page (`unit/app/standalone-*.test.ts`)
 
 `src/standalone.ts` sets the page identity and runtime config, which the SDK allows only once per page. Each test file has its own SDK, and `setup.ts` starts the test platform in `beforeEach`, so these files do their work in `beforeAll`, on an SDK in the same state `main.tsx` sees:
 
 - `standalone-config.test.ts`: the identity is `mfe-dashboard` / `portal`; `/config/runtime.json` is fetched once and set (the shipped `public/config/runtime.json` plus a `signInUrl`, so the strict SDK schema also validates the shipped file); logout goes to `auth.signInUrl`.
 - `standalone-no-config.test.ts`: a 404 is a warning (one console line in local, from the SDK), the page still starts with no config, and logout goes to `PUBLIC_APP1_URL`.
-- `standalone-no-config-prod.test.ts`: the same in `prod`, where the SDK logger is silent: `standalone.ts` writes one `console.warn`.
+- `standalone-no-config-prod.test.ts`, `standalone-no-config-test-env.test.ts`: the same in `prod` and `test`, where the SDK logger is silent (it writes to the console only with no identity, `local` or `dev`): `standalone.ts` writes one `console.warn`.
 - `standalone-build.test.ts`: `rsbuild.config.ts` gives the standalone environment `assetPrefix: '/'` and leaves the remote's to the preset.
 
 `shell-layout.test.tsx` covers a page that already has a config (nothing is fetched) and `main.test.ts` waits for `startStandalone` before the render.

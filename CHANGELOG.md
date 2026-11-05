@@ -6,6 +6,19 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+### Added
+
+- Metrics per the Enterprise Platform Observability Standard, through the SDK's `/metrics` (`getServiceMeter`), exported by the shell. There are three Tier 3 metrics: `portal_dashboard_ticket_loads_total` (`view`, `trigger`, `outcome`), `portal_dashboard_ticket_load_duration_seconds` (`view`, `outcome`) and `portal_dashboard_step_up_requests_total`. Every label has a closed value set (typed), and the SDK injects `domain`, `service` and `environment` and validates every point. No Tier 1 or Tier 2 metric applies, and none was invented. `test/unit/metrics` enforces the standard in CI (namespace, suffixes, required and prohibited labels, vocabularies, SDK acceptance) against the inventory in `docs/observability/metrics.md`, which also proposes recording rules, alerts and SLOs and has a runbook. The remote now also consumes the shell's SDK `/metrics` (web-shell already provides it).
+- `dependency-rules.test.ts` guards more SDK territory: metrics only through `frontend-sdk/metrics` in `src/metrics.ts` (no OpenTelemetry, Prometheus client or web-vitals library), host-page start-up only in `src/standalone.ts`, no shell-only SDK APIs (manifest, `loadRemote`, auth, flags, telemetry start) in `src/`, and no `console` except the standalone config warning. An audit of every SDK export against `src/` found no reimplementation; `recordMetric` no longer repeats the SDK's run-time label checks.
+
+### Fixed
+
+- In the `test` environment, a missing or invalid standalone `/config/runtime.json` was silent: `standalone.ts` assumed the SDK logger writes to the console in `test`, but the SDK's rule is no identity, `local` or `dev`. It now matches, with a `test` case.
+- The filter drawer closed on Escape through its own `document` listener; it now uses `useDismiss` like the other popups (a press outside closes it too, and focus returns to Filters). Its backdrop is no longer a button (focus never reaches it; the drawer has its own close button), so the catalog key `filters.close` is gone.
+- `PLATFORM_ENVIRONMENT` is checked against the SDK's `ENVIRONMENTS` at build time (an empty value means the default), and the manifest entry's `ownerDomain` against `DOMAINS`. Before this, a typo reached `initializeCore` or the shell's manifest check at run time.
+- `remoteEntry.js`, its chunks and `/assets/` send `Cross-Origin-Resource-Policy: cross-origin`, as platform-reactcommon's guidance for a remote on another origin asks; the smoke script checks it.
+- nginx follows the platform's SPA rule (platform-reactcommon `examples/cloudfront/spa-rewrite.js`), as CloudFront will. It used to fall back to `index.html` for every missing path, so a missing chunk, stylesheet or JSON file (`/assets/…`, `/config/…`) came back as an HTML page with status 200. Now only paths whose last segment has no static-asset extension get the document; missing files, the platform's pass-through prefixes (`/api`, `/otel`, `/csp-report`, `/config`, `/remotes`) and dotfiles are 404. `/assets/` is a `^~` prefix so it keeps its immutable and CORS headers. The smoke script checks eight cases.
+
 ## [0.3.0] - 2026-11-05
 
 The remote is renamed `app2` → `dashboard`. This breaks the shell contract: release and deploy together with web-shell #35, which loads `dashboard`. A shell that asks for `app2` cannot load this release. Dev manifests switch their key to `dashboard`, and the hosting path becomes `/remotes/dashboard/<version>/`.
@@ -30,7 +43,7 @@ Platform packages `1.0.0-alpha.5`: needs web-shell on alpha.5 (web-shell #31; an
 ### Fixed
 
 - Reloading a nested standalone route (`/dashboard/user-management`) left a blank page: the standalone HTML inherited the preset's `assetPrefix: 'auto'` and linked `assets/…` relatively, so nginx answered `/dashboard/assets/…` with `index.html`. The standalone environment now uses `assetPrefix: '/'`, and the smoke script loads a nested route's first script. The favicon link is root-absolute too.
-- A missing or invalid `/config/runtime.json` in staging or prod left no trace (the SDK logger is silent there before logging starts); the standalone page now also writes a `console.warn`. The release runbook has a deploy check for `auth.signInUrl`.
+- A missing or invalid `/config/runtime.json` in test, staging or prod left no trace (the SDK logger is silent there before logging starts); the standalone page now also writes a `console.warn`. The release runbook has a deploy check for `auth.signInUrl`.
 - `smoke-tests.sh` runs locally without `GITHUB_STEP_SUMMARY` or `GITHUB_REPOSITORY`.
 - The sidebar logo was broken inside web-shell (found by web-shell's contract suite, web-shell #29). `BrandLogo` used root-relative `/image/…` paths, which resolve on the shell's origin. The logos moved from `public/image/` to `src/assets/images/` and are imported, so they ship as `assets/<name>.<hash>.png` and load from the remote's public path. A source rule and an integration check stop root-relative image paths from coming back.
 

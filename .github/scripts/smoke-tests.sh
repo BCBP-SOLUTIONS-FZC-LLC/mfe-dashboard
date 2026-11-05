@@ -83,6 +83,30 @@ if [[ "${nested_type}" != application/javascript* ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::SPA rule"
+# platform-reactcommon examples/cloudfront/spa-rewrite.js, as nginx/default.conf applies it: routes
+# (no static-asset extension in the last segment) get the document; missing files, the platform's
+# pass-through prefixes and dotfiles are 404, never index.html.
+for check in \
+  "200 /dashboard/user-management" \
+  "200 /users/john.doe" \
+  "404 /assets/missing.js" \
+  "404 /missing.css" \
+  "404 /config/missing.json" \
+  "404 /remotes/missing" \
+  "404 /api/v1/missing" \
+  "404 /.env"; do
+  want=${check%% *}
+  path=${check#* }
+  got=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}${path}")
+  echo "${path}: ${got}"
+  if [ "${got}" != "${want}" ]; then
+    echo "::error file=nginx/default.conf,title=SPA rule::${path} answered ${got}, want ${want} (platform spa-rewrite.js rule)"
+    exit 1
+  fi
+done
+echo "::endgroup::"
+
 echo "::group::Runtime config"
 # The standalone page loads /config/runtime.json (src/standalone.ts); it must be JSON, not the SPA fallback.
 config_type=$(curl -s -o /dev/null -w '%{content_type}' "http://127.0.0.1:${PORT}/config/runtime.json")
@@ -125,7 +149,7 @@ if grep -qi '^Server: nginx/' <<<"${doc_headers}"; then
   echo "::error file=nginx/default.conf,title=Security headers::nginx reveals its version (server_tokens)"
   exit 1
 fi
-for header in "X-Content-Type-Options: nosniff" "Access-Control-Allow-Origin: *" "Content-Encoding: gzip"; do
+for header in "X-Content-Type-Options: nosniff" "Access-Control-Allow-Origin: *" "Cross-Origin-Resource-Policy: cross-origin" "Content-Encoding: gzip"; do
   if ! grep -qiF "${header}" <<<"${entry_headers}"; then
     echo "::error file=nginx/default.conf,title=Security headers::remoteEntry.js is missing '${header}'"
     exit 1
