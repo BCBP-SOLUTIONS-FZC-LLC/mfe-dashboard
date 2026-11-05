@@ -36,6 +36,8 @@
   "dashboard.refresh": "Refresh",
   "dashboard.mfaBanner": "MFA re-authentication required before final approval.",
   "dashboard.reauthenticate": "Re-authenticate",
+  "dashboard.loadFailed": "Tickets could not be loaded.",
+  "dashboard.retry": "Retry",
   "dashboard.partialFailure": "Some tender details could not be loaded. Tickets are retained below.",
   "dashboard.empty.title": "No tickets found",
   "dashboard.empty.hint": "Try adjusting your filters.",

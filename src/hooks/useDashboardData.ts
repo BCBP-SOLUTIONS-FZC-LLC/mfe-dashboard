@@ -1,9 +1,12 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
+import { getLogger } from '@bcbp-solutions-fzc-llc/frontend-sdk/logging'
 import { useApi } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { APP_ID } from '../i18n'
+import { calendarDate } from '../lib/dates'
 import { ticketsForView } from '../mocks/dashboardTickets'
 import type { DashboardFilters, DashboardView, TicketItem } from '../types/ticket'
 
-export type DashboardLoadState = 'loading' | 'ready' | 'empty' | 'partial_failure'
+export type DashboardLoadState = 'loading' | 'error' | 'ready' | 'empty' | 'partial_failure'
 
 type Options = {
   view: DashboardView
@@ -21,6 +24,18 @@ function delay(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Deadline filter on a ticket's due day, against the local day of `now`: 'overdue' is before today, 'week' is today and the next six days. */
+export function matchesDeadline(dueDate: string, deadline: string, now: Date): boolean {
+  if (deadline === 'all') return true
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const due = calendarDate(dueDate).getTime()
+  if (deadline === 'overdue') return due < today
+  if (deadline === 'week') return due >= today && due < today + 7 * DAY_MS
+  return true
+}
+
 function filterTickets(view: DashboardView, filters: DashboardFilters, canSeeAllTenders: boolean) {
   let data = ticketsForView(view, canSeeAllTenders)
   if (filters.status !== 'all') {
@@ -35,6 +50,10 @@ function filterTickets(view: DashboardView, filters: DashboardFilters, canSeeAll
   if (filters.tender !== 'all') {
     data = data.filter((t) => t.tenderTitle.toLowerCase().includes(filters.tender.toLowerCase()))
   }
+  if (filters.deadline !== 'all') {
+    const now = new Date()
+    data = data.filter((t) => matchesDeadline(t.dueDate, filters.deadline, now))
+  }
   return data
 }
 
@@ -47,7 +66,7 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
   const key = JSON.stringify([view, filters, canSeeAllTenders])
   const refreshRequested = useRef(false)
 
-  const { data, loading, reload } = useApi(async (_api, signal): Promise<Loaded> => {
+  const { data, error, loading, reload } = useApi(async (_api, signal): Promise<Loaded> => {
     const isRefresh = refreshRequested.current
     refreshRequested.current = false
     await delay(isRefresh ? 400 : 700, signal)
@@ -57,10 +76,22 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
   }, [key])
 
   // useApi keeps the last data while it loads: a refresh of the same query shows it, a new query
-  // (view or filters changed) is a fresh load.
+  // (view or filters changed) is a fresh load. An API error (ProblemError, timeout, network) is
+  // 'error' with the error; useApi drops the rows then, and throws any other exception to the
+  // error boundary (the shell's RemoteBoundary).
   const current = data?.key === key ? data : undefined
+  const failed = error !== undefined && !loading
+
+  // The SDK redacts the record and tags it with the remote; the shell exports it with its logs.
+  useEffect(() => {
+    if (error) {
+      getLogger({ mfe: APP_ID }).warn('dashboard tickets failed to load', { error, view })
+    }
+  }, [error, view])
   const loadState: DashboardLoadState = !current
-    ? 'loading'
+    ? failed
+      ? 'error'
+      : 'loading'
     : current.partialFailure
       ? 'partial_failure'
       : current.tickets.length === 0
@@ -72,6 +103,8 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
     tickets: current?.tickets ?? [],
     cachedAt: current?.cachedAt ?? null,
     refreshing: loading && current !== undefined,
+    /** The failed load's SDK ApiError, until a reload succeeds. */
+    error: failed ? error : undefined,
     refresh: () => {
       refreshRequested.current = true
       reload()

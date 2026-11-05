@@ -13,15 +13,16 @@ test -f release-asset.name || {
 
 ASSET_NAME=$(cat release-asset.name)
 CHECKSUM_FILE="${ASSET_NAME}.sha256"
+MANIFEST_ENTRY="mfe-dashboard_${RELEASE_TAG}_remote-manifest-entry.json"
 
-for f in release-notes.md "$ASSET_NAME" "$CHECKSUM_FILE" provenance.slsa.json sbom.cyclonedx.json; do
+for f in release-notes.md "$ASSET_NAME" "$CHECKSUM_FILE" "$MANIFEST_ENTRY" provenance.slsa.json sbom.cyclonedx.json; do
   test -f "$f" || {
     echo "::error::Release asset missing: ${f}"
     exit 1
   }
 done
 
-sha256sum "${ASSET_NAME}" > checksums.txt
+sha256sum "${ASSET_NAME}" "${MANIFEST_ENTRY}" > checksums.txt
 
 PRERELEASE_FLAG=""
 if echo "$RELEASE_TAG" | grep -q -- '-'; then
@@ -36,6 +37,7 @@ gh release create "$RELEASE_TAG" \
   --title "$RELEASE_TITLE" \
   --notes-file release-notes.md \
   "$ASSET_NAME" \
+  "$MANIFEST_ENTRY" \
   checksums.txt \
   provenance.slsa.json \
   sbom.cyclonedx.json \

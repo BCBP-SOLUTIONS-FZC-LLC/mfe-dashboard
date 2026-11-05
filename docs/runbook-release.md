@@ -10,9 +10,9 @@
 
 `extract-release-notes.sh` prints the body under `## [X.Y.Z]` until the next `## [` heading. An empty body fails the build job. Add the section, including the date (`## [X.Y.Z] - YYYY-MM-DD`), on the tagged commit. `[Unreleased]` alone is not enough once you are tagging.
 
-## Image built with the wrong shell origin
+## `PUBLIC_APP1_URL` not set
 
-`VITE_APP1_URL` is a build arg. The workflow uses the repository variable of that name, otherwise `http://localhost:5001`. A production tag built without the variable sends logout to localhost. Set the variable and re-run the workflow. The value is public in the bundle.
+`PUBLIC_APP1_URL` is a build arg for the image and the tarball. The build job's "Verify PUBLIC_APP1_URL is set for releases" step fails unless the repository variable is an `https://` URL, so a release can no longer send logout to localhost. Set the variable (Settings → Secrets and variables → Actions → Variables) and re-run the workflow. A variable still named `VITE_APP1_URL` (the deprecated name) is accepted, with a warning, until you rename it. The value is public in the bundle.
 
 ## Image tag looks wrong
 
@@ -29,3 +29,7 @@ Cosign identity for tags:
 ```
 
 OIDC issuer: `https://token.actions.githubusercontent.com`.
+
+## Web-shell's manifest entry
+
+Each release attaches `mfe-dashboard_<tag>_remote-manifest-entry.json` (also inside the dist tarball and served by the image at `/remote-manifest-entry.json`): `entry`, `version` (the tag without `v`), `ownerDomain` and the sha384 `integrity` of that release's `remoteEntry.js`. Copy the `app2` object into the environment's `/remotes/manifest.json` and set `entry` to the absolute URL the release is served from. A rebuilt `remoteEntry.js` has a different hash; always take the entry from the same release as the files.

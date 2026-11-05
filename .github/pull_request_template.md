@@ -30,11 +30,11 @@ Provide a clear description of the changes.
 
 ### Remote contract
 - [ ] Container `app2`, expose `./App`, and the preset version still load in the shell (`rsbuild.config.ts`; preset not newer than web-shell's SDK)
-- [ ] New `VITE_*` variables documented and given a Dockerfile `ARG` default when the image build needs them
+- [ ] New `PUBLIC_*` variables documented and given a Dockerfile `ARG` default when the image build needs them
 
 ### Security
 - [ ] `localStorage` is limited to the theme keys (`bcbp.themeMode`, `bcbp.appTheme`)
-- [ ] `VITE_APP1_URL` is not taken from the page URL
+- [ ] `PUBLIC_APP1_URL` is not taken from the page URL
 
 ---
 
@@ -44,4 +44,4 @@ Closes #<issue-id>
 ---
 
 ## Deployment Notes
-Mention anything operators need when upgrading (new `VITE_*` build args, remote URL changes, nginx path changes).
+Mention anything operators need when upgrading (new `PUBLIC_*` build args, remote URL changes, nginx path changes).

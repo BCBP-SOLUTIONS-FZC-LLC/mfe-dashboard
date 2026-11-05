@@ -7,17 +7,23 @@
 import { defineConfig } from '@rsbuild/core'
 import { pluginReact } from '@rsbuild/plugin-react'
 import { pluginPlatform } from '@bcbp-solutions-fzc-llc/webpack-preset/rsbuild'
+import { resolveApp1Url } from './config/app1Url'
 
 // Hashed CSS, fonts and images live under /assets/ (served immutable); the remote's JS stays next to
 // remoteEntry.js (the preset names it), the standalone page's JS goes to /assets/ too.
 const assets = { js: 'assets', css: 'assets', font: 'assets', image: 'assets', svg: 'assets', media: 'assets', wasm: 'assets', assets: 'assets' }
 
+const app1 = resolveApp1Url(process.env)
+if (app1.deprecated) {
+  console.warn('VITE_APP1_URL is deprecated: set PUBLIC_APP1_URL instead (same value).')
+}
+
 export default defineConfig({
   plugins: [pluginReact()],
   source: {
     define: {
-      // Where "Log out" goes when no shell signs the user out.
-      'import.meta.env.VITE_APP1_URL': JSON.stringify(process.env.VITE_APP1_URL ?? 'http://localhost:5001'),
+      // Where "Log out" goes when no shell signs the user out (config/app1Url.ts).
+      'import.meta.env.PUBLIC_APP1_URL': JSON.stringify(app1.url),
     },
   },
   output: {
@@ -29,8 +35,9 @@ export default defineConfig({
     inlineScripts: false,
     inlineStyles: false,
   },
-  // Root-relative url()s in the CSS point at files in public/; leave them as written.
-  tools: { cssLoader: { url: false } },
+  // Root-relative url()s in the CSS point at files in public/; leave them as written. Relative ones
+  // (the self-hosted font files) are bundled.
+  tools: { cssLoader: { url: { filter: (url: string) => !url.startsWith('/') } } },
   environments: {
     remote: {
       plugins: [pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })],

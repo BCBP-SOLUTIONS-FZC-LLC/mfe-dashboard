@@ -12,6 +12,7 @@ import {
   TicketTypeIcon,
 } from './DashboardIcons'
 import type { TicketItem } from '../../types/ticket'
+import { calendarDate } from '../../lib/dates'
 
 const slaDot = {
   on_track: 'bg-emerald-500',
@@ -20,7 +21,7 @@ const slaDot = {
 } as const
 
 function formatDue(iso: string) {
-  return formatDate(new Date(iso), { day: 'numeric', month: 'short', year: 'numeric' })
+  return formatDate(calendarDate(iso), { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export function TicketRow({ ticket }: { ticket: TicketItem }) {

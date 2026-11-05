@@ -1,12 +1,11 @@
 import type { DashboardView } from '../types/ticket'
 import { ticketsForView } from './dashboardTickets'
 
-export const KPI_COUNTS: Record<DashboardView, number> = {
-  'my-tickets': 12,
-  'awaiting-review': 5,
-  'awaiting-approval': 3,
-  delegated: 4,
-  'all-tenders': 18,
+const VIEWS: DashboardView[] = ['my-tickets', 'awaiting-review', 'awaiting-approval', 'delegated', 'all-tenders']
+
+/** Tickets per view (before filters), from the same rows the list shows. */
+export function kpiCounts(canSeeAllTenders: boolean): Record<DashboardView, number> {
+  return Object.fromEntries(VIEWS.map((v) => [v, ticketsForView(v, canSeeAllTenders).length])) as Record<DashboardView, number>
 }
 
 /** Unread notifications (no notifications service yet). */
@@ -20,5 +19,5 @@ export function slaOverviewForMyTickets() {
   const onTrack = tickets.filter((t) => t.slaState === 'on_track').length
   const warning = tickets.filter((t) => t.slaState === 'warning').length
   const breached = tickets.filter((t) => t.slaState === 'breached').length
-  return { total: KPI_COUNTS['my-tickets'], onTrack, warning, breached }
+  return { total: tickets.length, onTrack, warning, breached }
 }

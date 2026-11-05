@@ -108,7 +108,7 @@ export default function UserManagementPage() {
 
       <div className={`overflow-hidden rounded-xl border shadow-sm ${dashBorderClass} ${dashSurfaceClass}`}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[640px] border-collapse text-start text-sm">
             <thead>
               <tr className={`border-b text-xs font-semibold uppercase tracking-wide text-aura-muted ${dashBorderClass}`}>
                 <th className="px-4 py-3 font-semibold">{t('users.col.name')}</th>
@@ -117,7 +117,7 @@ export default function UserManagementPage() {
                 <th className="px-4 py-3 font-semibold">{t('users.col.department')}</th>
                 <th className="px-4 py-3 font-semibold">{t('users.col.status')}</th>
                 {canManage ? (
-                  <th className="px-4 py-3 font-semibold text-right">{t('users.col.actions')}</th>
+                  <th className="px-4 py-3 font-semibold text-end">{t('users.col.actions')}</th>
                 ) : null}
               </tr>
             </thead>
@@ -146,7 +146,7 @@ export default function UserManagementPage() {
                       </span>
                     </td>
                     {canManage ? (
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-end">
                         <button
                           type="button"
                           className="cursor-pointer text-sm font-semibold text-aura-secondary hover:underline"

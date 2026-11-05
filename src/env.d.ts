@@ -1,6 +1,6 @@
 interface ImportMetaEnv {
-  /** Standalone only: where "Log out" goes when no shell passes onLogout (rsbuild.config.ts). */
-  readonly VITE_APP1_URL?: string
+  /** Standalone only: where "Log out" goes when no shell passes onLogout (config/app1Url.ts). */
+  readonly PUBLIC_APP1_URL?: string
 }
 
 interface ImportMeta {

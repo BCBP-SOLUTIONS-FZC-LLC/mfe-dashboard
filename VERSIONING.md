@@ -10,8 +10,8 @@ We use [SemVer 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH` (e.g. `v1.2.3`).
 
 | Bump | When you change | Examples |
 |------|-----------------|----------|
-| **MAJOR** | Breaking change in the runtime contract (§ below) | Renaming the federation container (`app2`) or `remoteEntry.js`, removing `./App` or changing its props so the shell cannot mount it, moving to an SDK preset release that the shell's SDK cannot satisfy (a remote requires `^<its preset version>` of the shell's SDK), removing `/healthz` or `/`, removing `VITE_APP1_URL`, changing the image listen port |
-| **MINOR** | New backward-compatible capability | A new optional prop on `./App`, a new route that does not remove an existing one, a new optional `VITE_*` build arg |
+| **MAJOR** | Breaking change in the runtime contract (§ below) | Renaming the federation container (`app2`) or `remoteEntry.js`, removing `./App` or changing its props so the shell cannot mount it, moving to an SDK preset release that the shell's SDK cannot satisfy (a remote requires `^<its preset version>` of the shell's SDK), removing `/healthz` or `/`, removing `PUBLIC_APP1_URL` or its deprecated alias `VITE_APP1_URL`, changing the image listen port |
+| **MINOR** | New backward-compatible capability | A new optional prop on `./App`, a new route that does not remove an existing one, a new optional `PUBLIC_*` build arg |
 | **PATCH** | Backward-compatible fix | Ticket, theme, or navigation bug fix, visual fix that does not change the federation contract, dependency bump with no observable behavior change, documentation-only correction |
 
 ### What counts as the runtime contract
@@ -24,11 +24,11 @@ This remote has no package for another app to import from npm. Its public contra
 | Props `./App` accepts: optional `userLabel` (string) and optional `onLogout` (function) | Mock ticket and user rows. They are fixture data, not an API |
 | Shared singletons the remote consumes and their `requiredVersion`, from `@bcbp-solutions-fzc-llc/webpack-preset`: `react` and `react/jsx-runtime` `^19.0.0`, and the SDK subpaths it imports (`auth`, `config`, `i18n`, `react`, `storage`) at `^<preset SDK version>` with `import: false`. `react-router-dom` is not shared | Patch-level upgrades inside those ranges |
 | Routes: inside web-shell, `/t/<slug>/dashboard` and `/t/<slug>/dashboard/user-management` (own router at the workspace basename). When the host already provides a router: index route (dashboard) and `user-management`. Alone: `/` and unknown paths redirect to `/dashboard`, and `/dashboard/*` renders the same two pages. The permissions a page asks for (`read:tender`, `read:members`, `manage:members`) | Copy, KPI counts, and theme class names |
-| Build-time env `VITE_APP1_URL` (default `http://localhost:5001`): where logout sends the browser when the shell did not pass `onLogout` | The default itself. A production image must set the repository variable |
-| Image listen port **8080**, `GET /healthz` (plain `ok`), `GET /` (document with `id="app"`), `GET /remoteEntry.js` (no-cache, CORS, defines `var app2`), hashed files under `/assets/` | nginx config comments, cache headers on files other than the ones named here |
+| Build-time env `PUBLIC_APP1_URL` (deprecated alias `VITE_APP1_URL`, read when `PUBLIC_APP1_URL` is unset; removing the alias is MAJOR) (default `http://localhost:5001`): where logout sends the browser when the shell did not pass `onLogout` | The default itself. A production image must set the repository variable |
+| Image listen port **8080**, `GET /healthz` (plain `ok`), `GET /` (document with `id="app"`), `GET /remoteEntry.js` (no-cache, CORS, defines `var app2`), `GET /remote-manifest-entry.json` (the shell's manifest entry with `remoteEntry.js` integrity), hashed files under `/assets/` | nginx config comments, cache headers on files other than the ones named here |
 | `package.json` `version` once a tag exists — it must match the Git tag without the `v` | The npm package name. It is not published |
 
-`VITE_*` values are compiled into the browser bundle. They are public. Do not put secrets in them.
+`PUBLIC_*` values are compiled into the browser bundle. They are public. Do not put secrets in them.
 
 ### Guarantees
 
@@ -95,7 +95,7 @@ cosign verify \
 2. Add `## [X.Y.Z] - YYYY-MM-DD` to [CHANGELOG.md](CHANGELOG.md) and move the `[Unreleased]` notes into it. The release workflow fails when that section is missing or empty.
 3. Set `package.json` `version` to `X.Y.Z` (no `v`).
 4. Tag the commit: `git tag -a vX.Y.Z -m "vX.Y.Z"` and push the tag. `release.yml` checks that the tag matches `git describe --tags --exact-match`.
-5. Set the GitHub Actions variable `VITE_APP1_URL` to the shell origin before the production build. The default is `http://localhost:5001`.
+5. Set the GitHub Actions variable `PUBLIC_APP1_URL` to the shell origin before the production build. The default is `http://localhost:5001`.
 
 The workflow publishes the image, a CycloneDX SBOM, provenance, and `mfe-dashboard_vX.Y.Z_dist.tar.gz` plus checksums. It does not deploy a cluster.
 

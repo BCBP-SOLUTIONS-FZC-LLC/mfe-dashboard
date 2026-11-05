@@ -14,10 +14,10 @@ The Docker image is smoke-tested in CI by `.github/scripts/smoke-tests.sh`: size
 
 | Folder | Covers |
 |---|---|
-| `app/` | `App` with the SDK (user, sign-out, props from the shell), the workspace basename and routing under `/t/<slug>/dashboard`, `main.tsx`, `AppShellLayout` (user button, `defaultLogout`) |
+| `app/` | `config/app1Url.ts`; the standalone `MFEErrorBoundary`; the labelled search box; `App` with the SDK (user, sign-out, props from the shell), the workspace basename and routing under `/t/<slug>/dashboard`, `main.tsx`, `AppShellLayout` (user button, `defaultLogout`) |
 | `authz/` | User management under `read:members` / `manage:members` and a read-only tenant; the approval step-up (`useStepUp`) |
-| `dashboard/` | `ticketsForView`, `useDashboardData` (fake timers), the dashboard page's filters and formatted dates |
-| `components/` | Presentational components: logos, icons, ticket rows, theme picker, filter selects |
+| `dashboard/` | `ticketsForView`, `useDashboardData` (fake timers), load errors (SDK `ApiError` → alert, Retry, a `warn` log), the deadline filter and KPI counts, `calendarDate`, the dashboard page's filters and formatted dates |
+| `components/` | Presentational components (logos, icons, ticket rows, theme picker, filter selects) and keyboard behaviour (user menu keys, Escape, the drawer's focus trap) |
 | `theme/` | Theme mode and app theme in `storage('app2')` |
 | `i18n/` | `app2` messages through the SDK (plurals, fallback), and the `en` catalog against the source: no missing keys, no unused keys, every message formats |
 | `docs/` | `ARCHITECTURE.md`'s mermaid fences equal `docs/architecture/mermaid/*.mmd` |

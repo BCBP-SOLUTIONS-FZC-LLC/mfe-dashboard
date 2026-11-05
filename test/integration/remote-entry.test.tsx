@@ -14,6 +14,8 @@ import * as ReactDom from 'react-dom'
 import * as Auth from '@bcbp-solutions-fzc-llc/frontend-sdk/auth'
 import * as Config from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
 import * as I18n from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
+import * as Logging from '@bcbp-solutions-fzc-llc/frontend-sdk/logging'
+import * as Problem from '@bcbp-solutions-fzc-llc/frontend-sdk/problem'
 import * as SdkReact from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import * as Storage from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import sdkPackage from '@bcbp-solutions-fzc-llc/frontend-sdk/package.json'
@@ -36,6 +38,8 @@ function shellScope(omit: string[] = []) {
     [`${SDK}/auth`]: [sdkPackage.version, Auth],
     [`${SDK}/config`]: [sdkPackage.version, Config],
     [`${SDK}/i18n`]: [sdkPackage.version, I18n],
+    [`${SDK}/logging`]: [sdkPackage.version, Logging],
+    [`${SDK}/problem`]: [sdkPackage.version, Problem],
     [`${SDK}/react`]: [sdkPackage.version, SdkReact],
     [`${SDK}/storage`]: [sdkPackage.version, Storage],
   }
@@ -135,7 +139,7 @@ describe('./App loaded through the container', () => {
     expect(await screen.findByRole('button', { name: /Ada L/ })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /dashboard/i })[0]).toHaveAttribute('href', '/t/test/dashboard')
-    expect(consumed).toEqual(new Set(['react', 'react/jsx-runtime', `${SDK}/auth`, `${SDK}/config`, `${SDK}/i18n`, `${SDK}/react`, `${SDK}/storage`]))
+    expect(consumed).toEqual(new Set(['react', 'react/jsx-runtime', `${SDK}/auth`, `${SDK}/config`, `${SDK}/i18n`, `${SDK}/logging`, `${SDK}/problem`, `${SDK}/react`, `${SDK}/storage`]))
   })
 
   it('fails to load when the shell does not provide the SDK (no fallback copy)', async () => {
@@ -151,4 +155,21 @@ describe('./App loaded through the container', () => {
     await container.init(shellScope().scope)
     await expect(container.get('./Nope')).rejects.toThrow('Module "./Nope" does not exist in container.')
   })
+})
+
+describe('build-time logout target', () => {
+  it.each([
+    [{}, 'http://localhost:5001'],
+    [{ PUBLIC_APP1_URL: 'https://login.example.com' }, 'https://login.example.com'],
+    [{ VITE_APP1_URL: 'https://legacy.example.com' }, 'https://legacy.example.com'],
+  ])('%j is compiled into the remote as %s', (env, url) => {
+    const out = Object.keys(env).length === 0 ? build : buildRemote(env)
+    try {
+      const js = out.files().filter((f) => f.endsWith('.js')).map((f) => out.read(f)).join('\n')
+      expect(js).toContain(JSON.stringify(url))
+      expect(js).not.toContain('import.meta.env')
+    } finally {
+      if (out !== build) out.remove()
+    }
+  }, 120_000)
 })

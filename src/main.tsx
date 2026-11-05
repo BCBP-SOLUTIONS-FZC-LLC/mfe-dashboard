@@ -1,9 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// Self-hosted fonts for the standalone page (CSP font-src 'self'): the same packages and family
+// names as web-shell (bootstrap.tsx), so the remote looks the same inside the shell, where the
+// shell's document provides them and the remote ships none.
+import '@fontsource-variable/geist'
+import '@fontsource-variable/inter'
+import { MFEErrorBoundary } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import App from './App'
-import { applyAppTheme, readStoredAppTheme } from './theme/themeMode'
+import { APP_ID } from './i18n'
+import { readStoredAppTheme, showAppTheme } from './theme/themeMode'
 
-applyAppTheme(readStoredAppTheme())
+showAppTheme(readStoredAppTheme())
 
 const root = document.getElementById('app')
 if (!root) {
@@ -12,6 +19,9 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <App />
+    {/* Standalone has no shell RemoteBoundary: the SDK's boundary logs a render error and shows its fallback instead of a blank page. */}
+    <MFEErrorBoundary mfe={APP_ID}>
+      <App />
+    </MFEErrorBoundary>
   </StrictMode>,
 )

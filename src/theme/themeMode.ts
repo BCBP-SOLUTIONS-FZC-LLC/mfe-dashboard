@@ -22,13 +22,24 @@ export function readStoredThemeMode(): ThemeMode {
   return storage(APP_ID).get<ThemeMode>(THEME_MODE_KEY) === 'dark' ? 'dark' : 'light'
 }
 
-export function applyAppTheme(themeId: AppThemeId): void {
+/** Shows `themeId` on the page without storing it (on mount, when nothing changed). */
+export function showAppTheme(themeId: AppThemeId): void {
   document.documentElement.dataset.theme = themeId
+}
+
+/** Stores the user's choice (the SDK ignores writes while nobody is signed in). */
+export function saveAppTheme(themeId: AppThemeId): void {
   const store = storage(APP_ID)
   store.set(APP_THEME_KEY, themeId)
   if (isAuraTheme(themeId)) {
     store.set(THEME_MODE_KEY, themeId)
   }
+}
+
+/** Shows and stores `themeId`. */
+export function applyAppTheme(themeId: AppThemeId): void {
+  showAppTheme(themeId)
+  saveAppTheme(themeId)
 }
 export function applyThemeMode(mode: ThemeMode): void {
   applyAppTheme(mode)
@@ -48,7 +59,7 @@ export const dashSurfaceClass = 'bg-aura-surface'
 
 export const dashBorderClass = 'border-aura-border'
 
-export const dashSidebarClass = 'bg-aura-surface border-r border-aura-border'
+export const dashSidebarClass = 'bg-aura-surface border-e border-aura-border'
 
 export const dashHeaderClass =
   'bg-aura-surface border-b border-aura-border shadow-dash'

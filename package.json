@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "rsbuild dev",
-    "build": "tsc && node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && rsbuild build",
+    "build": "tsc && node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && rsbuild build && node config/remote-manifest-entry.mjs",
     "test": "vitest run",
     "test:unit": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
@@ -17,9 +17,9 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@bcbp-solutions-fzc-llc/eslint-plugin": "1.0.0-alpha.2",
+    "@bcbp-solutions-fzc-llc/eslint-plugin": "1.0.0-alpha.3",
     "@bcbp-solutions-fzc-llc/frontend-sdk": "1.0.0-alpha.3",
-    "@bcbp-solutions-fzc-llc/webpack-preset": "1.0.0-alpha.2",
+    "@bcbp-solutions-fzc-llc/webpack-preset": "1.0.0-alpha.3",
     "@opentelemetry/api": "1.10.0",
     "@rsbuild/core": "^2.3.1",
     "@rsbuild/plugin-react": "^2.1.1",
@@ -45,11 +45,16 @@
     "vitest": "^5.1.0"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/inter": "5.3.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.5"
   },
   "peerDependencies": {
     "@bcbp-solutions-fzc-llc/frontend-sdk": "^1.0.0-alpha.3"
+  },
+  "overrides": {
+    "minimatch": "^11.0.4"
   }
 }

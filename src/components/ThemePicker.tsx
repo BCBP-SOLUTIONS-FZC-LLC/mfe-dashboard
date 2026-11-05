@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useRef } from 'react'
+import { useDismiss } from '../hooks/useDismiss'
 import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { APP_ID } from '../i18n'
 import { IconPalette } from './dashboard/DashboardIcons'
@@ -16,23 +17,8 @@ export function ThemePicker({ activeThemeId, open, onOpenChange, onSelect }: The
   const t = useT(APP_ID)
   const panelRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-    const onPointerDown = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (panelRef.current?.contains(target)) {
-        return
-      }
-      if (target instanceof Element && target.closest('[data-theme-picker-trigger]')) {
-        return
-      }
-      onOpenChange(false)
-    }
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [open, onOpenChange])
+  const close = useCallback(() => onOpenChange(false), [onOpenChange])
+  useDismiss(open, close, { panelRef, trigger: '[data-theme-picker-trigger]' })
 
   const auraThemes = APP_THEME_OPTIONS.filter((t) => t.group === 'aura')
   const daisyThemes = APP_THEME_OPTIONS.filter((t) => t.group === 'daisy')
@@ -55,7 +41,7 @@ export function ThemePicker({ activeThemeId, open, onOpenChange, onSelect }: The
           ref={panelRef}
           role="listbox"
           aria-label={t('theme.list')}
-          className={`absolute right-0 top-[calc(100%+0.35rem)] z-50 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,14rem)] overflow-y-auto rounded-xl border py-2 shadow-lg ${dashBorderClass} ${dashSurfaceClass}`}
+          className={`absolute end-0 top-[calc(100%+0.35rem)] z-50 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,14rem)] overflow-y-auto rounded-xl border py-2 shadow-lg ${dashBorderClass} ${dashSurfaceClass}`}
         >
           <p className="px-3 pb-1 pt-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-aura-muted">
             {t('theme.appThemes')}
@@ -107,7 +93,7 @@ function ThemeOption({
       role="option"
       aria-selected={selected}
       onClick={onSelect}
-      className={`flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-aura-hover ${
+      className={`flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-start text-sm transition-colors hover:bg-aura-hover ${
         selected ? 'bg-aura-primary-soft font-medium text-aura-primary' : 'text-aura-text'
       }`}
     >

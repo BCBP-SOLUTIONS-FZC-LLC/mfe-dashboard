@@ -51,7 +51,8 @@ flowchart TB
 | User, sign-out | `useCurrentUser`, `useSignOut` |
 | Workspace basename, route names | `slugFromPath`, `tryGetConfig().auth.workspacePathPrefix`, `useRouteTemplate` |
 | Access | `useHasPermission`, `useReadOnly`, `useStepUp` |
-| Data loading | `useApi` |
+| Data loading, errors | `useApi`, `isProblemError` (`/problem`), `problemMessage`, `getLogger` (a failed load is logged) |
+| Standalone render errors | `MFEErrorBoundary` |
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` |
 | Per-app storage | `storage('app2')` |
 
@@ -62,7 +63,7 @@ flowchart TB
 Rsbuild 2 with the SDK's plugin (`rsbuild.config.ts`, `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })`), Module Federation v1. One `rsbuild build` makes two environments: **remote** (`remoteEntry.js` and chunks; the SDK from the shell) and **standalone** (`index.html` and `assets/`; the SDK bundled).
 
 - `remoteEntry.js` defines `var app2` synchronously. Only async chunks are split: a split entry would start asynchronously and leave `window.app2` a Promise, which `loadRemote` refuses. The dev server has no HMR or live-reload client for the same reason.
-- The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and five SDK subpaths (`auth`, `config`, `i18n`, `react`, `storage`; `^1.0.0-alpha.2`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
+- The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and seven SDK subpaths (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.3`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
 - `react-router-dom` is not shared; the remote runs its own router.
 - `test/integration/remote-entry.test.tsx` builds the remote and loads it through `init(shareScope)` / `get('./App')`, as web-shell does.
 
@@ -132,18 +133,18 @@ sequenceDiagram
 | `all-tenders` | every fixture when the user has `read:tender`, otherwise `[]` |
 | anything else | `[]` |
 
-Load state is `partial_failure` when the view is `my-tickets` and a row has `tenderDetailsUnavailable` (ticket `T-1015`). Status, department, role (`roleLevel.includes`) and tender title are applied in the hook; filter options are derived from the data. **Deadline is counted by `countActiveFilters` and is not applied.** The search box filters title, client and department after the hook returns. KPI numbers are `KPI_COUNTS` in `src/mocks/dashboardStats.ts`, not the row count.
+Load state is `partial_failure` when the view is `my-tickets` and a row has `tenderDetailsUnavailable` (ticket `T-1015`). Status, department, role (`roleLevel.includes`) and tender title are applied in the hook; filter options are derived from the data. Deadline is applied by local calendar day (`overdue`: before today; `week`: today and the next six days). The search box filters title, client and department after the hook returns. KPI numbers are `kpiCounts()` in `src/mocks/dashboardStats.ts`: each view's row count, from the same rows the list shows.
 
 ## Logout and theme
 
-`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `defaultLogout()` runs: `window.location.assign` of `VITE_APP1_URL` without a trailing slash (default `http://localhost:5001`, inlined at build by `source.define`).
+`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `defaultLogout()` runs: `window.location.assign` of `PUBLIC_APP1_URL` without a trailing slash (default `http://localhost:5001`, inlined at build by `source.define`).
 
 | Key | Values |
 |---|---|
 | `appTheme` | `light`, `dark`, or a daisyUI theme id |
 | `themeMode` | `light` or `dark`, written only for Aura themes |
 
-`readStoredAppTheme` prefers `appTheme`, then `themeMode`, then `light`.
+`readStoredAppTheme` prefers `appTheme`, then `themeMode`, then `light`. Start and mount only show the stored theme (`showAppTheme`); only a user's choice writes storage (`saveAppTheme`).
 
 ## Browser storage
 
@@ -156,7 +157,9 @@ The SDK clears both on sign-out and workspace switch, refuses token-like keys, a
 
 ## Image
 
-`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `VITE_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. `.dockerignore` excludes `.env`, so values come in as build args.
+nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standalone document a same-origin-only CSP (`frame-ancestors 'none'`), `X-Frame-Options: DENY`, `Permissions-Policy` and `X-Robots-Tag: noindex` (`nginx/document-headers.conf`); gzip is on and `server_tokens` off. Fonts are self-hosted (`@fontsource-variable/geist` and `/inter`, standalone only; the same packages and Tailwind font stack as web-shell). Each build writes `remote-manifest-entry.json`: web-shell's manifest entry for this build with `remoteEntry.js`'s sha384 integrity, which the smoke script compares with the served file. The smoke script checks the headers.
+
+`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. `.dockerignore` excludes `.env`, so values come in as build args.
 
 ## Failure domains
 
@@ -166,7 +169,9 @@ The SDK clears both on sign-out and workspace switch, refuses token-like keys, a
 | Filters match nothing | "No tickets found" |
 | Search matches nothing | "No matching tickets" |
 | No member permission | User management link hidden; the route returns to the dashboard |
-| No shell `signOut` | Logout navigates to `VITE_APP1_URL` |
+| Ticket load fails with an API error (problem, timeout, network) | Alert "Tickets could not be loaded." with the SDK's `problemMessage` for a problem, and Retry |
+| Ticket loader throws anything else | `useApi` rethrows it to the shell's `RemoteBoundary` |
+| No shell `signOut` | Logout navigates to `PUBLIC_APP1_URL` |
 | `#app` missing in standalone bootstrap | `main.tsx` throws before render |
 | Shell lacks a shared SDK subpath, or its SDK / React is outside the remote's range | `get('./App')` or the singleton check fails; the shell's `RemoteBoundary` shows the error |
 
@@ -190,7 +195,7 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 
 | Item | Note |
 |---|---|
-| `VITE_APP1_URL` | Fixed at build. Logout is an open navigation to that origin. Do not take it from the query string |
+| `PUBLIC_APP1_URL` | Fixed at build. Logout is an open navigation to that origin. Do not take it from the query string |
 | Theme in SDK storage | Any script in the page origin can read it. It is not a credential, and the SDK clears it on sign-out |
 | Mock data | Sample names and emails. They are not accounts |
 | Remote execution | The shell runs this bundle in the shell origin and pins `remoteEntry.js` by SRI in its manifest; this image is signed (see [VERSIONING.md](VERSIONING.md)) |
@@ -204,10 +209,10 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 | Own `BrowserRouter` under the workspace prefix | The SDK does not share `react-router-dom`; the basename is computed exactly as web-shell computes it |
 | Two Rsbuild environments | The remote must not bundle the SDK; the standalone page has no shell to provide it |
 | Access by `read:members` / `manage:members`, not roles | IAM owns roles and web-shell owns the role map; the remote only names the permission it needs |
+| Logical layout classes (`ps/pe`, `start/end`, `text-start`) | The layout follows the page's `dir`, so an RTL locale needs no separate stylesheet |
 | Custom chrome inside the remote | The shell renders only the frame; ticket navigation lives here |
 | `USER 101` | The unprivileged nginx image's uid. `USER nginx` fails Hadolint DL3066 |
 | Coverage script instead of a Vitest threshold | Same gate the shell uses, overridable with `COVERAGE_THRESHOLD` |
-| Deadline counted but not applied | The badge reflects the control; the hook has no deadline predicate yet (LLD §15) |
 
 ## Documentation
 

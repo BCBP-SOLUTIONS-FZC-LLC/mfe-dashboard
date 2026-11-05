@@ -41,4 +41,4 @@ What actually happened. Include the browser console output.
 ```
 
 ## Additional context
-Browser, shell origin (`VITE_APP1_URL`), related issues.
+Browser, shell origin (`PUBLIC_APP1_URL`), related issues.

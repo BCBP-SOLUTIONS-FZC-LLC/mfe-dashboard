@@ -1,6 +1,8 @@
 // AppShellLayout's own logic: the user button's initials and short name for each label shape, the
 // catalog's "User" when nobody is named, and the no-shell logout target.
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppShellLayout, { defaultLogout } from '../../../src/layouts/AppShellLayout'
@@ -35,21 +37,51 @@ describe('user button', () => {
   })
 })
 
+describe('theme', () => {
+  it('shows the theme on mount without storing it, and stores a choice', async () => {
+    render(
+      <MemoryRouter>
+        <AppShellLayout userLabel="Ada" />
+      </MemoryRouter>,
+    )
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(storage('app2').get('appTheme')).toBeUndefined()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { expanded: false, name: (_, el) => el.hasAttribute('data-user-menu-trigger') }))
+    await user.click(screen.getByRole('menuitem', { name: /Theme mode/ }))
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(storage('app2').get('appTheme')).toBe('dark')
+    expect(storage('app2').get('themeMode')).toBe('dark')
+  })
+})
+
+describe('search box', () => {
+  it('is labelled for screen readers, not only by its placeholder', () => {
+    render(
+      <MemoryRouter>
+        <AppShellLayout userLabel="Ada" />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('searchbox', { name: 'Search tickets, tenders, clients...' })).toBeInTheDocument()
+  })
+})
+
 describe('defaultLogout (no shell signOut)', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.restoreAllMocks()
   })
 
-  it('goes to VITE_APP1_URL without a trailing slash', () => {
-    vi.stubEnv('VITE_APP1_URL', 'https://login.example.com/')
+  it('goes to PUBLIC_APP1_URL without a trailing slash', () => {
+    vi.stubEnv('PUBLIC_APP1_URL', 'https://login.example.com/')
     const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
     defaultLogout()
     expect(assign).toHaveBeenCalledWith('https://login.example.com')
   })
 
-  it('falls back to the local sign-in app when VITE_APP1_URL is unset', () => {
-    vi.stubEnv('VITE_APP1_URL', undefined)
+  it('falls back to the local sign-in app when PUBLIC_APP1_URL is unset', () => {
+    vi.stubEnv('PUBLIC_APP1_URL', undefined)
     const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
     defaultLogout()
     expect(assign).toHaveBeenCalledWith('http://localhost:5001')
