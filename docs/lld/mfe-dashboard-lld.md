@@ -18,7 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
-| 1.15 | 2026-11-05 | Metrics per the Enterprise Platform Observability Standard: three Tier 3 `portal_dashboard_*` metrics through SDK `/metrics` (§5, §15 item 10), CI validation in `test/unit/metrics` |
+| 1.15 | 2026-11-05 | Metrics per the Enterprise Platform Observability Standard: three Tier 3 `portal_dashboard_*` metrics through SDK `/metrics` (§5, §15 item 10), CI validation in `test/unit/metrics`; SDK and platform-reactcommon audit (§5), nginx follows the platform SPA rule (§12.3) |
 | 1.14 | 2026-11-05 | Release `v0.3.0` (remote `dashboard`); open item 15 at its deployment step |
 | 1.13 | 2026-11-05 | Remote renamed `app2` → `dashboard` (container, global `__platform_mfe_dashboard`, manifest key, message namespace, storage, log label; §4, §5, §9, §10); open item 15 (switch together with web-shell) |
 | 1.12 | 2026-11-05 | Release `v0.2.0` (alpha.5); open item 14 at its last step |
@@ -160,7 +160,7 @@ web-shell passes neither today. A new required prop is a MAJOR change.
 
 The rule: anything the SDK provides is used from the SDK, through public subpaths only. `npm run lint` (`@bcbp-solutions-fzc-llc/eslint-plugin`: `no-raw-storage`, `no-sdk-deep-import`, `no-sdk-root-import`, `no-unsafe-html`, `no-identity-headers`, `no-eval`, …) and `test/unit/sdk/dependency-rules.test.ts` enforce it. The latter also keeps metrics in `src/metrics.ts` through `/metrics` (no OpenTelemetry or Prometheus client), host-page start-up (`initializeCore`, runtime config) in `src/standalone.ts`, shell-only APIs (manifest, `loadRemote`, auth, flags, telemetry start) out of `src/`, and `console` out except for the standalone config warning.
 
-Audit (2026-11-05), every SDK export against `src/`: nothing the SDK provides is reimplemented. Our own helpers have no SDK counterpart: `calendarDate` (the SDK formats a `Date`, it does not parse a calendar day), `workspaceBasename` (composes `slugFromPath` and `workspacePathPrefix`), `useNow`, `useDismiss`, `useFocusTrap`, the theme (stored with `storage()`), and `defaultLogout`'s full navigation to an absolute sign-in URL (`navigate()` takes same-origin paths only). `recordMetric` used to check label values again after the SDK; it now leaves run-time validation to the SDK. One deliberate gap-filler: `standalone.ts`'s `console.warn`, because the SDK logger is silent before logging starts outside local, dev and test.
+Audit (2026-11-05), every SDK export against `src/`: nothing the SDK provides is reimplemented. Our own helpers have no SDK counterpart: `calendarDate` (the SDK formats a `Date`, it does not parse a calendar day), `workspaceBasename` (composes `slugFromPath` and `workspacePathPrefix`), `useNow`, `useDismiss`, `useFocusTrap`, the theme (stored with `storage()`), and `defaultLogout`'s full navigation to an absolute sign-in URL (`navigate()` takes same-origin paths only). `recordMetric` used to check label values again after the SDK; it now leaves run-time validation to the SDK. One deliberate gap-filler: `standalone.ts`'s `console.warn`, because the SDK logger is silent before logging starts outside local, dev and test. The rest of platform-reactcommon: `webpack-preset` is used for the build (`pluginPlatform`), the container name and SRI (`containerName`, `integrityOf` in `config/remote-manifest-entry.mjs`; the preset has no manifest-entry generator); `eslint-plugin` as is; the SDK's `/testing` for every test; the observability registry is read from the SDK, not copied. One divergence was fixed: nginx's SPA fallback now follows `examples/cloudfront/spa-rewrite.js` (§12.3). The CI scripts under `.github/scripts/` started as copies of platform-reactcommon's; they are this repository's own CI (its workflows are for its pnpm monorepo, not published for reuse).
 
 | Concern | SDK API | Used in |
 |---|---|---|
@@ -358,9 +358,13 @@ The preset sets `assetPrefix: 'auto'`: the remote's chunks and images resolve fr
 | `/healthz` | `200 ok` |
 | `/` | standalone document (`id="app"`) |
 | `/remoteEntry.js` | `Cache-Control: no-cache`, `Access-Control-Allow-Origin: *` |
-| hashed chunks next to the entry, `/assets/*` | immutable, 1 year, CORS |
+| hashed chunks next to the entry, `/assets/*` (`^~`) | immutable, 1 year, CORS; `404` when absent |
 | `/config/runtime.json` | The standalone page's SDK runtime config, `no-cache`; `404` when absent, never the SPA fallback. The image ships `public/config/runtime.json` (web-shell's defaults, no `signInUrl`); each environment mounts its own over it |
-| anything else | `try_files` → `index.html` |
+| `/api`, `/otel`, `/csp-report`, `/config`, `/remotes` (other files), and any dotfile (`/.env`, `/.git/…`) | `404` |
+| a path whose last segment ends in a static-asset extension (`.js`, `.css`, `.json`, `.png`, `.woff2`, … : the list in `spa-rewrite.js`) | the file, `no-cache` (favicons, `remote-manifest-entry.json`); `404` when absent, never `index.html` |
+| any other path (app routes, including dotted ones such as `/users/john.doe`) | `index.html` |
+
+The last three rows are the platform's SPA rule, as CloudFront applies it (platform-reactcommon `examples/cloudfront/spa-rewrite.js`); the CI smoke script checks them. Until 0.3.0 this image fell back to `index.html` for every missing path, so a missing chunk or JSON file came back as HTML.
 | every response | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` (`nginx/security-headers.conf`) |
 | the document (`/`, `/index.html`, the fallback) | CSP `default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`, `X-Frame-Options: DENY`, `Permissions-Policy`, `X-Robots-Tag: noindex, nofollow`, `no-cache` (`nginx/document-headers.conf`) |
 
@@ -416,7 +420,7 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/unit/<area>` (`app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk`) | `npm run test:unit` | One area of `src/` each; the catalog and SDK-rule checks |
 | `test/integration` | `npm run test:integration` | The built `remoteEntry.js` (temp Rsbuild build of the `remote` environment) loaded through `init(shareScope)` / `get('./App')` and rendered with the shell's React and SDK |
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
-| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, security headers, no nginx version, gzip |
+| Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, the platform SPA rule (8 cases), security headers, no nginx version, gzip |
 
 Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.2% / 97.1% / 100% / 99.3% with 142 tests in 27 files.
 
