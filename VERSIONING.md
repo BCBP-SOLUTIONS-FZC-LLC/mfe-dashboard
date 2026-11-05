@@ -41,8 +41,8 @@ This remote has no package for another app to import from npm. Its public contra
 
 | Version | Status | Image tag | Notes |
 |---------|--------|-----------|-------|
-| *next* (`v0.3.0`) | Unreleased | — | **Breaking for the shell:** container renamed `app2` → `dashboard`. Needs web-shell with `DASHBOARD_REMOTE = 'dashboard'` and the manifest key `dashboard`; pre-1.0, so a minor version |
-| `v0.2.0` | **Current** (pre-1.0) | `0.2.0`, `0.2`, `0`, `latest` | Platform packages `1.0.0-alpha.5`: requires the shell's SDK `^1.0.0-alpha.5`, so web-shell must be on alpha.5. Standalone runtime config (`auth.signInUrl`), logo fix inside the shell |
+| `v0.3.0` | **Current** (pre-1.0) | `0.3.0`, `0.3`, `0`, `latest` | **Breaking for the shell:** remote renamed `app2` → `dashboard` (global `__platform_mfe_dashboard`, manifest key `dashboard`). Needs web-shell #35 or later, platform packages alpha.5 |
+| `v0.2.0` | Superseded | `0.2.0`, `0.2` | Platform packages `1.0.0-alpha.5`: requires the shell's SDK `^1.0.0-alpha.5`, so web-shell must be on alpha.5. Standalone runtime config (`auth.signInUrl`), logo fix inside the shell |
 | `v0.1.1` | Superseded | `0.1.1`, `0.1` | Platform packages `1.0.0-alpha.4` (`^1.0.0-alpha.4`, so it also loads in web-shell on alpha.5; checked by web-shell's contract suite). Logo broken inside the shell |
 | `v0.1.0` | **Do not use** | `0.1.0` (unsigned) | The release workflow failed after the push: no GitHub Release, no signature. Same application as `v0.1.1` |
 
@@ -55,10 +55,10 @@ Do not add this repository as an npm dependency. The shell loads `remoteEntry.js
 ### Pull and verify the image
 
 ```bash
-# Git tag v0.2.0 publishes the image as 0.2.0 (the v prefix is not part of the image tag)
-docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.2.0
+# Git tag v0.3.0 publishes the image as 0.3.0 (the v prefix is not part of the image tag)
+docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.3.0
 # the SLSA provenance BuildKit stored in the image index (also attached to the GitHub Release)
-docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.2.0 --format '{{ json .Provenance }}'
+docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.3.0 --format '{{ json .Provenance }}'
 ```
 
 Tagged releases (from `v0.1.1`) and every push to `main` or `master` publish images. Each is signed keylessly via Sigstore/Cosign (no long-lived key). Verify before deploying:
