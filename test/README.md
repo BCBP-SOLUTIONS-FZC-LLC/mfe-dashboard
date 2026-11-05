@@ -30,7 +30,9 @@ Builds the `remote` environment of `rsbuild.config.ts` into a temporary director
 - `var __platform_mfe_app2` is defined synchronously as `{ init, get }`, as the SDK's `loadRemote` reads it;
 - every share key the container consumes is one the shell provides, and no SDK code is bundled;
 - `init(shareScope)` then `get('./App')` renders the dashboard with the test's own React and SDK handed over as the shell's singletons (the signed-in user proves the SDK is the shell's);
-- without the shell's SDK the load fails, because there is no fallback copy, and an unknown module is rejected.
+- without the shell's SDK the load fails, because there is no fallback copy, and an unknown module is rejected;
+- every lazy stylesheet is pinned by its sha384;
+- the logos are emitted under `assets/` and loaded from the remote's public path (`__webpack_require__.p`), never a root-relative `/image/…` that would resolve on the shell's origin.
 
 The only stub is the network: `<script>` and `<link>` tags the container appends are answered from the build output.
 

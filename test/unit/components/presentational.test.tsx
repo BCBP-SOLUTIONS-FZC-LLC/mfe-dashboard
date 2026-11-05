@@ -48,11 +48,12 @@ const views = ['my-tickets', 'awaiting-review', 'awaiting-approval', 'delegated'
 describe('presentational components', () => {
   it('renders both logo variants', () => {
     const { rerender } = render(<BrandLogo />)
-    expect(screen.getByAltText('Beyond Code')).toHaveAttribute('src', '/image/logo.png')
+    // Bundled imports, not public '/image/…' paths (those load from the shell's origin in the shell).
+    expect(screen.getByAltText('Beyond Code').getAttribute('src')).toMatch(/assets\/images\/logo\.png$/)
     rerender(<BrandLogo variant="main" theme="dark" className="extra" size={80} />)
-    expect(screen.getByAltText('BCBP Solutions')).toHaveAttribute('src', '/image/logo-main-white.png')
+    expect(screen.getByAltText('BCBP Solutions').getAttribute('src')).toMatch(/logo-main-white\.png$/)
     rerender(<BrandLogo variant="main" theme="light" />)
-    expect(screen.getByAltText('BCBP Solutions')).toHaveAttribute('src', '/image/logo-main-black.png')
+    expect(screen.getByAltText('BCBP Solutions').getAttribute('src')).toMatch(/logo-main-black\.png$/)
   })
 
   it('renders every icon export', () => {

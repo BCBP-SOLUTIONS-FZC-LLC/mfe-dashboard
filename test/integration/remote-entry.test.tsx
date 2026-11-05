@@ -134,6 +134,16 @@ describe('remoteEntry.js', () => {
     expect(css.length).toBeGreaterThan(0)
     for (const file of css) expect(entry, file).toContain(integrityOf(readFileSync(join(build.dir, file))))
   })
+  it('ships its images and loads them from its own public path, not the page origin', () => {
+    // Inside web-shell the page origin is the shell's: a '/image/…' URL would 404 there (web-shell #29).
+    const images = build.files().filter((f) => /\.(png|jpe?g|gif|svg|webp|avif)$/.test(f))
+    expect(images.map((f) => f.replace(/\.[0-9a-f]+\.(\w+)$/, '.$1')).sort()).toEqual(
+      ['assets/logo-main-black.png', 'assets/logo-main-white.png', 'assets/logo.png'],
+    )
+    const js = build.files().filter((f) => f.endsWith('.js')).map((f) => build.read(f)).join('\n')
+    for (const file of images) expect(js, file).toMatch(new RegExp(`\\.p\\+"${file.replace(/\./g, '\\.')}"`))
+    expect(js).not.toMatch(/["'`]\/image\//)
+  })
 })
 
 describe('./App loaded through the container', () => {

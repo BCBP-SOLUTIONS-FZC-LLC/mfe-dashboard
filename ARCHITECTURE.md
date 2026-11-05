@@ -184,6 +184,7 @@ A tag `vX.Y.Z` runs `release.yml`: validate, build the `dist` tarball and `remot
 - Container `app2`, expose `./App`, `var __platform_mfe_app2` defined synchronously. The global's name comes from the preset and must match the shell's SDK, so this remote and web-shell upgrade the platform packages together.
 - The SDK is never bundled into the remote and never a runtime dependency; its dev version equals web-shell's.
 - `onLogout` and `userLabel` are optional.
+- Images and fonts are imported, never root-relative, so they load from the remote's origin inside the shell.
 - No role names in `src/`; access is by permission.
 - Every UI string is in `src/locales/en.json`, and every key there is used.
 - `/healthz` returns `ok` on port 8080.

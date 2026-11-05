@@ -6,6 +6,10 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+### Fixed
+
+- The sidebar logo was broken inside web-shell (found by web-shell's contract suite, web-shell #29). `BrandLogo` used root-relative `/image/…` paths, which resolve on the shell's origin. The logos moved from `public/image/` to `src/assets/images/` and are imported, so they ship as `assets/<name>.<hash>.png` and load from the remote's public path. A source rule and an integration check stop root-relative image paths from coming back.
+
 ### Changed
 
 - Release: the image is pushed by digest and gets its version tags and `latest` only after the Trivy scan, the provenance export and the Cosign signature (`.github/scripts/tag-signed-image.sh`), so a failed release no longer leaves a tag on an unscanned or unsigned image.

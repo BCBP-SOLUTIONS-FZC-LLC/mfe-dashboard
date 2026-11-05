@@ -1,4 +1,10 @@
 import type { ThemeMode } from '../theme/themeMode'
+// Imported, not root-relative public paths: inside web-shell the page origin is the shell's, so
+// '/image/…' would load from the shell. Imports are emitted under assets/ and resolved against the
+// remote's own public path (where remoteEntry.js was loaded from).
+import logoMark from '../assets/images/logo.png'
+import logoMainBlack from '../assets/images/logo-main-black.png'
+import logoMainWhite from '../assets/images/logo-main-white.png'
 
 type BrandLogoProps = {
   className?: string
@@ -16,8 +22,7 @@ export function BrandLogo({
   theme = 'light',
 }: BrandLogoProps) {
   if (variant === 'main') {
-    const src =
-      theme === 'dark' ? '/image/logo-main-white.png' : '/image/logo-main-black.png'
+    const src = theme === 'dark' ? logoMainWhite : logoMainBlack
     return (
       <img
         src={src}
@@ -29,7 +34,7 @@ export function BrandLogo({
 
   return (
     <img
-      src="/image/logo.png"
+      src={logoMark}
       alt="Beyond Code"
       width={size}
       height={size}

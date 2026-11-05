@@ -15,6 +15,7 @@ mfe-dashboard/
 │   ├── layouts/                   AppShellLayout (chrome, search, theme, user menu, defaultLogout), outlet context
 │   ├── pages/                     DashboardPage, UserManagementPage
 │   ├── components/                BrandLogo, ThemePicker, dashboard/{TicketRow, DashboardRightPanel, DashboardIcons}
+│   ├── assets/images/             logos (imported; emitted under assets/ with a hash)
 │   ├── hooks/                     useDashboardData (useApi), useMemberAccess
 │   ├── mocks/                     dashboardTickets (rows, ticketsForView, filter options), dashboardStats
 │   ├── theme/                     themeMode (storage('app2')), daisyThemes, CSS

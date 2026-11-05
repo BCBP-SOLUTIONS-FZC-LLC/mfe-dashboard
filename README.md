@@ -12,7 +12,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | Deploy | Not deployed yet. Ships with web-shell's first release (alpha.4), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). web-shell's contract suite passed 9/9 against this release |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4`, all the same as web-shell |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
-| Tests | 22 files, 115 tests (unit, integration, e2e); coverage 99.3% statements, 97.5% branches, 100% functions, 99.3% lines (gate 95%) |
+| Tests | 22 files, 117 tests (unit, integration, e2e); coverage 99.3% statements, 97.5% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
 
 Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, flows, failure handling) and [ARCHITECTURE.md](ARCHITECTURE.md) (diagrams, decisions). Claude Code guidance: [.claude/CLAUDE.md](.claude/CLAUDE.md).

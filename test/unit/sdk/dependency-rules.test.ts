@@ -73,6 +73,12 @@ describe('the SDK is used, not reimplemented', () => {
   })
 })
 
+describe('assets', () => {
+  it('imports images and fonts; no root-relative paths, which resolve on the shell origin inside web-shell', () => {
+    expect(offenders(/['"`]\/[^'"`\s]*\.(png|jpe?g|gif|svg|webp|avif|ico|woff2?)['"`]/)).toEqual([])
+  })
+})
+
 describe('dependencies', () => {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
     dependencies?: Record<string, string>
