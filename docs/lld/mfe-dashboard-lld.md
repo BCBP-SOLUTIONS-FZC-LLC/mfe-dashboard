@@ -201,7 +201,7 @@ KPI numbers are `kpiCounts()`: each view's row count before filters, from the sa
 
 | State | When |
 |---|---|
-| `loading` | No data for the current query key (`JSON.stringify([view, filters, canSeeAllTenders])`). The skeleton is a `role="status"` with `aria-busy`, announcing "Loading your tickets…"; its bars are `aria-hidden` |
+| `loading` | No data for the current query key (`JSON.stringify([view, filters, canSeeAllTenders])`). A visually hidden `role="status"`, always on the page, reads "Loading your tickets…" while loading and is empty otherwise (a live region inserted with its text is often not announced); the skeleton is `aria-hidden` |
 | `error` | The load failed with an SDK `ApiError` (problem, timeout, network). `useApi` drops the rows; `error` is returned until a reload succeeds. Any other exception is rethrown by `useApi` to the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes) |
 | `partial_failure` | View `my-tickets` and a row has `tenderDetailsUnavailable` (fixture `T-1015`) |
 | `empty` | Zero rows |

@@ -40,13 +40,17 @@ describe('accessibility of views and loading', () => {
     expect(pressed().every((b) => b.textContent?.includes('Delegated To Me'))).toBe(true)
   })
 
-  it('announces loading through a busy status and leaves it once rows arrive', async () => {
+  it('announces loading in a status region that stays on the page and empties once rows arrive', async () => {
     window.history.replaceState({}, '', '/t/acme/dashboard')
     render(<App userLabel="Ada" />)
     const status = screen.getByRole('status')
-    expect(status).toHaveAttribute('aria-busy', 'true')
     expect(status).toHaveTextContent('Loading your tickets…')
-    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument())
-    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    await waitFor(() => expect(status).toHaveTextContent(/^$/))
+    // The same element, not a new one: screen readers announce changes to an existing live region.
+    expect(screen.getByRole('status')).toBe(status)
+
+    await userEvent.click(screen.getAllByRole('button', { name: /Delegated To Me/ })[0]!)
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status).toHaveTextContent('Loading your tickets…')
   })
 })

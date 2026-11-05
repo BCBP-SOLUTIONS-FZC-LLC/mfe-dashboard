@@ -376,16 +376,17 @@ export default function DashboardPage() {
                 </p>
               ) : null}
 
+              {/* A live region that is always on the page and changes its text, so screen readers
+                  announce it (a region inserted with its text already in it is often skipped). */}
+              <p role="status" className="sr-only">
+                {loadState === 'loading' ? t('states.loading.body') : ''}
+              </p>
+
               {loadState === 'loading' ? (
-                // Announced politely; the skeleton itself is decorative.
-                <div role="status" aria-busy="true" className="space-y-3">
-                  <span className="sr-only">{t('states.loading.body')}</span>
+                // Decorative: the status above says what is happening.
+                <div aria-hidden className="space-y-3">
                   {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      aria-hidden
-                      className="h-28 animate-pulse rounded-xl bg-aura-border/60"
-                    />
+                    <div key={i} className="h-28 animate-pulse rounded-xl bg-aura-border/60" />
                   ))}
                 </div>
               ) : null}
