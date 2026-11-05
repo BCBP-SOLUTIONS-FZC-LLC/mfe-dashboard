@@ -218,6 +218,7 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 | Custom chrome inside the remote | The shell renders only the frame; ticket navigation lives here |
 | `USER 101` | The unprivileged nginx image's uid. `USER nginx` fails Hadolint DL3066 |
 | Coverage script instead of a Vitest threshold | Same gate the shell uses, overridable with `COVERAGE_THRESHOLD` |
+| Standalone build `assetPrefix: '/'`, remote left at the preset's `'auto'` | The remote is loaded from any base URL; the standalone page is always at `/`, and relative asset URLs break a reload of `/dashboard/user-management` |
 | Provenance read from the image index (`imagetools inspect`), not with `cosign download attestation` | `build-push-action` writes provenance as a BuildKit attestation, not a Cosign one; the Cosign call found nothing and failed `v0.1.0` |
 | Release images are pushed by digest and tagged only after scan, provenance and signature | A version tag or `latest` never points at an unscanned or unsigned image (`v0.1.0` did) |
 | A failed release is fixed by the next patch version, not by moving the tag | A rerun checks out the same tag and scripts, and moving a tag needs a force push |

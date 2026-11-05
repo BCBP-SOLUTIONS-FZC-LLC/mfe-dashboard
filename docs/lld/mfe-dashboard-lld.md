@@ -18,7 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
-| 1.11 | 2026-11-05 | Platform packages `1.0.0-alpha.5`; the standalone page sets its identity and loads `/config/runtime.json`, and logout uses `auth.signInUrl` (§5, §7.2, §7.6, §11, §12.3, §12.4); open item 14 at step 3 |
+| 1.11 | 2026-11-05 | Platform packages `1.0.0-alpha.5`; the standalone page sets its identity and loads `/config/runtime.json`, and logout uses `auth.signInUrl` (§5, §7.2, §7.6, §11, §12.3, §12.4); open item 14 at step 3. Standalone `assetPrefix: '/'` so nested routes reload (§12.1, §11); a config failure is visible on the console in staging and prod (§11) |
 | 1.10 | 2026-11-05 | Logos imported from `src/assets/images` instead of `public/image` (§3, §4.1) |
 | 1.9 | 2026-11-05 | Release tags are added after scan, provenance and signature (§12.5); open item 14 (runtime logout target) |
 | 1.8 | 2026-11-05 | `v0.1.1` published (GitHub Release, signed image `sha256:c9e10c06…`); release pipeline described in §12.5; supply chain (§13); open item 13 (the unsigned `0.1.0` tag). web-shell has the same release-script fixes (web-shell #27) |
@@ -302,7 +302,8 @@ No tokens, user data or permissions are stored by this repo. Raw `localStorage` 
 | Filters match nothing / search matches nothing | "No tickets found" with Clear Filters / "No matching tickets" |
 | No `read:members` / `manage:members` | Link hidden; route redirects to the dashboard |
 | No shell `signOut` | Fallback navigation to `auth.signInUrl`, else `PUBLIC_APP1_URL` |
-| Standalone `/config/runtime.json` missing, invalid or slow (> 5 s) | `warn` log; the page renders with no config and logout uses `PUBLIC_APP1_URL` |
+| Standalone `/config/runtime.json` missing, invalid or slow (> 5 s) | `warn` log (SDK logger; plus `console.warn` in staging and prod, where the SDK logger is silent before logging starts); the page renders with no config and logout uses `PUBLIC_APP1_URL`. Deploy check in `docs/runbook-release.md` |
+| Reload of a nested standalone route (`/dashboard/user-management`) | Works: the standalone HTML links `/assets/…` and `/favicon.png` root-absolute (`assetPrefix: '/'`); the CI smoke script checks it |
 | `#app` missing (standalone) | `main.tsx` throws before render |
 | Ticket load fails with an API error | `error` state: alert with the SDK's problem message and Retry; rows cleared |
 | Ticket loader throws anything else (a bug) | `useApi` rethrows; the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes) shows its fallback and logs it |
@@ -323,6 +324,8 @@ One `rsbuild build` makes two environments into `dist/` (`npm run build` runs `t
 | `standalone` | `src/main.tsx`, `index.html` | `index.html`, `assets/` | bundled |
 
 The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the installed `frontend-sdk` is not the preset's own version, so the three platform packages move together. Because the container global (§4.1) and the shared range come from that version, a platform upgrade ships as one release with web-shell: a remote built with the alpha.3 preset does not load in an alpha.4 shell, and the reverse.
+
+The preset sets `assetPrefix: 'auto'`: the remote's chunks and images resolve from wherever `remoteEntry.js` was loaded. The `standalone` environment overrides it with `'/'`, because in its HTML `'auto'` becomes relative (`assets/…`) and breaks a reload of a nested route; `test/unit/app/standalone-build.test.ts` and the smoke script check it.
 
 `inlineScripts`/`inlineStyles` are off (CSP `script-src 'self'`). The dev server (port 5002, `strictPort`, CORS `*`) runs without HMR or live reload, which would otherwise be injected into `remoteEntry.js`.
 
@@ -408,7 +411,7 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
 | Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files, `/config/runtime.json` served as JSON, security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.4% / 97.6% / 100% / 99.3% with 124 tests in 24 files.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.4% / 97.3% / 100% / 99.3% with 128 tests in 26 files.
 
 ## 15. Open Items
 

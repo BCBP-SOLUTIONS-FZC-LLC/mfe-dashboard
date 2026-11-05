@@ -61,6 +61,11 @@ export default defineConfig({
     standalone: {
       source: { entry: { index: './src/main.tsx' } },
       html: { template: './index.html' },
+      // Root-absolute URLs for the page's own scripts, styles and favicon. The preset sets
+      // assetPrefix 'auto' (right for the remote, which is loaded from anywhere); in this HTML that
+      // becomes relative ('assets/…'), and a reload of /dashboard/user-management would then ask for
+      // /dashboard/assets/… and get index.html back. The standalone page is always served at /.
+      output: { assetPrefix: '/' },
     },
   },
   // The shell (http://localhost:5001) loads remoteEntry.js and its chunks cross-origin in dev.

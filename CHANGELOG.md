@@ -17,6 +17,9 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ### Fixed
 
+- Reloading a nested standalone route (`/dashboard/user-management`) left a blank page: the standalone HTML inherited the preset's `assetPrefix: 'auto'` and linked `assets/…` relatively, so nginx answered `/dashboard/assets/…` with `index.html`. The standalone environment now uses `assetPrefix: '/'`, and the smoke script loads a nested route's first script. The favicon link is root-absolute too.
+- A missing or invalid `/config/runtime.json` in staging or prod left no trace (the SDK logger is silent there before logging starts); the standalone page now also writes a `console.warn`. The release runbook has a deploy check for `auth.signInUrl`.
+- `smoke-tests.sh` runs locally without `GITHUB_STEP_SUMMARY` or `GITHUB_REPOSITORY`.
 - The sidebar logo was broken inside web-shell (found by web-shell's contract suite, web-shell #29). `BrandLogo` used root-relative `/image/…` paths, which resolve on the shell's origin. The logos moved from `public/image/` to `src/assets/images/` and are imported, so they ship as `assets/<name>.<hash>.png` and load from the remote's public path. A source rule and an integration check stop root-relative image paths from coming back.
 
 ## [0.1.1] - 2026-11-05

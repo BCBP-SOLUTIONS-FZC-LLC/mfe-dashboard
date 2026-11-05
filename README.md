@@ -12,7 +12,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | Deploy | Not deployed yet. Ships with web-shell's first release (now on alpha.5), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). web-shell's contract suite passed 9/9 against this release |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.5` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.5`, all the same as web-shell. `v0.1.1` was built on alpha.4 and still loads in the alpha.5 shell (`^1.0.0-alpha.4`) |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
-| Tests | 24 files, 124 tests (unit, integration, e2e); coverage 99.4% statements, 97.6% branches, 100% functions, 99.3% lines (gate 95%) |
+| Tests | 26 files, 128 tests (unit, integration, e2e); coverage 99.4% statements, 97.3% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
 
 Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, flows, failure handling) and [ARCHITECTURE.md](ARCHITECTURE.md) (diagrams, decisions). Claude Code guidance: [.claude/CLAUDE.md](.claude/CLAUDE.md).
@@ -146,7 +146,7 @@ The gate requires **95%** statements, branches, functions, and lines on `src/**/
 
 | Variable | When | Default |
 |---|---|---|
-| `auth.signInUrl` in `/config/runtime.json` | Run time, per environment. Standalone logout target; wins over `PUBLIC_APP1_URL`. Mount the environment's file over the image's default (`/usr/share/nginx/html/config/runtime.json`; the default, `public/config/runtime.json`, is web-shell's and has no `signInUrl`). The SDK validates the file strictly (unknown keys are rejected) | none |
+| `auth.signInUrl` in `/config/runtime.json` | Run time, per environment. Standalone logout target; wins over `PUBLIC_APP1_URL`. Mount the environment's file over the image's default (`/usr/share/nginx/html/config/runtime.json`; the default, `public/config/runtime.json`, is web-shell's and has no `signInUrl`). The SDK validates the file strictly (unknown keys are rejected). Deploy check: [runbook](docs/runbook-release.md#standalone-runtime-config-authsigninurl) | none |
 | `PUBLIC_APP1_URL` | Build time. Logout target when no shell signs the user out and the runtime config has no `signInUrl` (`config/app1Url.ts`). Dockerfile `ARG`, CI repository variable | `http://localhost:5001` |
 | `PLATFORM_ENVIRONMENT` | Build time. The standalone page's identity environment (`local`, `dev`, `test`, `staging`, `prod`), as web-shell's. `http` origins in the runtime config are accepted only for `local`, `dev` and `test` | `prod` for a production build, `local` for the dev server |
 | `VITE_APP1_URL` | **Deprecated** (Vite-era name). Read only when `PUBLIC_APP1_URL` is unset or empty; the build prints a warning. Will be removed in a major release | — |

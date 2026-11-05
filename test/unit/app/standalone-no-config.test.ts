@@ -34,6 +34,8 @@ describe('standalone page without a runtime config', () => {
 
   it('warns that logout uses the build-time sign-in URL', () => {
     expect(seen.warnings.join('\n')).toContain('runtime config unavailable')
+    // In local the SDK logger writes it to the console itself: one line, not a second copy.
+    expect(seen.warnings.filter((w) => w.includes('runtime config unavailable'))).toHaveLength(1)
   })
 
   it('logs out to PUBLIC_APP1_URL', () => {

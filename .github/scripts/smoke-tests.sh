@@ -67,6 +67,22 @@ if [ "${map_count}" -ne 0 ]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Nested route"
+# A reload of a nested standalone route must still load the page's scripts (root-absolute /assets/…),
+# not get index.html back for them.
+nested_js=$(curl -sf "http://127.0.0.1:${PORT}/dashboard/user-management" | grep -o 'src="[^"]*\.js"' | head -1 | cut -d'"' -f2)
+echo "first script: ${nested_js}"
+case "${nested_js}" in
+  /*) ;;
+  *) echo "::error file=rsbuild.config.ts,title=Nested route::the standalone page links '${nested_js}', which a nested route resolves under its own path (set the standalone assetPrefix to /)"; exit 1 ;;
+esac
+nested_type=$(curl -s -o /dev/null -w '%{content_type}' "http://127.0.0.1:${PORT}${nested_js}")
+if [[ "${nested_type}" != application/javascript* ]]; then
+  echo "::error file=nginx/default.conf,title=Nested route::${nested_js} is served as '${nested_type}', not JavaScript"
+  exit 1
+fi
+echo "::endgroup::"
+
 echo "::group::Runtime config"
 # The standalone page loads /config/runtime.json (src/standalone.ts); it must be JSON, not the SPA fallback.
 config_type=$(curl -s -o /dev/null -w '%{content_type}' "http://127.0.0.1:${PORT}/config/runtime.json")
@@ -121,5 +137,5 @@ echo "::endgroup::"
   echo "### Smoke test results"
   echo "- ✅ Startup gate: \`/healthz\`, \`/\`, and \`/remoteEntry.js\` returned 200"
   echo "- 📦 Image size (linux/amd64): **${mb} MB** (limit: ${MAX_MB} MB)"
-  echo "- 🔍 [Security (Trivy SARIF results)](https://github.com/${GITHUB_REPOSITORY}/security/code-scanning)"
-} >> "$GITHUB_STEP_SUMMARY"
+  echo "- 🔍 [Security (Trivy SARIF results)](https://github.com/${GITHUB_REPOSITORY:-BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard}/security/code-scanning)"
+} >> "${GITHUB_STEP_SUMMARY:-/dev/null}"

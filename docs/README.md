@@ -9,7 +9,7 @@ Operator material for `mfe-dashboard`. Product setup stays in the repository [RE
 | [pipeline/](pipeline/README.md) | What `ci.yml` and `release.yml` run, and in which order |
 | [runbook-coverage-gate.md](runbook-coverage-gate.md) | A red `validate-test` job |
 | [runbook-image-scan.md](runbook-image-scan.md) | Hadolint, digest pin, Trivy, or the smoke script |
-| [runbook-release.md](runbook-release.md) | A tag that does not publish |
+| [runbook-release.md](runbook-release.md) | A tag that does not publish; the standalone runtime config deploy check |
 
 Test layout: [test/README.md](../test/README.md). Claude Code guidance: [.claude/CLAUDE.md](../.claude/CLAUDE.md).
 

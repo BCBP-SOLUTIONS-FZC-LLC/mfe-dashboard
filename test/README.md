@@ -41,7 +41,9 @@ The only stub is the network: `<script>` and `<link>` tags the container appends
 `src/standalone.ts` sets the page identity and runtime config, which the SDK allows only once per page. Each test file has its own SDK, and `setup.ts` starts the test platform in `beforeEach`, so these files do their work in `beforeAll`, on an SDK in the same state `main.tsx` sees:
 
 - `standalone-config.test.ts`: the identity is `mfe-dashboard` / `portal`; `/config/runtime.json` is fetched once and set (the shipped `public/config/runtime.json` plus a `signInUrl`, so the strict SDK schema also validates the shipped file); logout goes to `auth.signInUrl`.
-- `standalone-no-config.test.ts`: a 404 is a warning, the page still starts with no config, and logout goes to `PUBLIC_APP1_URL`.
+- `standalone-no-config.test.ts`: a 404 is a warning (one console line in local, from the SDK), the page still starts with no config, and logout goes to `PUBLIC_APP1_URL`.
+- `standalone-no-config-prod.test.ts`: the same in `prod`, where the SDK logger is silent: `standalone.ts` writes one `console.warn`.
+- `standalone-build.test.ts`: `rsbuild.config.ts` gives the standalone environment `assetPrefix: '/'` and leaves the remote's to the preset.
 
 `shell-layout.test.tsx` covers a page that already has a config (nothing is fetched) and `main.test.ts` waits for `startStandalone` before the render.
 
