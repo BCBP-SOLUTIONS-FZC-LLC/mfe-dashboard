@@ -6,6 +6,10 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-05
+
+The remote is renamed `app2` → `dashboard`. This breaks the shell contract: release and deploy together with web-shell #35, which loads `dashboard`. A shell that asks for `app2` cannot load this release. Dev manifests switch their key to `dashboard`, and the hosting path becomes `/remotes/dashboard/<version>/`.
+
 ### Changed
 
 - **Breaking for the shell: the remote is renamed `app2` → `dashboard`.** `app2` was a template leftover. Container `dashboard`, so `remoteEntry.js` defines `var __platform_mfe_dashboard` (chunk global `rspackChunk_platform_mfe_dashboard`). `remote-manifest-entry.json` has the key `dashboard`. `APP_ID` is `dashboard`, which names the SDK message namespace, `storage('dashboard')`, and the `mfe` label on logs and error boundaries. A shell that still asks for `app2` cannot load this build: web-shell switches `DASHBOARD_REMOTE`, its manifest key and any kill-switch entry in the same release (`../web-shell-rename-app2-to-dashboard.md`, frontend workspace). The theme saved under `app2` is not migrated (dev only, so nothing to keep). Hosting path: `/remotes/dashboard/<version>/`. The integration test now derives the container global from `APP_ID`, so the build name and the code name cannot drift apart.
