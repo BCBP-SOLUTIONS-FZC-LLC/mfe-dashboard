@@ -8,7 +8,7 @@ A Module Federation **remote**, container `app2`, exposing `./App` (`src/App.tsx
 
 React 19, React Router 7, Tailwind 4 + daisyUI 5, Rsbuild 2 (Rspack) with `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild`, Vitest 5 + happy-dom, nginx 1.31 image on port 8080. Node 26 in CI and the image (`.nvmrc`; `engines` `>=22`), npm. Packages `@bcbp-solutions-fzc-llc/*` come from **GitHub Packages**: `export NODE_AUTH_TOKEN=$(gh auth token)` before `npm ci` / `npm install`.
 
-**Status (2026-11-05):** `v0.1.1` released (GitHub Release, signed image; `v0.1.0` failed to publish, do not use), built with `PUBLIC_APP1_URL` = `https://app.dev.bcbpsolutions.com`. Not deployed yet: it ships with web-shell's first release. `main` is on platform packages (`frontend-sdk`, `webpack-preset`, `eslint-plugin`) `1.0.0-alpha.5`, all the same as web-shell; the standalone page loads `/config/runtime.json` (logout → `auth.signInUrl`). Data is fixtures; no backend calls. Open items: [LLD §15](../docs/lld/mfe-dashboard-lld.md#15-open-items).
+**Status (2026-11-05):** `v0.2.0` released (platform packages `frontend-sdk`, `webpack-preset`, `eslint-plugin` `1.0.0-alpha.5`, all the same as web-shell; needs web-shell on alpha.5). Built with `PUBLIC_APP1_URL` = `https://app.dev.bcbpsolutions.com`; the standalone page loads `/config/runtime.json` (logout → `auth.signInUrl`). Not deployed yet: it ships with web-shell's first release. `v0.1.1` superseded; `v0.1.0` failed to publish. Data is fixtures; no backend calls. Open items: [LLD §15](../docs/lld/mfe-dashboard-lld.md#15-open-items).
 
 **Owns:** the dashboard (views, KPIs, filters, load states, right panel), user management UI, the remote's chrome (sidebar, search, theme, user menu), the `app2` catalog, themes, the nginx image.
 
