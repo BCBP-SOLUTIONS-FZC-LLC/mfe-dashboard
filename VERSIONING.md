@@ -41,7 +41,8 @@ This remote has no package for another app to import from npm. Its public contra
 
 | Version | Status | Image tag | Notes |
 |---------|--------|-----------|-------|
-| `v0.1.1` | **Current** (pre-1.0) | `0.1.1`, `0.1`, `0`, `latest` | First published release; platform packages `1.0.0-alpha.4` (requires the shell's SDK `^1.0.0-alpha.4`, so it also loads in web-shell on alpha.5; checked by web-shell's contract suite). No support window has started |
+| `v0.2.0` | **Current** (pre-1.0) | `0.2.0`, `0.2`, `0`, `latest` | Platform packages `1.0.0-alpha.5`: requires the shell's SDK `^1.0.0-alpha.5`, so web-shell must be on alpha.5. Standalone runtime config (`auth.signInUrl`), logo fix inside the shell |
+| `v0.1.1` | Superseded | `0.1.1`, `0.1` | Platform packages `1.0.0-alpha.4` (`^1.0.0-alpha.4`, so it also loads in web-shell on alpha.5; checked by web-shell's contract suite). Logo broken inside the shell |
 | `v0.1.0` | **Do not use** | `0.1.0` (unsigned) | The release workflow failed after the push: no GitHub Release, no signature. Same application as `v0.1.1` |
 
 This remote has no formal support-window policy yet, since nothing is running in production against a tagged release. Once a `v1.0.0` ships, this section will define how long a superseded major line receives security-only fixes.
@@ -53,10 +54,10 @@ Do not add this repository as an npm dependency. The shell loads `remoteEntry.js
 ### Pull and verify the image
 
 ```bash
-# Git tag v0.1.1 publishes the image as 0.1.1 (the v prefix is not part of the image tag)
-docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.1
+# Git tag v0.2.0 publishes the image as 0.2.0 (the v prefix is not part of the image tag)
+docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.2.0
 # the SLSA provenance BuildKit stored in the image index (also attached to the GitHub Release)
-docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.1 --format '{{ json .Provenance }}'
+docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.2.0 --format '{{ json .Provenance }}'
 ```
 
 Tagged releases (from `v0.1.1`) and every push to `main` or `master` publish images. Each is signed keylessly via Sigstore/Cosign (no long-lived key). Verify before deploying:

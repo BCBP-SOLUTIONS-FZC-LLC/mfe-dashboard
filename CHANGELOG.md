@@ -6,6 +6,10 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-05
+
+Platform packages `1.0.0-alpha.5`: needs web-shell on alpha.5 (web-shell #31; an alpha.4 shell refuses it). Fixes the logo inside web-shell. Once this and web-shell are deployed, each environment's standalone `runtime.json` can set `auth.signInUrl`.
+
 ### Added
 
 - The standalone page is its own host page (SDK alpha.5): `src/standalone.ts` sets the page identity (`mfe-dashboard`, `portal`, `PLATFORM_ENVIRONMENT`, `BUILD_VERSION`) and loads `/config/runtime.json` before rendering. It renders anyway when the file is missing or invalid, with a warning. Logout without a shell goes to the config's `auth.signInUrl`, else `PUBLIC_APP1_URL`, so one release can serve every environment. The image ships web-shell's default `config/runtime.json` (no `signInUrl`) and serves it `no-cache` with no SPA fallback, and an environment mounts its own over it. The smoke script checks the file. New Dockerfile `ARG PLATFORM_ENVIRONMENT=prod`.

@@ -5,8 +5,8 @@
 | | |
 |---|---|
 | Repository | `BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard` (private) |
-| Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.1.1`); nothing is published to npm |
-| Version | `0.1.1`, released 2026-11-05 ([GitHub Release](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.1.1), [CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
+| Deliverables | Container image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard` and the release `dist` tarball. `package.json` is private (`0.2.0`); nothing is published to npm |
+| Version | `0.2.0`, released 2026-11-05 ([GitHub Release](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.2.0), [CHANGELOG.md](../../CHANGELOG.md)); SemVer rules in [VERSIONING.md](../../VERSIONING.md) |
 | Host | `web-shell` (`app1`), which loads this remote as `DASHBOARD_REMOTE = 'app2'` (`web-shell/src/App.tsx`) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.5` (peer `^1.0.0-alpha.5`, provided by the shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.5` (§12) |
 | Runtime | React 19, React Router 7, Tailwind 4 + daisyUI 5; built with Rsbuild 2 (Rspack); served by nginx 1.31 on port 8080 |
@@ -18,6 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.12 | 2026-11-05 | Release `v0.2.0` (alpha.5); open item 14 at its last step |
 | 1.11 | 2026-11-05 | Platform packages `1.0.0-alpha.5`; the standalone page sets its identity and loads `/config/runtime.json`, and logout uses `auth.signInUrl` (§5, §7.2, §7.6, §11, §12.3, §12.4); open item 14 at step 3. Standalone `assetPrefix: '/'` so nested routes reload (§12.1, §11); a config failure is visible on the console in staging and prod (§11) |
 | 1.10 | 2026-11-05 | Logos imported from `src/assets/images` instead of `public/image` (§3, §4.1) |
 | 1.9 | 2026-11-05 | Release tags are added after scan, provenance and signature (§12.5); open item 14 (runtime logout target) |
@@ -426,6 +427,6 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 9 | Layout uses logical classes (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`, `rtl:` for the sidebar slide), so it follows `dir`. Still needed for RTL: the shell setting `<html dir>` for the locale, an Arabic catalog, and a check of directional icons (chevrons) | web-shell, mfe-dashboard |
 | 10 | Logs: failed loads only. No metrics (`getServiceMeter`) yet, and source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
 | 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_app2`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
-| 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.1.1` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
+| 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.2.0` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
 | 13 | The unsigned `0.1.0` image (no GitHub Release) is still in GHCR. Delete package version `1507080606`; that needs a token with `delete:packages` | maintainers |
-| 14 | Steps 1 and 2 of the `auth.signInUrl` rollout are done: web-shell is on alpha.5 (web-shell #31), and this remote is on alpha.5 with the standalone page loading `/config/runtime.json`. Step 3: once this ships, each environment's `runtime.json` for the standalone image sets `auth.signInUrl`. Until then logout uses `PUBLIC_APP1_URL` | platform deployment |
+| 14 | `auth.signInUrl` rollout: web-shell is on alpha.5 (web-shell #31) and this remote released it in `v0.2.0`. Last step, after both are deployed: each environment's standalone `runtime.json` sets `auth.signInUrl` (deploy check in `docs/runbook-release.md`). Until then standalone logout uses `PUBLIC_APP1_URL` | platform deployment |

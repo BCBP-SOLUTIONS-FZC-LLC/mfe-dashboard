@@ -8,9 +8,9 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 
 | | |
 |---|---|
-| Release | [`v0.1.1`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.1.1) (2026-11-05): image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.1`, signed, with SBOM and provenance. `v0.1.0` failed to publish; do not use it. See [CHANGELOG.md](CHANGELOG.md) |
-| Deploy | Not deployed yet. Ships with web-shell's first release (now on alpha.5), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). web-shell's contract suite passed 9/9 against this release |
-| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.5` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.5`, all the same as web-shell. `v0.1.1` was built on alpha.4 and still loads in the alpha.5 shell (`^1.0.0-alpha.4`) |
+| Release | [`v0.2.0`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.2.0) (2026-11-05): image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.2.0`, signed, with SBOM and provenance. Platform packages alpha.5, so it needs web-shell on alpha.5. `v0.1.1` (alpha.4) is superseded; `v0.1.0` failed to publish, do not use it. See [CHANGELOG.md](CHANGELOG.md) |
+| Deploy | Not deployed yet. Ships with web-shell's first release (alpha.4 → alpha.5 done in web-shell #31), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). After both are deployed, each environment's standalone `runtime.json` sets `auth.signInUrl` (item 14) |
+| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.5` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.5`, all the same as web-shell. Released from `v0.2.0` |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
 | Tests | 26 files, 128 tests (unit, integration, e2e); coverage 99.4% statements, 97.3% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
@@ -164,7 +164,7 @@ docker run --rm -p 18080:8080 mfe-dashboard:dev
 
 Bases are digest-pinned in the Dockerfile (`node:26-bookworm`, `nginxinc/nginx-unprivileged:1.31-alpine`, with `apk upgrade`). `npm ci` reads the GitHub Packages token from the BuildKit secret `npm_token` (`docker build --secret id=npm_token,env=NODE_AUTH_TOKEN .`). Source maps are deleted from the image. The process runs as uid **101**.
 
-Published name: `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard`. A Git tag `v0.1.1` becomes the image tags `0.1.1`, `0.1`, `0` and `latest` (no `v`). Each GitHub Release carries the `dist` tarball, `remote-manifest-entry.json` (web-shell's manifest entry with the `remoteEntry.js` integrity), `checksums.txt`, the SBOM and the SLSA provenance; the image is Cosign-signed. See [VERSIONING.md](VERSIONING.md) and [LLD §12.5](docs/lld/mfe-dashboard-lld.md#125-release).
+Published name: `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard`. A Git tag `v0.2.0` becomes the image tags `0.2.0`, `0.2`, `0` and `latest` (no `v`). Each GitHub Release carries the `dist` tarball, `remote-manifest-entry.json` (web-shell's manifest entry with the `remoteEntry.js` integrity), `checksums.txt`, the SBOM and the SLSA provenance; the image is Cosign-signed. See [VERSIONING.md](VERSIONING.md) and [LLD §12.5](docs/lld/mfe-dashboard-lld.md#125-release).
 
 ## CI
 
