@@ -9,8 +9,8 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | | |
 |---|---|
 | Release | [`v0.3.0`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.3.0) (2026-11-05): image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.3.0`, signed, with SBOM and provenance. Remote named `dashboard` (was `app2` up to `v0.2.0`), platform packages alpha.5: needs web-shell #35 or later. See [CHANGELOG.md](CHANGELOG.md) |
-| Deploy | Not deployed yet. Ships with web-shell's first release (on alpha.5, loading `dashboard` since web-shell #35), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). At deploy, dev manifests switch the key `app2` → `dashboard` (item 15); then each environment's standalone `runtime.json` can set `auth.signInUrl` (item 14) |
-| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.6` on `main` (web-shell must move to alpha.6 before the next release; LLD §15 item 16); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.6`. Released from `v0.2.0` |
+| Deploy | Not deployed yet. Ships with web-shell's first release (on alpha.6 since web-shell #44, loading `dashboard` since web-shell #35), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). At deploy, dev manifests switch the key `app2` → `dashboard` (item 15); then each environment's standalone `runtime.json` can set `auth.signInUrl` (item 14) |
+| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.6` (same as web-shell, since web-shell #44); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.6`. Released from `v0.2.0` |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
 | Tests | 26 files, 142 tests (unit, integration, e2e); coverage 99.2% statements, 98.0% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |

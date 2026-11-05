@@ -8,7 +8,7 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ### Changed
 
-- **Platform packages `1.0.0-alpha.6`** (`frontend-sdk`, `webpack-preset`, `eslint-plugin`, pinned exactly; peer `^1.0.0-alpha.6`). A remote built on alpha.6 needs the shell's SDK `^1.0.0-alpha.6`: **web-shell moves to alpha.6 first**, then this remote releases, and both deploy together.
+- **Platform packages `1.0.0-alpha.6`** (`frontend-sdk`, `webpack-preset`, `eslint-plugin`, pinned exactly; peer `^1.0.0-alpha.6`). A remote built on alpha.6 needs the shell's SDK `^1.0.0-alpha.6`; web-shell moved first (web-shell #44). Release and deploy both together.
 - The two workarounds from the SDK audit are gone, now that alpha.6 covers them. Calendar days use `formatDate('YYYY-MM-DD')` instead of the `calendarDate()` helper (`src/lib/dates.ts`, removed), and the deadline filter compares them as day strings. The standalone page's "runtime config unavailable" warning goes through `getLogger` only, which the SDK writes to the console while logging is off; the `console.warn` is removed. `dependency-rules.test.ts` now rejects any `console` call, `calendarDate(` and a `Date` built from a `YYYY-MM-DD` literal.
 - The standalone page takes its environment from `/config/runtime.json` (alpha.6). It loads the file, calls `initializeCore` with its `environment`, then `setRuntimeConfig`, so one build serves every environment. Without a file, or a file without `environment`, it runs as `prod` in a build and `local` on the dev server. `PLATFORM_ENVIRONMENT` is removed (`rsbuild.config.ts`, Dockerfile `ARG`).
 
