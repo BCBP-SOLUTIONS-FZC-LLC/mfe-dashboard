@@ -7,6 +7,7 @@
 import { defineConfig } from '@rsbuild/core'
 import { pluginReact } from '@rsbuild/plugin-react'
 import { pluginPlatform } from '@bcbp-solutions-fzc-llc/webpack-preset/rsbuild'
+import { ENVIRONMENTS } from '@bcbp-solutions-fzc-llc/frontend-sdk/core'
 import { resolveApp1Url } from './config/app1Url'
 
 // Hashed CSS, fonts and images live under /assets/ (served immutable); the remote's JS stays next to
@@ -20,7 +21,12 @@ if (app1.deprecated) {
 
 // The standalone page's environment, as web-shell's: PLATFORM_ENVIRONMENT, else prod for a
 // production build and local for the dev server.
-const environment = process.env.PLATFORM_ENVIRONMENT ?? (process.env.NODE_ENV === 'production' ? 'prod' : 'local')
+const environment = process.env.PLATFORM_ENVIRONMENT || (process.env.NODE_ENV === 'production' ? 'prod' : 'local')
+// The SDK's own list (frontend-sdk/core ENVIRONMENTS): a typo would otherwise reach initializeCore,
+// which throws at run time and leaves the standalone page without its runtime config.
+if (!(ENVIRONMENTS as readonly string[]).includes(environment)) {
+  throw new Error(`PLATFORM_ENVIRONMENT="${environment}" is not one of ${ENVIRONMENTS.join(', ')}`)
+}
 
 export default defineConfig({
   plugins: [pluginReact()],

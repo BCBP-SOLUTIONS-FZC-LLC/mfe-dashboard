@@ -1,5 +1,5 @@
 // A production standalone page whose /config/runtime.json is missing. Before logging starts, the
-// SDK logger is a no-op outside local, dev and test, so src/standalone.ts also warns on the console;
+// SDK logger is a no-op outside local and dev, so src/standalone.ts also warns on the console;
 // otherwise a bad mount would leave no trace. See standalone-config.test.ts for why this is beforeAll.
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 

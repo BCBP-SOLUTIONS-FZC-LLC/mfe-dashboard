@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { formatNumber, problemMessage } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { isProblemError } from '@bcbp-solutions-fzc-llc/frontend-sdk/problem'
@@ -21,6 +21,7 @@ import type { AppShellOutletContext } from '../layouts/appShellContext'
 import { DashboardRightPanel } from '../components/dashboard/DashboardRightPanel'
 import { TicketRow } from '../components/dashboard/TicketRow'
 import { useDashboardData } from '../hooks/useDashboardData'
+import { useDismiss } from '../hooks/useDismiss'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useNow } from '../hooks/useNow'
 import { kpiCounts, UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
@@ -97,18 +98,8 @@ export default function DashboardPage() {
   // "All Tenders In Flight" is for users who may read every tender (a UI hint; the API decides).
   const canSeeAllTenders = useHasPermission('read', 'tender')
 
-  useEffect(() => {
-    if (!filtersDrawerOpen) {
-      return
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setFiltersDrawerOpen(false)
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [filtersDrawerOpen])
+  // Escape and a press outside close the drawer (useDismiss), and focus returns to the Filters button.
+  useDismiss(filtersDrawerOpen, () => setFiltersDrawerOpen(false), { panelRef: filtersDrawerRef, trigger: '[data-filters-trigger]' })
 
   const activeFilterCount = countActiveFilters(filters)
 
@@ -199,6 +190,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setFiltersDrawerOpen(true)}
+              data-filters-trigger
               className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium ${dashBorderClass} ${dashSurfaceClass} hover:bg-aura-hover`}
               aria-expanded={filtersDrawerOpen}
             >
@@ -214,12 +206,9 @@ export default function DashboardPage() {
 
           {filtersDrawerOpen ? (
             <>
-              <button
-                type="button"
-                className="fixed inset-0 z-40 cursor-default bg-black/30"
-                aria-label={t('filters.close')}
-                onClick={() => setFiltersDrawerOpen(false)}
-              />
+              {/* A press here is outside the drawer, which useDismiss closes. Not a button: the focus
+                  trap keeps keyboard focus in the drawer, which has its own close button and Escape. */}
+              <div data-testid="filters-backdrop" aria-hidden="true" className="fixed inset-0 z-40 bg-black/30" />
               <aside
                 ref={filtersDrawerRef}
                 className="fixed inset-y-0 end-0 z-50 flex w-[min(100%,20rem)] flex-col border-s border-gray-200 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:border-aura-border dark:bg-aura-surface"

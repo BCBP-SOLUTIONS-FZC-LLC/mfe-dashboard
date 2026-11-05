@@ -78,7 +78,7 @@ describe('the SDK is used, not reimplemented', () => {
     expect(offenders(/\b(loadManifest|loadRemote|registerNavigator|initializeAuth|createOidcProvider|setTokenSource|setAuthorizer|setFlagProvider|startVersionPolling)\b/)).toEqual([])
   })
 
-  it('logs with getLogger; console only for the standalone config warning the SDK logger drops in staging and prod', () => {
+  it('logs with getLogger; console only for the standalone config warning the SDK logger drops outside local and dev', () => {
     expect(offenders(/\bconsole\.(log|info|warn|error|debug)\(/, { 'src/standalone.ts': 'SDK logger is silent before logging starts' })).toEqual([])
   })
 

@@ -44,7 +44,9 @@ describe('dashboard flows', () => {
     expect(await screen.findByText('Software Development Framework')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /^Filters/ }))
-    await user.click(screen.getByRole('button', { name: 'Close filters' }))
+    // A press on the backdrop is outside the drawer: useDismiss closes it.
+    await user.click(screen.getByTestId('filters-backdrop'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /^Filters/ }))
     const dialog = screen.getByRole('dialog', { name: 'Filters' })
     await user.selectOptions(within(dialog).getByLabelText('Role'), 'Approver')

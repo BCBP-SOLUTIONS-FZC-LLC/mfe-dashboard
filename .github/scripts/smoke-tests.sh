@@ -149,7 +149,7 @@ if grep -qi '^Server: nginx/' <<<"${doc_headers}"; then
   echo "::error file=nginx/default.conf,title=Security headers::nginx reveals its version (server_tokens)"
   exit 1
 fi
-for header in "X-Content-Type-Options: nosniff" "Access-Control-Allow-Origin: *" "Content-Encoding: gzip"; do
+for header in "X-Content-Type-Options: nosniff" "Access-Control-Allow-Origin: *" "Cross-Origin-Resource-Policy: cross-origin" "Content-Encoding: gzip"; do
   if ! grep -qiF "${header}" <<<"${entry_headers}"; then
     echo "::error file=nginx/default.conf,title=Security headers::remoteEntry.js is missing '${header}'"
     exit 1
