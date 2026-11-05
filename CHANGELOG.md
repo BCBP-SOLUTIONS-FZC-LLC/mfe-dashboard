@@ -6,6 +6,14 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-05
+
+The first published release. The application is the same as 0.1.0; only the release workflow changed.
+
+### Fixed
+
+- Release: the SLSA provenance export (`.github/scripts/export-image-provenance.sh`) asked Cosign for an attestation that does not exist. `build-push-action` stores provenance as a BuildKit attestation inside the image index, so the script now reads it with `docker buildx imagetools inspect`. The `v0.1.0` run pushed its image (`0.1.0`) and then failed before signing it, so `v0.1.0` has no GitHub Release and its image is unsigned. Use `0.1.1`.
+
 ## [0.1.0] - 2026-11-05
 
 First release. Built on the platform packages `1.0.0-alpha.4`, so it loads only in a web-shell on alpha.4 (web-shell #23); release the two together. Built with `PUBLIC_APP1_URL=https://app.dev.bcbpsolutions.com`.

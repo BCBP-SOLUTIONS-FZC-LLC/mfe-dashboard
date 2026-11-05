@@ -41,7 +41,8 @@ This remote has no package for another app to import from npm. Its public contra
 
 | Version | Status | Image tag | Notes |
 |---------|--------|-----------|-------|
-| `v0.1.0` | **Current** (pre-1.0) | `0.1.0`, `0.1`, `0`, `latest` | First release; platform packages `1.0.0-alpha.4`, so it needs web-shell on alpha.4. No support window has started |
+| `v0.1.1` | **Current** (pre-1.0) | `0.1.1`, `0.1`, `0`, `latest` | First published release; platform packages `1.0.0-alpha.4`, so it needs web-shell on alpha.4. No support window has started |
+| `v0.1.0` | **Do not use** | `0.1.0` (unsigned) | The release workflow failed after the push: no GitHub Release, no signature. Same application as `v0.1.1` |
 
 This remote has no formal support-window policy yet, since nothing is running in production against a tagged release. Once a `v1.0.0` ships, this section will define how long a superseded major line receives security-only fixes.
 
