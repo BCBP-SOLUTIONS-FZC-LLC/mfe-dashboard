@@ -46,6 +46,18 @@ Cosign identity for tags:
 
 OIDC issuer: `https://token.actions.githubusercontent.com`.
 
+## Standalone runtime config (`auth.signInUrl`)
+
+The standalone image serves `/config/runtime.json` (web-shell's defaults, no `signInUrl`). For logout to return to that environment's sign-in page, mount the environment's file over `/usr/share/nginx/html/config/runtime.json`, with `auth.signInUrl` an absolute `https` URL. The SDK validates it strictly: an unknown key or an `http` origin outside local, dev and test makes the page ignore the whole file.
+
+Check after each deploy:
+
+```bash
+curl -fsS https://<standalone-host>/config/runtime.json | jq -e '.auth.signInUrl | startswith("https://")'
+```
+
+A failure in the browser shows as a console warning `[app2] runtime config unavailable; logout uses the build-time sign-in URL`. In staging and prod that console line is the only trace: the standalone page sends no telemetry.
+
 ## Web-shell's manifest entry
 
 Each release attaches `mfe-dashboard_<tag>_remote-manifest-entry.json` (also inside the dist tarball and served by the image at `/remote-manifest-entry.json`): `entry`, `version` (the tag without `v`), `ownerDomain` and the sha384 `integrity` of that release's `remoteEntry.js`. Copy the `app2` object into the environment's `/remotes/manifest.json` and set `entry` to the absolute URL the release is served from. A rebuilt `remoteEntry.js` has a different hash; always take the entry from the same release as the files.

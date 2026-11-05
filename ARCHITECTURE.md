@@ -137,7 +137,7 @@ Load state is `partial_failure` when the view is `my-tickets` and a row has `ten
 
 ## Logout and theme
 
-`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `defaultLogout()` runs: `window.location.assign` of `PUBLIC_APP1_URL` without a trailing slash (default `http://localhost:5001`, inlined at build by `source.define`).
+`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `defaultLogout()` runs: `window.location.assign`, without a trailing slash, of the runtime config's `auth.signInUrl` (per environment), else `PUBLIC_APP1_URL` (inlined at build by `source.define`), else `http://localhost:5001`. Only the standalone page has a config with `signInUrl`: `src/standalone.ts` sets the page identity and loads `/config/runtime.json` through the SDK before rendering, and renders anyway when that fails. Inside web-shell the shell's config applies and has no `signInUrl`.
 
 | Key | Values |
 |---|---|
@@ -159,7 +159,7 @@ The SDK clears both on sign-out and workspace switch, refuses token-like keys, a
 
 nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standalone document a same-origin-only CSP (`frame-ancestors 'none'`), `X-Frame-Options: DENY`, `Permissions-Policy` and `X-Robots-Tag: noindex` (`nginx/document-headers.conf`); gzip is on and `server_tokens` off. Fonts are self-hosted (`@fontsource-variable/geist` and `/inter`, standalone only; the same packages and Tailwind font stack as web-shell). Each build writes `remote-manifest-entry.json`: web-shell's manifest entry for this build with `remoteEntry.js`'s sha384 integrity, which the smoke script compares with the served file. The smoke script checks the headers.
 
-`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. `.dockerignore` excludes `.env`, so values come in as build args.
+`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `PLATFORM_ENVIRONMENT` (default `prod`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. `/config/runtime.json` is served `no-cache` and is a 404 when absent; an environment mounts its own file over the shipped default to set `auth.signInUrl`. `.dockerignore` excludes `.env`, so values come in as build args.
 
 ## Release
 
@@ -218,6 +218,7 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 | Custom chrome inside the remote | The shell renders only the frame; ticket navigation lives here |
 | `USER 101` | The unprivileged nginx image's uid. `USER nginx` fails Hadolint DL3066 |
 | Coverage script instead of a Vitest threshold | Same gate the shell uses, overridable with `COVERAGE_THRESHOLD` |
+| Standalone build `assetPrefix: '/'`, remote left at the preset's `'auto'` | The remote is loaded from any base URL; the standalone page is always at `/`, and relative asset URLs break a reload of `/dashboard/user-management` |
 | Provenance read from the image index (`imagetools inspect`), not with `cosign download attestation` | `build-push-action` writes provenance as a BuildKit attestation, not a Cosign one; the Cosign call found nothing and failed `v0.1.0` |
 | Release images are pushed by digest and tagged only after scan, provenance and signature | A version tag or `latest` never points at an unscanned or unsigned image (`v0.1.0` did) |
 | A failed release is fixed by the next patch version, not by moving the tag | A rerun checks out the same tag and scripts, and moving a tag needs a force push |

@@ -20,9 +20,9 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@bcbp-solutions-fzc-llc/eslint-plugin": "1.0.0-alpha.4",
-    "@bcbp-solutions-fzc-llc/frontend-sdk": "1.0.0-alpha.4",
-    "@bcbp-solutions-fzc-llc/webpack-preset": "1.0.0-alpha.4",
+    "@bcbp-solutions-fzc-llc/eslint-plugin": "1.0.0-alpha.5",
+    "@bcbp-solutions-fzc-llc/frontend-sdk": "1.0.0-alpha.5",
+    "@bcbp-solutions-fzc-llc/webpack-preset": "1.0.0-alpha.5",
     "@opentelemetry/api": "1.10.0",
     "@rsbuild/core": "^2.3.1",
     "@rsbuild/plugin-react": "^2.1.1",
@@ -55,7 +55,7 @@
     "react-router-dom": "^7.18.5"
   },
   "peerDependencies": {
-    "@bcbp-solutions-fzc-llc/frontend-sdk": "^1.0.0-alpha.4"
+    "@bcbp-solutions-fzc-llc/frontend-sdk": "^1.0.0-alpha.5"
   },
   "overrides": {
     "minimatch": "^11.0.4"

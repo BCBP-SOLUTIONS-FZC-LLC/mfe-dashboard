@@ -6,13 +6,21 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
-### Fixed
+### Added
 
-- The sidebar logo was broken inside web-shell (found by web-shell's contract suite, web-shell #29). `BrandLogo` used root-relative `/image/…` paths, which resolve on the shell's origin. The logos moved from `public/image/` to `src/assets/images/` and are imported, so they ship as `assets/<name>.<hash>.png` and load from the remote's public path. A source rule and an integration check stop root-relative image paths from coming back.
+- The standalone page is its own host page (SDK alpha.5): `src/standalone.ts` sets the page identity (`mfe-dashboard`, `portal`, `PLATFORM_ENVIRONMENT`, `BUILD_VERSION`) and loads `/config/runtime.json` before rendering. It renders anyway when the file is missing or invalid, with a warning. Logout without a shell goes to the config's `auth.signInUrl`, else `PUBLIC_APP1_URL`, so one release can serve every environment. The image ships web-shell's default `config/runtime.json` (no `signInUrl`) and serves it `no-cache` with no SPA fallback, and an environment mounts its own over it. The smoke script checks the file. New Dockerfile `ARG PLATFORM_ENVIRONMENT=prod`.
 
 ### Changed
 
+- Platform packages `frontend-sdk`, `webpack-preset` and `eslint-plugin` move to `1.0.0-alpha.5` (pinned exactly, peer `^1.0.0-alpha.5`), the same as web-shell (web-shell #31). A remote built on alpha.5 needs the shell's SDK `^1.0.0-alpha.5`, so web-shell moved first.
 - Release: the image is pushed by digest and gets its version tags and `latest` only after the Trivy scan, the provenance export and the Cosign signature (`.github/scripts/tag-signed-image.sh`), so a failed release no longer leaves a tag on an unscanned or unsigned image.
+
+### Fixed
+
+- Reloading a nested standalone route (`/dashboard/user-management`) left a blank page: the standalone HTML inherited the preset's `assetPrefix: 'auto'` and linked `assets/…` relatively, so nginx answered `/dashboard/assets/…` with `index.html`. The standalone environment now uses `assetPrefix: '/'`, and the smoke script loads a nested route's first script. The favicon link is root-absolute too.
+- A missing or invalid `/config/runtime.json` in staging or prod left no trace (the SDK logger is silent there before logging starts); the standalone page now also writes a `console.warn`. The release runbook has a deploy check for `auth.signInUrl`.
+- `smoke-tests.sh` runs locally without `GITHUB_STEP_SUMMARY` or `GITHUB_REPOSITORY`.
+- The sidebar logo was broken inside web-shell (found by web-shell's contract suite, web-shell #29). `BrandLogo` used root-relative `/image/…` paths, which resolve on the shell's origin. The logos moved from `public/image/` to `src/assets/images/` and are imported, so they ship as `assets/<name>.<hash>.png` and load from the remote's public path. A source rule and an integration check stop root-relative image paths from coming back.
 
 ## [0.1.1] - 2026-11-05
 

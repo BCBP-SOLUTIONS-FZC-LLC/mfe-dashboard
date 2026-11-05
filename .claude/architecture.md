@@ -9,7 +9,8 @@ mfe-dashboard/
 ├── src/
 │   ├── App.tsx                    ./App: SDK user/sign-out, own BrowserRouter at workspaceBasename(), routes
 │   ├── remote.ts                  remote environment's placeholder entry
-│   ├── main.tsx                   standalone entry (#app)
+│   ├── main.tsx                   standalone entry (#app): startStandalone(), then render
+│   ├── standalone.ts              standalone host page: initializeCore, load/set /config/runtime.json
 │   ├── i18n.ts                    APP_ID 'app2', registerMessages()
 │   ├── locales/en.json            every UI string
 │   ├── layouts/                   AppShellLayout (chrome, search, theme, user menu, defaultLogout), outlet context
@@ -31,6 +32,7 @@ mfe-dashboard/
 │   ├── architecture/mermaid/      diagram sources (embedded in ARCHITECTURE.md)
 │   ├── pipeline/                  CI and release map
 │   └── runbook-*.md
+├── public/                        standalone only: favicons, config/runtime.json (default SDK runtime config)
 ├── nginx/default.conf, Dockerfile
 ├── rsbuild.config.ts              environments: remote (pluginPlatform app2) and standalone
 ├── config/remote-manifest-entry.mjs  post-build: dist/remote-manifest-entry.json (remoteEntry.js sha384)
@@ -71,7 +73,7 @@ One `rsbuild build`, two environments into `dist/`:
 | `remote` | `remoteEntry.js` (`var __platform_mfe_app2`), chunks beside it, CSS in `assets/async/` | shell's (`import: false`) |
 | `standalone` | `index.html`, `assets/` | bundled; anonymous defaults with no shell |
 
-The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage` (`^1.0.0-alpha.4`, the preset's SDK version). `react-router-dom` is not shared.
+The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage` (`^1.0.0-alpha.5`, the preset's SDK version); `core` only in the standalone build. `react-router-dom` is not shared.
 
 ## Access
 

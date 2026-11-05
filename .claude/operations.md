@@ -28,7 +28,7 @@ Port 5002 may already be taken on this machine by another process; preview on an
 | `Validate / Quality / quality` | Workflow hygiene, digest-pinned `FROM`, `npm audit --omit=dev --audit-level=high` |
 | `Build image (cache)` | Hadolint, then a cached `linux/amd64` build |
 | `Trivy CVE scan` | CRITICAL / HIGH / UNKNOWN unfixed fail |
-| `Smoke tests` | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files |
+| `Smoke tests` | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_app2`, no `.map` files, `/config/runtime.json` served as JSON |
 | `PR summary` | One comment with the results |
 | `changelog` | `CHANGELOG.md` touched when `src/`, deps, Dockerfile, nginx, `rsbuild.config.ts` or `index.html` changed |
 

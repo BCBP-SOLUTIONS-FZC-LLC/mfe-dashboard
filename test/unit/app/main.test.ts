@@ -1,5 +1,7 @@
 import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { describe, expect, it, vi } from 'vitest'
+import { STANDALONE_IDENTITY } from '../../../src/standalone'
+import { startPlatform } from '../../fixtures/platform'
 
 const render = vi.fn()
 const createRoot = vi.fn(() => ({ render }))
@@ -10,12 +12,15 @@ vi.mock('react-dom/client', () => ({
 
 describe('main', () => {
   it('applies the stored theme and mounts #app', async () => {
+    // The standalone page's own identity; the test platform's config stands in for runtime.json.
+    startPlatform({ identity: STANDALONE_IDENTITY })
     document.body.innerHTML = '<div id="app"></div>'
     storage('app2').set('appTheme', 'dark')
     await import('../../../src/main')
     expect(document.documentElement.dataset.theme).toBe('dark')
+    // It renders once startStandalone has set the identity and config.
+    await vi.waitFor(() => expect(render).toHaveBeenCalled())
     expect(createRoot).toHaveBeenCalledWith(document.getElementById('app'))
-    expect(render).toHaveBeenCalled()
     // Standalone has no shell RemoteBoundary: App renders inside the SDK's MFEErrorBoundary.
     const tree = (render.mock.calls[0] as unknown[])[0] as { props: { children: { type: { name: string }; props: { mfe: string } } } }
     expect(tree.props.children.type.name).toBe('MFEErrorBoundary')
