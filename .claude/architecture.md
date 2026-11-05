@@ -51,7 +51,7 @@ mfe-dashboard/
 | Basename, route template | `slugFromPath` (`/auth`), `tryGetConfig` (`/config`), `useRouteTemplate` | `App.tsx` |
 | Access | `useHasPermission`, `useReadOnly`, `useStepUp` | `DashboardPage.tsx`, `useMemberAccess.ts` |
 | Data, errors, logs | `useApi`, `isProblemError`, `problemMessage`, `getLogger` | `useDashboardData.ts`, `DashboardPage.tsx` |
-| Standalone render errors | `MFEErrorBoundary` | `main.tsx` |
+| Render errors | `MFEErrorBoundary` (page, `resetKeys` = path; standalone also around `App`) | `AppShellLayout.tsx`, `main.tsx` |
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` | `i18n.ts`, components |
 | Storage | `storage('app2')` | `theme/themeMode.ts` |
 | Tests | `createTestPlatform` | `test/fixtures/platform.ts` |
@@ -64,10 +64,10 @@ One `rsbuild build`, two environments into `dist/`:
 
 | Environment | Output | SDK |
 |---|---|---|
-| `remote` | `remoteEntry.js` (`var app2`), chunks beside it, CSS in `assets/async/` | shell's (`import: false`) |
+| `remote` | `remoteEntry.js` (`var __platform_mfe_app2`), chunks beside it, CSS in `assets/async/` | shell's (`import: false`) |
 | `standalone` | `index.html`, `assets/` | bundled; anonymous defaults with no shell |
 
-The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage` (`^1.0.0-alpha.3`, the preset's SDK version). `react-router-dom` is not shared.
+The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage` (`^1.0.0-alpha.4`, the preset's SDK version). `react-router-dom` is not shared.
 
 ## Access
 

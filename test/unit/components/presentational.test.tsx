@@ -134,14 +134,14 @@ describe('presentational components', () => {
     render(
       <ThemePicker activeThemeId="light" open onOpenChange={onOpenChange} onSelect={onSelect} />,
     )
-    await user.click(screen.getByRole('option', { name: 'Dark mode' }))
-    await user.click(screen.getByRole('option', { name: 'Cupcake' }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Dark mode' }))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Cupcake' }))
     expect(onSelect).toHaveBeenCalledWith('cupcake')
     expect(onSelect).toHaveBeenCalledWith('dark')
     expect(onOpenChange).toHaveBeenCalledWith(false)
 
     onOpenChange.mockClear()
-    await user.click(screen.getByRole('listbox'))
+    await user.click(screen.getByRole('menu', { name: 'Themes' }))
     expect(onOpenChange).not.toHaveBeenCalled()
   })
 

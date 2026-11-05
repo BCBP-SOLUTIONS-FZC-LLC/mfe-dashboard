@@ -159,6 +159,7 @@ export default function DashboardPage() {
                 key={v.id}
                 type="button"
                 onClick={() => setView(v.id)}
+                aria-pressed={view === v.id}
                 className={`cursor-pointer rounded-2xl border p-4 text-start shadow-sm transition-all hover:shadow-md ${
                   KPI_CARD_STYLE[v.id].surface
                 } ${view === v.id ? KPI_CARD_STYLE[v.id].active : ''}`}
@@ -183,6 +184,7 @@ export default function DashboardPage() {
                   key={v.id}
                   type="button"
                   onClick={() => setView(v.id)}
+                  aria-pressed={view === v.id}
                   className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm transition-colors ${
                     view === v.id
                       ? 'bg-aura-secondary font-semibold text-white shadow-sm'
@@ -375,10 +377,13 @@ export default function DashboardPage() {
               ) : null}
 
               {loadState === 'loading' ? (
-                <div className="space-y-3">
+                // Announced politely; the skeleton itself is decorative.
+                <div role="status" aria-busy="true" className="space-y-3">
+                  <span className="sr-only">{t('states.loading.body')}</span>
                   {[1, 2, 3].map((i) => (
                     <div
                       key={i}
+                      aria-hidden
                       className="h-28 animate-pulse rounded-xl bg-aura-border/60"
                     />
                   ))}

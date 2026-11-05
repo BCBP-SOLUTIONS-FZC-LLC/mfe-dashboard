@@ -1,6 +1,6 @@
 // Keyboard behaviour of the popups: the user menu (focus, arrows, Home/End, Escape back to its
 // trigger), the theme picker (Escape), and the filter drawer (focus trap, focus returned on close).
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from '../../../src/App'
@@ -39,9 +39,31 @@ describe('theme picker', () => {
   it('closes on Escape', async () => {
     const user = mount()
     await user.click(await screen.findByRole('button', { name: 'Choose theme' }))
-    expect(screen.getByRole('listbox')).toBeInTheDocument()
+    expect(screen.getByRole('menu', { name: 'Themes' })).toBeInTheDocument()
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('menu', { name: 'Themes' })).not.toBeInTheDocument()
+  })
+
+  it('is a menu of radio items: focus starts on the current theme, arrows and Home/End move', async () => {
+    const user = mount()
+    const trigger = await screen.findByRole('button', { name: 'Choose theme' })
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu')
+    await user.click(trigger)
+    const menu = screen.getByRole('menu', { name: 'Themes' })
+    const items = within(menu).getAllByRole('menuitemradio')
+    const checked = items.filter((item) => item.getAttribute('aria-checked') === 'true')
+    expect(checked).toHaveLength(1)
+    expect(checked[0]).toHaveFocus()
+    expect(within(menu).getAllByRole('group').map((g) => g.getAttribute('aria-labelledby'))).toHaveLength(2)
+
+    await user.keyboard('{End}')
+    expect(items[items.length - 1]).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(items[0]).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(items[items.length - 1]).toHaveFocus()
+    await user.keyboard('{Home}')
+    expect(items[0]).toHaveFocus()
   })
 })
 

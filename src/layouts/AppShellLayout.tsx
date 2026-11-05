@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
-import { useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { MFEErrorBoundary, useLocale, useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { UNREAD_NOTIFICATIONS } from '../mocks/dashboardStats'
 import { useDismiss } from '../hooks/useDismiss'
 import { useMemberAccess } from '../hooks/useMemberAccess'
@@ -295,7 +295,11 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = de
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-6">
-          <Outlet context={outletContext} />
+          {/* A page's render error replaces only the page, so the sidebar still navigates; the boundary
+              clears when the path changes (SDK resetKeys), in the shell and standalone alike. */}
+          <MFEErrorBoundary mfe={APP_ID} resetKeys={[location.pathname]}>
+            <Outlet context={outletContext} />
+          </MFEErrorBoundary>
         </main>
       </div>
     </div>

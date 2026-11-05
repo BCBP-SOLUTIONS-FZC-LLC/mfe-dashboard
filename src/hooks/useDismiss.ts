@@ -5,11 +5,11 @@ type Options = {
   panelRef: RefObject<HTMLElement | null>
   /** Selector for the control that opens the panel: a press on it is left to its own toggle, and focus returns to it on Escape. */
   trigger: string
-  /** A role="menu" panel: focus its first item on open, move with ArrowUp/ArrowDown, Home and End. */
+  /** A role="menu" panel: focus its checked item (else the first) on open, move with ArrowUp/ArrowDown, Home and End. */
   menu?: boolean
 }
 
-const ITEM = '[role="menuitem"]:not([disabled])'
+const ITEM = ':is([role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]):not([disabled])'
 
 /** Closes a popup on a press outside it or on Escape (focus back on its trigger), with menu keys. */
 export function useDismiss(open: boolean, close: () => void, { panelRef, trigger, menu = false }: Options): void {
@@ -19,7 +19,8 @@ export function useDismiss(open: boolean, close: () => void, { panelRef, trigger
     }
     const items = () => Array.from(panelRef.current?.querySelectorAll<HTMLElement>(ITEM) ?? [])
     if (menu) {
-      items()[0]?.focus()
+      const list = items()
+      ;(list.find((item) => item.getAttribute('aria-checked') === 'true') ?? list[0])?.focus()
     }
 
     const onPointerDown = (event: MouseEvent) => {

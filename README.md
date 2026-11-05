@@ -9,7 +9,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | | |
 |---|---|
 | Release | Untagged; everything is under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) |
-| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.3` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.3`, all the same as web-shell |
+| Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4`, all the same as web-shell |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
 | Tests | 22 files, 110 tests (unit, integration, e2e); coverage 99.3% statements, 97.8% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
@@ -37,7 +37,7 @@ Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell
 | `userLabel` | Display name or email. Initials are derived from it. Default: the SDK user's email, then name, then `User` |
 | `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to `PUBLIC_APP1_URL` |
 
-`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.3`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.3`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload.
+`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.4`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.4`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload.
 
 Use the SDK for anything it covers (storage, dates and numbers, messages, permissions, data loading, navigation) instead of writing it here. `npm run lint` runs the platform's ESLint rules, which reject raw `localStorage`/`sessionStorage`, unsanitised HTML and SDK deep imports.
 
@@ -55,13 +55,13 @@ One `rsbuild` run makes two builds into `dist/` (`rsbuild.config.ts` environment
 
 ## Federation
 
-Built with Rsbuild 2 (Rspack) and the platform SDK's plugin, `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })` from `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild` (`1.0.0-alpha.3`, GitHub Packages), in `rsbuild.config.ts`:
+Built with Rsbuild 2 (Rspack) and the platform SDK's plugin, `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })` from `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild` (`1.0.0-alpha.4`, GitHub Packages), in `rsbuild.config.ts`:
 
-- container `app2`, defined as the global `var app2` by `remoteEntry.js`. The shell's SDK (`loadRemote`) injects that script and reads `window.app2`. Chunks load relative to `remoteEntry.js`.
+- container `app2`, defined as the global `var __platform_mfe_app2` by `remoteEntry.js`. The shell's SDK (`loadRemote`) injects that script and reads `window.__platform_mfe_app2`. Chunks load relative to `remoteEntry.js`.
 - Module Federation v1 (Rspack's webpack-compatible protocol). Do not set Rsbuild's `moduleFederation` option; the plugin refuses it.
-- shared strict singletons from the preset. The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and the SDK subpaths it imports (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.3`, `import: false`: never bundled, no fallback, always the shell's). The shell provides them; web-shell does not need to list anything for this remote. `test/integration/remote-entry.test.tsx` loads the built container exactly this way.
+- shared strict singletons from the preset. The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and the SDK subpaths it imports (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.4`, `import: false`: never bundled, no fallback, always the shell's). The shell provides them; web-shell does not need to list anything for this remote. `test/integration/remote-entry.test.tsx` loads the built container exactly this way.
 - `react-router-dom` is **not** shared. The remote runs its own `BrowserRouter`, with the basename the shell computes: `workspacePathPrefix` + `slugFromPath(location)` (`/t/<slug>` inside the shell, empty standalone).
-- `splitChunks: { preset: 'none', chunks: 'async' }`. Rsbuild's default vendor groups split the entries too, and a `remoteEntry.js` that needs other chunks starts asynchronously: `window.app2` is then a Promise and the SDK refuses it.
+- `splitChunks: { preset: 'none', chunks: 'async' }`. Rsbuild's default vendor groups split the entries too, and a `remoteEntry.js` that needs other chunks starts asynchronously: `window.__platform_mfe_app2` is then a Promise and the SDK refuses it.
 - The dev server runs without Rsbuild's live-reload client for the same reason (it would be injected into `remoteEntry.js`). Reload the shell by hand after a change.
 
 Every build writes this remote's entry to `dist/remote-manifest-entry.json` (served at `/remote-manifest-entry.json`, attached to each GitHub Release) with the sha384 integrity of the exact `remoteEntry.js` built; copy it into the environment's manifest with an absolute `entry`. The shell registers the remote in its `/remotes/manifest.json` (`"app2": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`). `integrity` is required outside local, dev and test.
@@ -105,7 +105,7 @@ docs/                            pipeline map and runbooks
 
 ## Local setup
 
-Node **22**. From this directory:
+Node **26** (`.nvmrc`; CI and the image use it). `engines` allows `>=22`, the minimum the platform packages need. From this directory:
 
 ```bash
 npm ci

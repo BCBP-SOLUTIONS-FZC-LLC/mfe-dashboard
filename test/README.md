@@ -14,10 +14,10 @@ The Docker image is smoke-tested in CI by `.github/scripts/smoke-tests.sh`: size
 
 | Folder | Covers |
 |---|---|
-| `app/` | `config/app1Url.ts`; the standalone `MFEErrorBoundary`; the labelled search box; `App` with the SDK (user, sign-out, props from the shell), the workspace basename and routing under `/t/<slug>/dashboard`, `main.tsx`, `AppShellLayout` (user button, `defaultLogout`) |
+| `app/` | `config/app1Url.ts`; the standalone `MFEErrorBoundary`; the labelled search box; `App` with the SDK (user, sign-out, props from the shell), the workspace basename and routing under `/t/<slug>/dashboard`, `main.tsx`, `AppShellLayout` (user button, `defaultLogout`, the page error boundary that clears on navigation) |
 | `authz/` | User management under `read:members` / `manage:members` and a read-only tenant; the approval step-up (`useStepUp`) |
-| `dashboard/` | `ticketsForView`, `useDashboardData` (fake timers), load errors (SDK `ApiError` → alert, Retry, a `warn` log), the deadline filter and KPI counts, `calendarDate`, the dashboard page's filters and formatted dates |
-| `components/` | Presentational components (logos, icons, ticket rows, theme picker, filter selects) and keyboard behaviour (user menu keys, Escape, the drawer's focus trap) |
+| `dashboard/` | `ticketsForView`, `useDashboardData` (fake timers), load errors (SDK `ApiError` → alert, Retry, a `warn` log), the deadline filter and KPI counts, `calendarDate`, the dashboard page's filters and formatted dates, `aria-pressed` on the selected view and the busy loading status |
+| `components/` | Presentational components (logos, icons, ticket rows, theme picker, filter selects) and keyboard behaviour (user menu and theme picker menu keys, Escape, the drawer's focus trap) |
 | `theme/` | Theme mode and app theme in `storage('app2')` |
 | `i18n/` | `app2` messages through the SDK (plurals, fallback), and the `en` catalog against the source: no missing keys, no unused keys, every message formats |
 | `docs/` | `ARCHITECTURE.md`'s mermaid fences equal `docs/architecture/mermaid/*.mmd` |
@@ -27,7 +27,7 @@ The Docker image is smoke-tested in CI by `.github/scripts/smoke-tests.sh`: size
 
 Builds the `remote` environment of `rsbuild.config.ts` into a temporary directory (`fixtures/remote-build.ts`, in a child process; `dist/` is untouched). It then runs `remoteEntry.js` as a classic script and checks:
 
-- `var app2` is defined synchronously as `{ init, get }`, as the SDK's `loadRemote` reads it;
+- `var __platform_mfe_app2` is defined synchronously as `{ init, get }`, as the SDK's `loadRemote` reads it;
 - every share key the container consumes is one the shell provides, and no SDK code is bundled;
 - `init(shareScope)` then `get('./App')` renders the dashboard with the test's own React and SDK handed over as the shell's singletons (the signed-in user proves the SDK is the shell's);
 - without the shell's SDK the load fails, because there is no fallback copy, and an unknown module is rejected.
