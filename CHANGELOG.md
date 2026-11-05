@@ -6,6 +6,10 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+### Fixed
+
+- The sidebar logo was broken inside web-shell (found by web-shell's contract suite, web-shell #29). `BrandLogo` used root-relative `/image/…` paths, which resolve on the shell's origin. The logos moved from `public/image/` to `src/assets/images/` and are imported, so they ship as `assets/<name>.<hash>.png` and load from the remote's public path. A source rule and an integration check stop root-relative image paths from coming back.
+
 ### Changed
 
 - Platform packages `frontend-sdk`, `webpack-preset` and `eslint-plugin` move to `1.0.0-alpha.5` (pinned exactly, peer `^1.0.0-alpha.5`), the same as web-shell (web-shell #31). A remote built on alpha.5 needs the shell's SDK `^1.0.0-alpha.5`, so web-shell moved first.
