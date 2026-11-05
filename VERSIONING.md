@@ -10,7 +10,7 @@ We use [SemVer 2.0.0](https://semver.org/): `MAJOR.MINOR.PATCH` (e.g. `v1.2.3`).
 
 | Bump | When you change | Examples |
 |------|-----------------|----------|
-| **MAJOR** | Breaking change in the runtime contract (§ below) | Renaming the federation container (`app2`) or `remoteEntry.js`, removing `./App` or changing its props so the shell cannot mount it, moving to an SDK preset release that the shell's SDK cannot satisfy (a remote requires `^<its preset version>` of the shell's SDK), removing `/healthz` or `/`, removing `PUBLIC_APP1_URL` or its deprecated alias `VITE_APP1_URL`, changing the image listen port |
+| **MAJOR** | Breaking change in the runtime contract (§ below) | Renaming the federation container (`dashboard`) or `remoteEntry.js`, removing `./App` or changing its props so the shell cannot mount it, moving to an SDK preset release that the shell's SDK cannot satisfy (a remote requires `^<its preset version>` of the shell's SDK), removing `/healthz` or `/`, removing `PUBLIC_APP1_URL` or its deprecated alias `VITE_APP1_URL`, changing the image listen port |
 | **MINOR** | New backward-compatible capability | A new optional prop on `./App`, a new route that does not remove an existing one, a new optional `PUBLIC_*` build arg |
 | **PATCH** | Backward-compatible fix | Ticket, theme, or navigation bug fix, visual fix that does not change the federation contract, dependency bump with no observable behavior change, documentation-only correction |
 
@@ -20,12 +20,12 @@ This remote has no package for another app to import from npm. Its public contra
 
 | In scope (SemVer applies) | Out of scope (may change without MAJOR) |
 |---------------------------|------------------------------------------|
-| Federation container `name` (`app2`), `filename` (`remoteEntry.js`), and `exposes['./App']` in `rsbuild.config.ts` (`pluginPlatform`) | Internal file layout under `src/`, component names that are not the exposed `./App`, CSS class names |
+| Federation container `name` (`dashboard`), `filename` (`remoteEntry.js`), and `exposes['./App']` in `rsbuild.config.ts` (`pluginPlatform`) | Internal file layout under `src/`, component names that are not the exposed `./App`, CSS class names |
 | Props `./App` accepts: optional `userLabel` (string) and optional `onLogout` (function) | Mock ticket and user rows. They are fixture data, not an API |
 | Shared singletons the remote consumes and their `requiredVersion`, from `@bcbp-solutions-fzc-llc/webpack-preset`: `react` and `react/jsx-runtime` `^19.0.0`, and the SDK subpaths it imports (`auth`, `config`, `i18n`, `react`, `storage`) at `^<preset SDK version>` with `import: false`. `react-router-dom` is not shared | Patch-level upgrades inside those ranges |
 | Routes: inside web-shell, `/t/<slug>/dashboard` and `/t/<slug>/dashboard/user-management` (own router at the workspace basename). When the host already provides a router: index route (dashboard) and `user-management`. Alone: `/` and unknown paths redirect to `/dashboard`, and `/dashboard/*` renders the same two pages. The permissions a page asks for (`read:tender`, `read:members`, `manage:members`) | Copy, KPI counts, and theme class names |
 | Build-time env `PUBLIC_APP1_URL` (deprecated alias `VITE_APP1_URL`, read when `PUBLIC_APP1_URL` is unset; removing the alias is MAJOR) (default `http://localhost:5001`): where logout sends the browser when the shell did not pass `onLogout` | The default itself. A production image must set the repository variable |
-| Image listen port **8080**, `GET /healthz` (plain `ok`), `GET /` (document with `id="app"`), `GET /remoteEntry.js` (no-cache, CORS, defines `var __platform_mfe_app2`), `GET /remote-manifest-entry.json` (the shell's manifest entry with `remoteEntry.js` integrity), hashed files under `/assets/` | nginx config comments, cache headers on files other than the ones named here |
+| Image listen port **8080**, `GET /healthz` (plain `ok`), `GET /` (document with `id="app"`), `GET /remoteEntry.js` (no-cache, CORS, defines `var __platform_mfe_dashboard`), `GET /remote-manifest-entry.json` (the shell's manifest entry with `remoteEntry.js` integrity), hashed files under `/assets/` | nginx config comments, cache headers on files other than the ones named here |
 | `package.json` `version` once a tag exists — it must match the Git tag without the `v` | The npm package name. It is not published |
 
 `PUBLIC_*` values are compiled into the browser bundle. They are public. Do not put secrets in them.
@@ -34,13 +34,14 @@ This remote has no package for another app to import from npm. Its public contra
 
 - **Pre-`v1.0.0` (current status):** per [SemVer §4](https://semver.org/#spec-item-4), anything may change at any time while the major version is `0`. This remote has not yet committed to a stable contract via a Git tag. The table above still indicates what is *more* disruptive than what within `v0.x`, but a host should not yet assume `v0.x` compatibility across a MINOR bump the way it could once `v1.0.0` ships.
 - **MAJOR (once `v1` ships):** breaking changes to the runtime contract ship as `v2.0.0` with migration notes in the CHANGELOG.
-- **MINOR:** safe to roll the image forward without changing the shell's import of `app2/App` or the shared React versions, unless you opt into a new capability.
+- **MINOR:** safe to roll the image forward without changing the shell's import of `dashboard/App` or the shared React versions, unless you opt into a new capability.
 - **PATCH:** drop-in image replacement. Upgrade recommended for security fixes. Every image is CVE-scanned (see below).
 
 ## Supported releases
 
 | Version | Status | Image tag | Notes |
 |---------|--------|-----------|-------|
+| *next* (`v0.3.0`) | Unreleased | — | **Breaking for the shell:** container renamed `app2` → `dashboard`. Needs web-shell with `DASHBOARD_REMOTE = 'dashboard'` and the manifest key `dashboard`; pre-1.0, so a minor version |
 | `v0.2.0` | **Current** (pre-1.0) | `0.2.0`, `0.2`, `0`, `latest` | Platform packages `1.0.0-alpha.5`: requires the shell's SDK `^1.0.0-alpha.5`, so web-shell must be on alpha.5. Standalone runtime config (`auth.signInUrl`), logo fix inside the shell |
 | `v0.1.1` | Superseded | `0.1.1`, `0.1` | Platform packages `1.0.0-alpha.4` (`^1.0.0-alpha.4`, so it also loads in web-shell on alpha.5; checked by web-shell's contract suite). Logo broken inside the shell |
 | `v0.1.0` | **Do not use** | `0.1.0` (unsigned) | The release workflow failed after the push: no GitHub Release, no signature. Same application as `v0.1.1` |
@@ -49,7 +50,7 @@ This remote has no formal support-window policy yet, since nothing is running in
 
 ## Consume a release
 
-Do not add this repository as an npm dependency. The shell loads `remoteEntry.js` from the entry its `/remotes/manifest.json` names for `app2` (with `integrity` outside local, dev and test). You can also unpack the static tarball from the GitHub Release behind any static host that preserves the paths above.
+Do not add this repository as an npm dependency. The shell loads `remoteEntry.js` from the entry its `/remotes/manifest.json` names for `dashboard` (with `integrity` outside local, dev and test). You can also unpack the static tarball from the GitHub Release behind any static host that preserves the paths above.
 
 ### Pull and verify the image
 

@@ -26,6 +26,6 @@ describe('production standalone page without a runtime config', () => {
   })
 
   it('warns on the console once, where the SDK logger stays silent', () => {
-    expect(seen.warnings).toEqual(['[app2] runtime config unavailable; logout uses the build-time sign-in URL'])
+    expect(seen.warnings).toEqual(['[dashboard] runtime config unavailable; logout uses the build-time sign-in URL'])
   })
 })

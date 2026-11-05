@@ -1,6 +1,6 @@
 # Architecture
 
-`mfe-dashboard` is the Module Federation remote **`app2`**. The shell (`web-shell`, container `app1`, built on the platform SDK) loads `remoteEntry.js` and renders `./App`. This repo does not sign users in and does not call a backend yet: ticket, KPI, notification, delegation and user rows are fixtures in the bundle. Everything the platform SDK (platform-reactcommon) provides is used from the SDK, not reimplemented here.
+`mfe-dashboard` is the Module Federation remote **`dashboard`**. The shell (`web-shell`, container `app1`, built on the platform SDK) loads `remoteEntry.js` and renders `./App`. This repo does not sign users in and does not call a backend yet: ticket, KPI, notification, delegation and user rows are fixtures in the bundle. Everything the platform SDK (platform-reactcommon) provides is used from the SDK, not reimplemented here.
 
 Exact behaviour, the runtime contract and open items are in the [LLD](docs/lld/mfe-dashboard-lld.md). Diagram sources live in [docs/architecture/mermaid/](docs/architecture/mermaid); the fences below must equal those files (`test/unit/docs/diagrams.test.ts` checks it).
 
@@ -35,13 +35,13 @@ flowchart TB
 | `src/App.tsx` | Exposed `./App` and the standalone root. Props `userLabel?`, `onLogout?`; otherwise `useCurrentUser` and `useSignOut` from the SDK. Uses the host's router when there is one, otherwise its own `BrowserRouter` with `workspaceBasename()` (`workspacePathPrefix` + `slugFromPath`, as web-shell). Registers the route template for user management |
 | `src/main.tsx` | Standalone entry: applies the stored theme, then mounts `<App />` on `#app`. Throws if `#app` is missing. The shell never runs it |
 | `src/remote.ts` | The remote build's placeholder entry (Rsbuild needs one; the shell loads only `remoteEntry.js`) |
-| `src/i18n.ts`, `src/locales/en.json` | The `app2` namespace (`registerNamespace`); every UI string |
+| `src/i18n.ts`, `src/locales/en.json` | The `dashboard` namespace (`registerNamespace`); every UI string |
 | `src/layouts/AppShellLayout.tsx` | Sidebar, search box, theme picker, user menu, logout. Publishes `{ search }` on the outlet context. `defaultLogout()` is the no-shell fallback |
 | `src/pages/DashboardPage.tsx` | Views, KPI cards, filter drawer, step-up banner, empty / loading / partial states, right panel |
 | `src/pages/UserManagementPage.tsx` | Member table filtered by the outlet search; Invite and Edit only for `canManage` |
 | `src/hooks/useDashboardData.ts` | Tickets through the SDK's `useApi` (fixture loader with an abortable delay) |
 | `src/hooks/useMemberAccess.ts` | `canView` (`read:members` or `manage:members`), `canManage` (`manage:members` and not `useReadOnly()`) |
-| `src/theme/themeMode.ts` | `appTheme` and `themeMode` in the SDK's `storage('app2')` |
+| `src/theme/themeMode.ts` | `appTheme` and `themeMode` in the SDK's `storage('dashboard')` |
 | `nginx/default.conf` | Port 8080, `/healthz`, no-cache `remoteEntry.js`, immutable hashed chunks, CORS |
 
 ### What comes from the SDK
@@ -54,15 +54,15 @@ flowchart TB
 | Data loading, errors | `useApi`, `isProblemError` (`/problem`), `problemMessage`, `getLogger` (a failed load is logged) |
 | Render errors | `MFEErrorBoundary`: around the routed page (reset on path change) and, standalone, around `App` |
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` |
-| Per-app storage | `storage('app2')` |
+| Per-app storage | `storage('dashboard')` |
 
 `npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports.
 
 ## Federation
 
-Rsbuild 2 with the SDK's plugin (`rsbuild.config.ts`, `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })`), Module Federation v1. One `rsbuild build` makes two environments: **remote** (`remoteEntry.js` and chunks; the SDK from the shell) and **standalone** (`index.html` and `assets/`; the SDK bundled).
+Rsbuild 2 with the SDK's plugin (`rsbuild.config.ts`, `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })`), Module Federation v1. One `rsbuild build` makes two environments: **remote** (`remoteEntry.js` and chunks; the SDK from the shell) and **standalone** (`index.html` and `assets/`; the SDK bundled).
 
-- `remoteEntry.js` defines `var __platform_mfe_app2` synchronously. Only async chunks are split: a split entry would start asynchronously and leave `window.__platform_mfe_app2` a Promise, which `loadRemote` refuses. The dev server has no HMR or live-reload client for the same reason.
+- `remoteEntry.js` defines `var __platform_mfe_dashboard` synchronously. Only async chunks are split: a split entry would start asynchronously and leave `window.__platform_mfe_dashboard` a Promise, which `loadRemote` refuses. The dev server has no HMR or live-reload client for the same reason.
 - The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and seven SDK subpaths (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.4`, `import: false`) from the shell. There is no fallback copy of the SDK: without the shell's, the load fails.
 - `react-router-dom` is not shared; the remote runs its own router.
 - `test/integration/remote-entry.test.tsx` builds the remote and loads it through `init(shareScope)` / `get('./App')`, as web-shell does.
@@ -150,8 +150,8 @@ Load state is `partial_failure` when the view is `my-tickets` and a row has `ten
 
 | Key | Store | Contents |
 |---|---|---|
-| `appTheme` | SDK `storage('app2')` (`localStorage`, namespaced per workspace) | Theme id |
-| `themeMode` | SDK `storage('app2')` | `light` or `dark` |
+| `appTheme` | SDK `storage('dashboard')` (`localStorage`, namespaced per workspace) | Theme id |
+| `themeMode` | SDK `storage('dashboard')` | `light` or `dark` |
 
 The SDK clears both on sign-out and workspace switch, refuses token-like keys, and writes nothing while anonymous (standalone). No tokens are written. Search text stays in React state.
 
@@ -181,7 +181,7 @@ A tag `vX.Y.Z` runs `release.yml`: validate, build the `dist` tarball and `remot
 
 ## Invariants
 
-- Container `app2`, expose `./App`, `var __platform_mfe_app2` defined synchronously. The global's name comes from the preset and must match the shell's SDK, so this remote and web-shell upgrade the platform packages together.
+- Container `dashboard`, expose `./App`, `var __platform_mfe_dashboard` defined synchronously. The global's name comes from the preset and must match the shell's SDK, so this remote and web-shell upgrade the platform packages together.
 - The SDK is never bundled into the remote and never a runtime dependency; its dev version equals web-shell's.
 - `onLogout` and `userLabel` are optional.
 - Images and fonts are imported, never root-relative, so they load from the remote's origin inside the shell.

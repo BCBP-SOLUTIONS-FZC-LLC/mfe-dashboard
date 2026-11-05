@@ -36,6 +36,6 @@ export async function startStandalone(): Promise<void> {
     // The standalone page never starts SDK logging (it has no collector), and before that the SDK
     // logger is a no-op outside local, dev and test. Without this, a missing or invalid
     // /config/runtime.json in staging or prod would leave no trace at all.
-    if (!CONSOLE_LOGGING_ENVIRONMENTS.has(getIdentity()?.environment ?? 'local')) console.warn(`[app2] ${message}`, error)
+    if (!CONSOLE_LOGGING_ENVIRONMENTS.has(getIdentity()?.environment ?? 'local')) console.warn(`[dashboard] ${message}`, error)
   }
 }

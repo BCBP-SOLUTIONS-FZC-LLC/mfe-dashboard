@@ -26,11 +26,11 @@ The hook rejects:
 
 ## What a change has to keep true
 
-- Federation name stays `app2`, the expose stays `./App`, and the shared map comes from `@bcbp-solutions-fzc-llc/webpack-preset` (`rsbuild.config.ts`). Keep its version the same as, or older than, web-shell's SDK. Do not set Rsbuild's `moduleFederation` option, and keep `splitChunks` on async chunks only.
+- Federation name stays `dashboard`, the expose stays `./App`, and the shared map comes from `@bcbp-solutions-fzc-llc/webpack-preset` (`rsbuild.config.ts`). Keep its version the same as, or older than, web-shell's SDK. Do not set Rsbuild's `moduleFederation` option, and keep `splitChunks` on async chunks only.
 - `./App` keeps optional `userLabel` and `onLogout`. New required props are a breaking change ([VERSIONING.md](VERSIONING.md)).
 - Do not reimplement what `@bcbp-solutions-fzc-llc/frontend-sdk` (platform-reactcommon) provides: storage, locale-aware dates and numbers, messages and plurals, permissions, data loading (`useApi`), navigation, sign-out. Import it through its public subpaths only. Keep the dev dependency on the same version as web-shell. `npm run lint` enforces the platform rules.
 - A new `PUBLIC_*` variable is documented in [README.md](README.md) and given a Dockerfile `ARG` default when the image needs it.
-- No raw `localStorage` or `sessionStorage`: use `storage('app2')` from the SDK (the lint rule `no-raw-storage`).
+- No raw `localStorage` or `sessionStorage`: use `storage('dashboard')` from the SDK (the lint rule `no-raw-storage`).
 - nginx keeps `/healthz`, port 8080, and no-cache and CORS on `remoteEntry.js`, CORS on the hashed chunks.
 
 ## Tests

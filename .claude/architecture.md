@@ -11,7 +11,7 @@ mfe-dashboard/
 │   ├── remote.ts                  remote environment's placeholder entry
 │   ├── main.tsx                   standalone entry (#app): startStandalone(), then render
 │   ├── standalone.ts              standalone host page: initializeCore, load/set /config/runtime.json
-│   ├── i18n.ts                    APP_ID 'app2', registerMessages()
+│   ├── i18n.ts                    APP_ID 'dashboard', registerMessages()
 │   ├── locales/en.json            every UI string
 │   ├── layouts/                   AppShellLayout (chrome, search, theme, user menu, defaultLogout), outlet context
 │   ├── pages/                     DashboardPage, UserManagementPage
@@ -19,7 +19,7 @@ mfe-dashboard/
 │   ├── assets/images/             logos (imported; emitted under assets/ with a hash)
 │   ├── hooks/                     useDashboardData (useApi), useMemberAccess
 │   ├── mocks/                     dashboardTickets (rows, ticketsForView, filter options), dashboardStats
-│   ├── theme/                     themeMode (storage('app2')), daisyThemes, CSS
+│   ├── theme/                     themeMode (storage('dashboard')), daisyThemes, CSS
 │   └── types/ticket.ts
 ├── test/
 │   ├── setup.ts                   fresh createTestPlatform per test
@@ -34,7 +34,7 @@ mfe-dashboard/
 │   └── runbook-*.md
 ├── public/                        standalone only: favicons, config/runtime.json (default SDK runtime config)
 ├── nginx/default.conf, Dockerfile
-├── rsbuild.config.ts              environments: remote (pluginPlatform app2) and standalone
+├── rsbuild.config.ts              environments: remote (pluginPlatform dashboard) and standalone
 ├── config/remote-manifest-entry.mjs  post-build: dist/remote-manifest-entry.json (remoteEntry.js sha384)
 ├── config/app1Url.ts              PUBLIC_APP1_URL → deprecated VITE_APP1_URL → http://localhost:5001
 ├── vitest.config.ts               happy-dom; test/{unit,integration,e2e}; coverage on src/
@@ -59,7 +59,7 @@ mfe-dashboard/
 | Data, errors, logs | `useApi`, `isProblemError`, `problemMessage`, `getLogger` | `useDashboardData.ts`, `DashboardPage.tsx` |
 | Render errors | `MFEErrorBoundary` (page, `resetKeys` = path; standalone also around `App`) | `AppShellLayout.tsx`, `main.tsx` |
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` | `i18n.ts`, components |
-| Storage | `storage('app2')` | `theme/themeMode.ts` |
+| Storage | `storage('dashboard')` | `theme/themeMode.ts` |
 | Tests | `createTestPlatform` | `test/fixtures/platform.ts` |
 
 Next SDK APIs to reach for: `useApiClient` (real APIs), `useFeatureFlag`, `Can`, `getServiceMeter`.
@@ -70,7 +70,7 @@ One `rsbuild build`, two environments into `dist/`:
 
 | Environment | Output | SDK |
 |---|---|---|
-| `remote` | `remoteEntry.js` (`var __platform_mfe_app2`), chunks beside it, CSS in `assets/async/` | shell's (`import: false`) |
+| `remote` | `remoteEntry.js` (`var __platform_mfe_dashboard`), chunks beside it, CSS in `assets/async/` | shell's (`import: false`) |
 | `standalone` | `index.html`, `assets/` | bundled; anonymous defaults with no shell |
 
 The remote consumes `react`, `react/jsx-runtime` (`^19.0.0`) and the SDK's `auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage` (`^1.0.0-alpha.5`, the preset's SDK version); `core` only in the standalone build. `react-router-dom` is not shared.

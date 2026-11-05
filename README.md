@@ -1,6 +1,6 @@
 # mfe-dashboard
 
-Ticket and user-management remote for the BCBP shell. Module Federation name **`app2`**. The shell (`web-shell`, built on the platform SDK) loads `remoteEntry.js` and mounts `./App` inside its `RemoteBoundary`. This repo does not sign users in.
+Ticket and user-management remote for the BCBP shell. Module Federation name **`dashboard`**. The shell (`web-shell`, built on the platform SDK) loads `remoteEntry.js` and mounts `./App` inside its `RemoteBoundary`. This repo does not sign users in.
 
 `package.json` is private. Consume the GHCR image or the release tarball. Do not `npm install` this package. Versioning rules are in [VERSIONING.md](VERSIONING.md).
 
@@ -22,13 +22,13 @@ Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, fl
 | Piece | Role |
 |---|---|
 | `src/App.tsx` | Exposed module, and the standalone page's root. User and sign-out from the SDK (`useCurrentUser`, `useSignOut`). Renders relative routes when a router already exists, otherwise its own `BrowserRouter` under the shell's workspace prefix (`workspaceBasename`: `workspacePathPrefix` + `slugFromPath`) |
-| `src/i18n.ts`, `src/locales/` | The `app2` message namespace (`registerNamespace`, `useT`). Every UI string is in `src/locales/en.json`; mock data (tickets, users), brand names and theme names are not |
+| `src/i18n.ts`, `src/locales/` | The `dashboard` message namespace (`registerNamespace`, `useT`). Every UI string is in `src/locales/en.json`; mock data (tickets, users), brand names and theme names are not |
 | `src/layouts/AppShellLayout.tsx` | Sidebar, search, theme, user menu, logout |
 | `src/pages/DashboardPage.tsx` | Ticket views, filters, KPI cards, the approval step-up banner (`useStepUp`). "All Tenders In Flight" needs `read:tender` |
 | `src/hooks/useDashboardData.ts` | Tickets through the SDK's `useApi` (fixture loader: 700 ms load, 400 ms refresh, aborted when superseded) |
 | `src/pages/UserManagementPage.tsx` | Mock user table filtered by the shell search box |
 | `src/hooks/useMemberAccess.ts` | `canView` (`read:members` or `manage:members`) and `canManage` (`manage:members`, not read-only) |
-| `src/theme/` | Aura light/dark and daisyUI themes, stored with the SDK's `storage('app2')` |
+| `src/theme/` | Aura light/dark and daisyUI themes, stored with the SDK's `storage('dashboard')` |
 | `nginx/default.conf` | Static host for the production image |
 
 Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell needs to pass nothing. Props, when passed, override the SDK:
@@ -56,16 +56,16 @@ One `rsbuild` run makes two builds into `dist/` (`rsbuild.config.ts` environment
 
 ## Federation
 
-Built with Rsbuild 2 (Rspack) and the platform SDK's plugin, `pluginPlatform({ role: 'remote', name: 'app2', exposes: { './App': './src/App.tsx' } })` from `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild` (`1.0.0-alpha.4`, GitHub Packages), in `rsbuild.config.ts`:
+Built with Rsbuild 2 (Rspack) and the platform SDK's plugin, `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })` from `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild` (`1.0.0-alpha.4`, GitHub Packages), in `rsbuild.config.ts`:
 
-- container `app2`, defined as the global `var __platform_mfe_app2` by `remoteEntry.js`. The shell's SDK (`loadRemote`) injects that script and reads `window.__platform_mfe_app2`. Chunks load relative to `remoteEntry.js`.
+- container `dashboard`, defined as the global `var __platform_mfe_dashboard` by `remoteEntry.js`. The shell's SDK (`loadRemote`) injects that script and reads `window.__platform_mfe_dashboard`. Chunks load relative to `remoteEntry.js`.
 - Module Federation v1 (Rspack's webpack-compatible protocol). Do not set Rsbuild's `moduleFederation` option; the plugin refuses it.
 - shared strict singletons from the preset. The remote consumes `react` and `react/jsx-runtime` (`^19.0.0`) and the SDK subpaths it imports (`auth`, `config`, `i18n`, `logging`, `problem`, `react`, `storage`; `^1.0.0-alpha.4`, `import: false`: never bundled, no fallback, always the shell's). The shell provides them; web-shell does not need to list anything for this remote. `test/integration/remote-entry.test.tsx` loads the built container exactly this way.
 - `react-router-dom` is **not** shared. The remote runs its own `BrowserRouter`, with the basename the shell computes: `workspacePathPrefix` + `slugFromPath(location)` (`/t/<slug>` inside the shell, empty standalone).
-- `splitChunks: { preset: 'none', chunks: 'async' }`. Rsbuild's default vendor groups split the entries too, and a `remoteEntry.js` that needs other chunks starts asynchronously: `window.__platform_mfe_app2` is then a Promise and the SDK refuses it.
+- `splitChunks: { preset: 'none', chunks: 'async' }`. Rsbuild's default vendor groups split the entries too, and a `remoteEntry.js` that needs other chunks starts asynchronously: `window.__platform_mfe_dashboard` is then a Promise and the SDK refuses it.
 - The dev server runs without Rsbuild's live-reload client for the same reason (it would be injected into `remoteEntry.js`). Reload the shell by hand after a change.
 
-Every build writes this remote's entry to `dist/remote-manifest-entry.json` (served at `/remote-manifest-entry.json`, attached to each GitHub Release) with the sha384 integrity of the exact `remoteEntry.js` built; copy it into the environment's manifest with an absolute `entry`. The shell registers the remote in its `/remotes/manifest.json` (`"app2": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`). `integrity` is required outside local, dev and test.
+Every build writes this remote's entry to `dist/remote-manifest-entry.json` (served at `/remote-manifest-entry.json`, attached to each GitHub Release) with the sha384 integrity of the exact `remoteEntry.js` built; copy it into the environment's manifest with an absolute `entry`. The shell registers the remote in its `/remotes/manifest.json` (`"dashboard": { "entry": ".../remoteEntry.js", "version": ..., "ownerDomain": "portal", "integrity": "sha384-..." }`). `integrity` is required outside local, dev and test.
 
 ## nginx
 
@@ -84,7 +84,7 @@ Every build writes this remote's entry to `dist/remote-manifest-entry.json` (ser
 src/App.tsx                      exposed remote and standalone root (platform SDK)
 src/remote.ts                    remote build's placeholder entry (the shell loads remoteEntry.js)
 src/main.tsx                     standalone entry (#app)
-src/i18n.ts, src/locales/        app2 messages
+src/i18n.ts, src/locales/        dashboard messages
 src/layouts/                     shell chrome and outlet context
 src/pages/                       dashboard and user management
 src/components/                  logo, theme picker, ticket row, right panel, icons
@@ -92,7 +92,7 @@ src/hooks/                       useDashboardData (useApi), useMemberAccess
 src/mocks/                       ticket, stats and filter fixtures
 src/theme/                       theme, in SDK storage
 src/types/                       ticket, view, SLA and filter types
-rsbuild.config.ts                Rsbuild + platform plugin (remote app2, standalone)
+rsbuild.config.ts                Rsbuild + platform plugin (remote dashboard, standalone)
 config/app1Url.ts                build-time logout target (PUBLIC_APP1_URL, deprecated VITE_APP1_URL)
 nginx/default.conf
 Dockerfile

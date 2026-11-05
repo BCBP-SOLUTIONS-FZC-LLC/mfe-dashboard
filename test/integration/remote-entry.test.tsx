@@ -25,13 +25,18 @@ import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { buildRemote, type RemoteBuild } from '../fixtures/remote-build'
 import { startPlatform } from '../fixtures/platform'
+import { APP_ID } from '../../src/i18n'
 
 type Container = { init(scope: ShareScope): Promise<void> | void; get(module: string): Promise<() => unknown> }
 type ShareScope = Record<string, Record<string, { get: () => Promise<() => unknown>; from: string; loaded?: number; eager?: boolean }>>
 
 const SDK = '@bcbp-solutions-fzc-llc/frontend-sdk'
-/** The global remoteEntry.js defines and the SDK's loadRemote reads (`__platform_mfe_app2` since 1.0.0-alpha.4). */
-const GLOBAL = containerName('app2')
+/**
+ * The global remoteEntry.js defines and the SDK's loadRemote reads (`__platform_mfe_<name>` since
+ * 1.0.0-alpha.4). Derived from APP_ID, so the build's name (rsbuild.config.ts) and the name the code
+ * uses for storage, messages and logs cannot drift apart: web-shell's manifest key is the same name.
+ */
+const GLOBAL = containerName(APP_ID)
 const ORIGIN = 'http://localhost:5002/'
 
 /** What web-shell shares: its singletons, by share key and version. */
@@ -82,7 +87,7 @@ function serveBuild() {
   })
 }
 
-/** Runs remoteEntry.js as the page would: a classic script that defines `var __platform_mfe_app2`. */
+/** Runs remoteEntry.js as the page would: a classic script that defines `var __platform_mfe_dashboard`. */
 function loadEntry(): Container {
   Object.defineProperty(document, 'currentScript', { configurable: true, value: { src: `${ORIGIN}remoteEntry.js`, tagName: 'SCRIPT' } })
   ;(0, eval)(build.read('remoteEntry.js'))
@@ -103,8 +108,9 @@ afterEach(() => {
 })
 
 describe('remoteEntry.js', () => {
-  it('defines the app2 container synchronously, as loadRemote reads it', () => {
-    expect(GLOBAL).toBe('__platform_mfe_app2')
+  it('defines the dashboard container synchronously, as loadRemote reads it', () => {
+    expect(APP_ID).toBe('dashboard')
+    expect(GLOBAL).toBe('__platform_mfe_dashboard')
     expect(build.read('remoteEntry.js').startsWith(`var ${GLOBAL};`)).toBe(true)
     const container = loadEntry()
     expect(typeof container.init).toBe('function')

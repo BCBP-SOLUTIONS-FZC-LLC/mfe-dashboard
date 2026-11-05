@@ -15,7 +15,7 @@ Describe the behaviour change you'd like.
 ## Affected areas
 - [ ] Dashboard UI
 - [ ] User management
-- [ ] Module Federation contract (name `app2`, expose `./App`, shared versions)
+- [ ] Module Federation contract (name `dashboard`, expose `./App`, shared versions)
 - [ ] Build / Docker image
 - [ ] nginx hosting
 

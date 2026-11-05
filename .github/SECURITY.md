@@ -37,5 +37,5 @@ We follow responsible disclosure. Reporters will be credited in release notes un
 Areas of particular sensitivity in this remote:
 
 - **Host origin** — `PUBLIC_APP1_URL` is where logout sends the browser. It is fixed at build time.
-- **Module Federation** — this build exposes `./App` as `app2`. The host executes that module in the host origin.
+- **Module Federation** — this build exposes `./App` as `dashboard`. The host executes that module in the host origin.
 - **Build-time configuration** — `PUBLIC_*` values are compiled into the static bundle and are public in the browser.

@@ -1,16 +1,16 @@
 # CLAUDE.md
 
-Guidance for Claude Code in **mfe-dashboard**, the dashboard and user-management remote (`app2`) that web-shell loads. Detail lives in the files under [See Also](#see-also); this file is what must always be in context.
+Guidance for Claude Code in **mfe-dashboard**, the dashboard and user-management remote (`dashboard`) that web-shell loads. Detail lives in the files under [See Also](#see-also); this file is what must always be in context.
 
 ## What This Repo Is
 
-A Module Federation **remote**, container `app2`, exposing `./App` (`src/App.tsx`). web-shell (`app1`) loads `remoteEntry.js` with the platform SDK's `loadRemote` and mounts `App` at `/t/<slug>/dashboard/*`. The same code also runs standalone (`npm run dev`, port 5002; the image's `/`).
+A Module Federation **remote**, container `dashboard`, exposing `./App` (`src/App.tsx`). web-shell (`app1`) loads `remoteEntry.js` with the platform SDK's `loadRemote` and mounts `App` at `/t/<slug>/dashboard/*`. The same code also runs standalone (`npm run dev`, port 5002; the image's `/`).
 
 React 19, React Router 7, Tailwind 4 + daisyUI 5, Rsbuild 2 (Rspack) with `@bcbp-solutions-fzc-llc/webpack-preset/rsbuild`, Vitest 5 + happy-dom, nginx 1.31 image on port 8080. Node 26 in CI and the image (`.nvmrc`; `engines` `>=22`), npm. Packages `@bcbp-solutions-fzc-llc/*` come from **GitHub Packages**: `export NODE_AUTH_TOKEN=$(gh auth token)` before `npm ci` / `npm install`.
 
 **Status (2026-11-05):** `v0.2.0` released (platform packages `frontend-sdk`, `webpack-preset`, `eslint-plugin` `1.0.0-alpha.5`, all the same as web-shell; needs web-shell on alpha.5). Built with `PUBLIC_APP1_URL` = `https://app.dev.bcbpsolutions.com`; the standalone page loads `/config/runtime.json` (logout → `auth.signInUrl`). Not deployed yet: it ships with web-shell's first release. `v0.1.1` superseded; `v0.1.0` failed to publish. Data is fixtures; no backend calls. Open items: [LLD §15](../docs/lld/mfe-dashboard-lld.md#15-open-items).
 
-**Owns:** the dashboard (views, KPIs, filters, load states, right panel), user management UI, the remote's chrome (sidebar, search, theme, user menu), the `app2` catalog, themes, the nginx image.
+**Owns:** the dashboard (views, KPIs, filters, load states, right panel), user management UI, the remote's chrome (sidebar, search, theme, user menu), the `dashboard` catalog, themes, the nginx image.
 
 **Does NOT own:** sign-in, tokens, session, sign-out, workspace switch (SDK `/auth` in web-shell); roles (IAM P-35) and the role → permission map (web-shell `src/platform/permissions.ts`); authorisation (IAM and the APIs; UI checks are hints); the remote manifest, SRI and kill switch (web-shell + SDK `/mfe`); hosting in an environment.
 
@@ -30,9 +30,9 @@ One test: `npx vitest run test/unit/authz/permissions.test.tsx -t "read-only"`. 
 
 ## Critical Rules (do not break)
 
-- **Use the platform SDK; never reimplement it.** User, sign-out, permissions, read-only, step-up, data loading (`useApi`), messages (`useT`), dates and numbers (`formatDate`, `formatNumber`), storage (`storage('app2')`), workspace paths (`slugFromPath`), route templates. Import public subpaths only. `npm run lint` and `test/unit/sdk/dependency-rules.test.ts` enforce it. If the SDK lacks something, raise it with platform-reactcommon (write it up as a `.md` for that team) rather than building it here.
+- **Use the platform SDK; never reimplement it.** User, sign-out, permissions, read-only, step-up, data loading (`useApi`), messages (`useT`), dates and numbers (`formatDate`, `formatNumber`), storage (`storage('dashboard')`), workspace paths (`slugFromPath`), route templates. Import public subpaths only. `npm run lint` and `test/unit/sdk/dependency-rules.test.ts` enforce it. If the SDK lacks something, raise it with platform-reactcommon (write it up as a `.md` for that team) rather than building it here.
 - **The SDK comes from the shell.** It is a peer dependency (`^<dev version>`) and a dev dependency pinned to **web-shell's version**; never a runtime dependency; never bundled into the remote (`import: false`).
-- **Container contract:** name `app2`, expose `./App`, `remoteEntry.js` defines `var __platform_mfe_app2` (the preset's `containerName('app2')`, since alpha.4) synchronously. Ship SDK upgrades in step with web-shell: all three platform packages the same version as the shell (the preset's `SdkVersionPlugin` fails the build otherwise), and a remote built with another preset major/pre-release is not loadable by that shell. Keep `splitChunks` async-only, the dev server without HMR/live reload, and the standalone environment's `assetPrefix: '/'` (the remote keeps the preset's `'auto'`). Do not set Rsbuild's `moduleFederation` option. `./App` props stay optional (`userLabel`, `onLogout`).
+- **Container contract:** name `dashboard`, expose `./App`, `remoteEntry.js` defines `var __platform_mfe_dashboard` (the preset's `containerName('dashboard')`, since alpha.4) synchronously. Ship SDK upgrades in step with web-shell: all three platform packages the same version as the shell (the preset's `SdkVersionPlugin` fails the build otherwise), and a remote built with another preset major/pre-release is not loadable by that shell. Keep `splitChunks` async-only, the dev server without HMR/live reload, and the standalone environment's `assetPrefix: '/'` (the remote keeps the preset's `'auto'`). Do not set Rsbuild's `moduleFederation` option. `./App` props stay optional (`userLabel`, `onLogout`).
 - **Access by permission, never by role name.** `read:tender`, `read:members`, `manage:members`, plus `useReadOnly()`. Roles belong to IAM and web-shell's map.
 - **Every UI string is a key in `src/locales/en.json`, and every key is used** (`test/unit/i18n/catalog.test.ts`).
 - **No raw browser storage, no tokens, no identity headers, no unsafe HTML** (lint). No third-party origins in the standalone page: the image's CSP is same-origin only (fonts are self-hosted).

@@ -15,7 +15,7 @@ describe('main', () => {
     // The standalone page's own identity; the test platform's config stands in for runtime.json.
     startPlatform({ identity: STANDALONE_IDENTITY })
     document.body.innerHTML = '<div id="app"></div>'
-    storage('app2').set('appTheme', 'dark')
+    storage('dashboard').set('appTheme', 'dark')
     await import('../../../src/main')
     expect(document.documentElement.dataset.theme).toBe('dark')
     // It renders once startStandalone has set the identity and config.
@@ -24,7 +24,7 @@ describe('main', () => {
     // Standalone has no shell RemoteBoundary: App renders inside the SDK's MFEErrorBoundary.
     const tree = (render.mock.calls[0] as unknown[])[0] as { props: { children: { type: { name: string }; props: { mfe: string } } } }
     expect(tree.props.children.type.name).toBe('MFEErrorBoundary')
-    expect(tree.props.children.props.mfe).toBe('app2')
+    expect(tree.props.children.props.mfe).toBe('dashboard')
   })
 
   it('throws when #app is missing', async () => {

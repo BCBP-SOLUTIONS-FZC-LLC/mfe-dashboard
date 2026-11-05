@@ -66,7 +66,7 @@ describe('useDashboardData errors', () => {
     })
     const record = platform.logs.find((l) => l.body === 'dashboard tickets failed to load')
     expect(record?.level).toBe('warn')
-    expect(record?.attributes).toMatchObject({ mfe: 'app2', view: 'delegated' })
+    expect(record?.attributes).toMatchObject({ mfe: 'dashboard', view: 'delegated' })
   })
 
   it('reports a failed refresh the same way (useApi drops the old rows)', async () => {

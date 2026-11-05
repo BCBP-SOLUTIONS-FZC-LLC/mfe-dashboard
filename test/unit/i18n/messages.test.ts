@@ -3,7 +3,7 @@ import { createTestPlatform } from '@bcbp-solutions-fzc-llc/frontend-sdk/testing
 import { describe, expect, it } from 'vitest'
 import { APP_ID, registerMessages } from '../../../src/i18n'
 
-describe('app2 messages', () => {
+describe('dashboard messages', () => {
   it('formats plurals through the SDK', () => {
     expect(t(APP_ID, 'lastUpdated.ago', { mins: 1 })).toBe('Last updated: 1 min ago')
     expect(t(APP_ID, 'lastUpdated.ago', { mins: 4 })).toBe('Last updated: 4 mins ago')
