@@ -18,7 +18,7 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
-| 1.9 | 2026-11-05 | Release tags are added after scan, provenance and signature (§12.5) |
+| 1.9 | 2026-11-05 | Release tags are added after scan, provenance and signature (§12.5); open item 14 (runtime logout target) |
 | 1.8 | 2026-11-05 | `v0.1.1` published (GitHub Release, signed image `sha256:c9e10c06…`); release pipeline described in §12.5; supply chain (§13); open item 13 (the unsigned `0.1.0` tag). web-shell has the same release-script fixes (web-shell #27) |
 | 1.7 | 2026-11-05 | `v0.1.1`: the release workflow's provenance export fixed; `v0.1.0` was not published |
 | 1.6 | 2026-11-05 | First release `v0.1.0`, together with web-shell on alpha.4; open item 7 (tag and `PUBLIC_APP1_URL`) closed |
@@ -352,7 +352,7 @@ The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the
 
 | Variable | When | Default | Note |
 |---|---|---|---|
-| `PUBLIC_APP1_URL` | build (`config/app1Url.ts` → `source.define` as `import.meta.env.PUBLIC_APP1_URL`; Dockerfile `ARG`; CI repository variable) | `http://localhost:5001` | Public in the bundle; logout target without a shell. `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
+| `PUBLIC_APP1_URL` | build (`config/app1Url.ts` → `source.define` as `import.meta.env.PUBLIC_APP1_URL`; Dockerfile `ARG`; CI repository variable) | `http://localhost:5001` | Public in the bundle; logout target without a shell. Build time only, so one release serves one environment (§15 item 14). `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
 | `VITE_APP1_URL` | **Deprecated** alias, read only when `PUBLIC_APP1_URL` is unset or empty (build warning; CI and release fall back to the repository variable of this name, release warns) | — | Remove in a major release |
 
 ### 12.5 Release
@@ -413,4 +413,5 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 10 | Logs: failed loads only. No metrics (`getServiceMeter`) yet, and source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
 | 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_app2`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
 | 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.1.1` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
-| 13 | The `0.1.0` image tag stays in GHCR, unsigned and with no GitHub Release. Delete that package version, or leave it as "do not use" in VERSIONING | maintainers |
+| 13 | The unsigned `0.1.0` image (no GitHub Release) is still in GHCR. Delete package version `1507080606`; that needs a token with `delete:packages` | maintainers |
+| 14 | `PUBLIC_APP1_URL` (standalone logout target) is fixed at build time, so one release serves one environment (`v0.1.1`: `https://app.dev.bcbpsolutions.com`). Read it at runtime once the SDK's runtime config has a sign-in URL field (`../platform-reactcommon-runtime-config-sign-in-url.md`, frontend workspace) | platform-reactcommon, mfe-dashboard |
