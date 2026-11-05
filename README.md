@@ -9,7 +9,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | | |
 |---|---|
 | Release | [`v0.1.1`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.1.1) (2026-11-05): image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.1.1`, signed, with SBOM and provenance. `v0.1.0` failed to publish; do not use it. See [CHANGELOG.md](CHANGELOG.md) |
-| Deploy | Not deployed yet. Ships together with web-shell's alpha.4 release, once web-shell's CSP allows the IdP in `form-action` ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items)) |
+| Deploy | Not deployed yet. Ships with web-shell's first release (alpha.4), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). web-shell's contract suite passed 9/9 against this release |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.4` (same as web-shell); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.4`, all the same as web-shell |
 | Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
 | Tests | 22 files, 110 tests (unit, integration, e2e); coverage 99.3% statements, 97.8% branches, 100% functions, 99.3% lines (gate 95%) |
