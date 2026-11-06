@@ -8,6 +8,7 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ### Added
 
+- **Architecture lint** (`npm run arch-lint`, CI step `Architecture lint` in Validate / Quality): dependency-cruiser `18.7.0` with `.dependency-cruiser.cjs`, written like the Go services' `.go-arch-lint.yml` (one component per layer, a `mayDependOn` allow-list, `anyVendorDeps`). It also rejects import cycles, forbidden telemetry and server-state libraries, `src/` → `test/` and unresolvable imports.
 - **Playwright journeys and WCAG 2.1 AA checks** (`test/browser`, `npm run test:browser`, CI job `Browser (Playwright, axe)`, which the image push waits for; ADR 0009). They run in Chromium against the production build of the standalone page.
   - Journeys: views, filters, clear and search, nested-route reload, logout to `auth.signInUrl`.
   - axe-core on the dashboard, the open filter drawer and the dark theme.
@@ -42,6 +43,9 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ### Fixed
 
+- **Tender filter matched inside words:** "IT" also listed "Hospital Campus Redevelopment" (hosp-it-al). The keyword now matches whole words (`titleHasKeyword`).
+- **Failed loads besides the ticket list were silent.** A failed dashboard summary left the KPI counts at "—", the filter lists empty and no right panel, with no reason given; a failed member list left an empty table. Both now show an alert with Retry, and every failure is logged through the SDK (`useLoadable`). The member table shows "Loading users…" and `aria-busy` while it loads.
+- **Sample due days were fixed October 2026 dates**, so after October the "This week" filter showed nothing and "on track" tickets were weeks overdue. They are now offsets from today, consistent with each SLA state; the sample delegation period too.
 - **Ticket rows at 1280px:** every title column collapsed to zero width, so titles were invisible and the client and pills wrapped one word per line. The row used viewport breakpoints, though the list shares the row with the right panel. `TicketRow` now lays out by its own width (container queries).
 - **WCAG 2.1 AA contrast:** 11 colour pairs failed, as low as 1.15:1 in the dark theme.
   - Brand-coloured text now uses ink tokens: `--aura-primary-ink`, `--aura-secondary-ink` and `--aura-*-on-soft` in `aura.css`.

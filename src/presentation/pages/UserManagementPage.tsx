@@ -27,7 +27,7 @@ export default function UserManagementPage() {
   const { canManage } = useMemberAccess()
 
   // The members (listMembers through the SDK's useApi), narrowed by the shell's search as the user types.
-  const members = useMembers()
+  const { data: members, failed, retry } = useMembers()
   const users = useMemo(() => searchMembers(members ?? [], search), [members, search])
 
   return (
@@ -49,7 +49,7 @@ export default function UserManagementPage() {
 
       <div className={`overflow-hidden rounded-xl border shadow-sm ${dashBorderClass} ${dashSurfaceClass}`}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-start text-sm">
+          <table aria-busy={!members && !failed} className="w-full min-w-[640px] border-collapse text-start text-sm">
             <thead>
               <tr className={`border-b text-xs font-semibold uppercase tracking-wide text-aura-muted ${dashBorderClass}`}>
                 <th className="px-4 py-3 font-semibold">{t('users.col.name')}</th>
@@ -63,7 +63,24 @@ export default function UserManagementPage() {
               </tr>
             </thead>
             <tbody>
-              {members && users.length === 0 ? (
+              {failed ? (
+                <tr>
+                  <td colSpan={canManage ? 6 : 5} className="px-4 py-10 text-center text-sm">
+                    <div role="alert" className="inline-flex flex-wrap items-center gap-2 text-red-800 dark:text-red-300">
+                      <span>{t('users.loadFailed')}</span>
+                      <button type="button" onClick={retry} className="cursor-pointer font-semibold underline">
+                        {t('dashboard.retry')}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : !members ? (
+                <tr>
+                  <td colSpan={canManage ? 6 : 5} className="px-4 py-10 text-center text-sm text-aura-muted">
+                    {t('users.loading')}
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={canManage ? 6 : 5} className="px-4 py-10 text-center text-sm text-aura-muted">
                     {t('users.empty')}

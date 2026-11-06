@@ -3,8 +3,13 @@
 // the composition root (src/app/providers/dependencies.ts); nothing above infrastructure changes.
 import type { TicketItem } from '../../domain/entities/ticket'
 import type { LoadOptions, TicketRepository } from '../../domain/repositories'
+import { CalendarDay } from '../../domain/value-objects/CalendarDay'
 
-const baseTickets: TicketItem[] = [
+// Due days are offsets from today, so the demo always has overdue and this-week tickets, and each
+// agrees with its SLA state: breached is past due, warning is due in 1–3 days, on track in 5 or more.
+type SampleTicket = Omit<TicketItem, 'dueDate'> & { dueInDays: number }
+
+const sampleTickets: SampleTicket[] = [
   {
     id: 'T-2001',
     tenderTitle: 'IT Infrastructure Modernization',
@@ -14,7 +19,7 @@ const baseTickets: TicketItem[] = [
     section: '3.2',
     department: 'IT Department',
     roleLevel: 'Senior Reviewer',
-    dueDate: '2026-10-25',
+    dueInDays: 5,
     slaState: 'on_track',
     restricted: true,
     evidenceGrade: 'Evidence Grade A',
@@ -30,7 +35,7 @@ const baseTickets: TicketItem[] = [
     section: '2.1',
     department: 'Engineering',
     roleLevel: 'Technical Lead',
-    dueDate: '2026-10-22',
+    dueInDays: 2,
     slaState: 'warning',
     evidenceGrade: 'Evidence Grade B',
     unreadComments: 1,
@@ -45,7 +50,7 @@ const baseTickets: TicketItem[] = [
     section: '4.5',
     department: 'Operations',
     roleLevel: 'Project Manager',
-    dueDate: '2026-10-18',
+    dueInDays: -2,
     slaState: 'breached',
     unreadComments: 3,
     status: 'open',
@@ -59,7 +64,7 @@ const baseTickets: TicketItem[] = [
     section: 'Bridges',
     department: 'Engineering',
     roleLevel: 'Senior Reviewer',
-    dueDate: '2026-10-16',
+    dueInDays: 1,
     slaState: 'warning',
     restricted: true,
     evidenceGrade: 'Evidence Grade A',
@@ -75,7 +80,7 @@ const baseTickets: TicketItem[] = [
     section: 'Mechanical',
     department: 'MEP',
     roleLevel: 'Approver',
-    dueDate: '2026-10-15',
+    dueInDays: -5,
     slaState: 'breached',
     unreadComments: 1,
     status: 'approval',
@@ -89,7 +94,7 @@ const baseTickets: TicketItem[] = [
     section: 'HSE',
     department: 'Compliance',
     roleLevel: 'Reviewer',
-    dueDate: '2026-10-20',
+    dueInDays: 7,
     slaState: 'on_track',
     evidenceGrade: 'Evidence Grade B',
     delegatedFrom: 'Arjun R',
@@ -105,7 +110,7 @@ const baseTickets: TicketItem[] = [
     section: 'Commercial',
     department: 'Estimating',
     roleLevel: 'Lead',
-    dueDate: '2026-10-22',
+    dueInDays: 9,
     slaState: 'on_track',
     unreadComments: 5,
     status: 'open',
@@ -129,11 +134,17 @@ const TENDERS: readonly (readonly [string, string])[] = [
   ['Hardware', 'Hardware'],
 ]
 
+/** The sample tickets with due days counted from the local day of `now`. */
+export function sampleTicketsAt(now: Date): TicketItem[] {
+  const today = CalendarDay.fromLocalDate(now)
+  return sampleTickets.map(({ dueInDays, ...ticket }) => ({ ...ticket, dueDate: today.addDays(dueInDays).iso }))
+}
+
 /** The sample tickets, with a simulated network delay (shorter for a user's refresh). */
 export class FixtureTicketRepository implements TicketRepository {
   async list({ signal, refresh = false }: LoadOptions & { refresh?: boolean }): Promise<readonly TicketItem[]> {
     await delay(refresh ? 400 : 700, signal)
-    return baseTickets
+    return sampleTicketsAt(new Date())
   }
 
   async filterReference() {
@@ -141,5 +152,5 @@ export class FixtureTicketRepository implements TicketRepository {
   }
 }
 
-/** The sample tickets themselves, for tests of the domain rules. */
-export const FIXTURE_TICKETS: readonly TicketItem[] = baseTickets
+/** The sample tickets as of when this module loaded, for tests of the domain rules. */
+export const FIXTURE_TICKETS: readonly TicketItem[] = sampleTicketsAt(new Date())

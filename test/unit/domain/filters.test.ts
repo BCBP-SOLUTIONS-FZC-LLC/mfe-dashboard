@@ -1,12 +1,12 @@
 // The domain's filter, search and SLA rules: pure functions of the tickets and members.
 import { describe, expect, it } from 'vitest'
 import type { DashboardFilters, TicketItem } from '../../../src/domain/entities/ticket'
-import { applyFilters, departmentsOf, searchTickets } from '../../../src/domain/rules/filters'
+import { applyFilters, departmentsOf, searchTickets, titleHasKeyword } from '../../../src/domain/rules/filters'
 import { CalendarDay } from '../../../src/domain/value-objects/CalendarDay'
 import { searchMembers } from '../../../src/domain/rules/members'
 import { slaOverview } from '../../../src/domain/rules/sla'
 import { countByView, hasPartialFailure } from '../../../src/domain/rules/views'
-import { FIXTURE_TICKETS } from '../../../src/infrastructure/fixtures/tickets'
+import { FIXTURE_TICKETS, sampleTicketsAt } from '../../../src/infrastructure/fixtures/tickets'
 
 const all: DashboardFilters = { status: 'all', role: 'all', department: 'all', deadline: 'all', tender: 'all' }
 const now = new Date(2026, 9, 20, 12)
@@ -24,6 +24,37 @@ describe('applyFilters', () => {
     expect(applyFilters([a, b], { ...all, role: 'Reviewer' }, now).map((t) => t.id)).toEqual(['a'])
     expect(applyFilters([a, b], { ...all, tender: 'wind' }, now).map((t) => t.id)).toEqual(['a'])
     expect(applyFilters([a, b], { ...all, department: 'HR' }, now)).toEqual([])
+  })
+
+  it('matches the tender keyword as whole words, not inside a word', () => {
+    expect(titleHasKeyword('IT Infrastructure Modernization', 'IT')).toBe(true)
+    expect(titleHasKeyword('Hospital Campus Redevelopment', 'IT')).toBe(false)
+    expect(titleHasKeyword('Upgrade of IT', 'it')).toBe(true)
+    expect(titleHasKeyword('Metro (IT) works', 'IT')).toBe(true)
+    expect(titleHasKeyword('Software Development', 'Soft')).toBe(false)
+    expect(titleHasKeyword('IT Infrastructure Modernization', 'it infrastructure')).toBe(true)
+    expect(titleHasKeyword('Écoles numériques', 'écoles')).toBe(true)
+    expect(titleHasKeyword('C++ toolchain', 'C++')).toBe(true)
+    expect(titleHasKeyword('Anything', '  ')).toBe(true)
+    const it_ = ticket({ id: 'it', tenderTitle: 'IT Infrastructure Modernization' })
+    const hospital = ticket({ id: 'h', tenderTitle: 'Hospital Campus Redevelopment' })
+    expect(applyFilters([it_, hospital], { ...all, tender: 'IT' }, now).map((t) => t.id)).toEqual(['it'])
+  })
+})
+
+describe('sample tickets', () => {
+  it('are due relative to today, consistent with their SLA state', () => {
+    const today = CalendarDay.fromLocalDate(now)
+    for (const t of sampleTicketsAt(now)) {
+      const due = CalendarDay.parse(t.dueDate)
+      if (t.slaState === 'breached') expect(due.isBefore(today), t.id).toBe(true)
+      else expect(due.isBefore(today.addDays(1)), t.id).toBe(false)
+      if (t.slaState === 'warning') expect(due.isBefore(today.addDays(4)), t.id).toBe(true)
+      if (t.slaState === 'on_track') expect(due.isBefore(today.addDays(5)), t.id).toBe(false)
+    }
+    // The demo always has overdue and this-week tickets.
+    expect(applyFilters(sampleTicketsAt(now), { ...all, deadline: 'overdue' }, now).length).toBeGreaterThan(0)
+    expect(applyFilters(sampleTicketsAt(now), { ...all, deadline: 'week' }, now).length).toBeGreaterThan(0)
   })
 })
 
