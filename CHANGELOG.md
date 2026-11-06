@@ -1,65 +1,211 @@
 # Changelog
 
-All notable changes to this remote are documented here. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as described in [VERSIONING.md](VERSIONING.md).
+All notable changes to this remote are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) as [VERSIONING.md](VERSIONING.md) applies it to the runtime contract: the container, `./App`, shared modules, routes, permissions, `runtime.json`, image paths, metrics.
 
-Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` `version` matches the latest one. Pull requests that change `src/`, dependencies, the Dockerfile, or nginx config add a line under `[Unreleased]` (`.github/workflows/changelog-check.yml`).
+**How releases map to this file:**
+- **Sections:** each Git tag `vX.Y.Z` has a dated `## [X.Y.Z] - YYYY-MM-DD` section. `release.yml` refuses a tag without one and uses its text as the GitHub Release notes.
+- **Versions:** `package.json` `version` matches the latest section.
+- **What needs a line:** a pull request that changes `src/`, dependencies, the `Dockerfile`, `nginx/`, `rsbuild.config.ts` or `index.html` adds a line under `[Unreleased]` (`changelog-check.yml`).
+- **Released sections are not edited.** They are what each release shipped. A later fix appears in a later section, with a *(Previously: …)* note when it reverses something.
+
+**Conventions:**
+- **Entries:** each starts with a **bold lead**, says what changed and why, and names the files, tests or ADRs involved.
+- **Grouping in `[Unreleased]`:** entries are grouped into themed, dated subsections (`### Changed (YYYY-MM-DD — topic, #PR)`), newest first.
+- **At cut time:** the subsections merge into `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed` and `Security`.
+- **End of `[Unreleased]`:** *Known gaps* and *Current architecture notes* describe the state of `main`.
 
 ## [Unreleased]
 
-### Added
+`main` is on platform packages `1.0.0-alpha.6` and needs web-shell #44 or later. It is not released or deployed yet; it ships with web-shell's first release ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items)). The runtime contract is unchanged since `v0.3.0` except for the platform-package range, so the next release is a MINOR (`v0.4.0`).
 
-- **Architecture lint** (`npm run arch-lint`, CI step `Architecture lint` in Validate / Quality): dependency-cruiser `18.7.0` with `.dependency-cruiser.cjs`, written like the Go services' `.go-arch-lint.yml` (one component per layer, a `mayDependOn` allow-list, `anyVendorDeps`). It also rejects import cycles, forbidden telemetry and server-state libraries, `src/` → `test/` and unresolvable imports.
-- **Playwright journeys and WCAG 2.1 AA checks** (`test/browser`, `npm run test:browser`, CI job `Browser (Playwright, axe)`, which the image push waits for; ADR 0009). They run in Chromium against the production build of the standalone page.
-  - Journeys: views, filters, clear and search, nested-route reload, logout to `auth.signInUrl`.
-  - axe-core on the dashboard, the open filter drawer and the dark theme.
-- A unit test checks the shipped `runtime.json` files against the SDK's `RuntimeConfigSchema`.
-- The `CalendarDay` value object (`src/domain/value-objects`) for due days and the deadline filter.
-- `test/unit/architecture/layers.test.ts` fails on a misplaced top-level folder, a wrong-way import, React, an SDK or a browser API in `domain/` or `application/`, and the SDK's storage, metrics or config in `presentation/`.
-- Domain and use-case tests (`test/unit/domain`, `test/unit/application`).
-- The coverage gate also holds every `src/domain/` file above 90% (the constitution's domain target).
-- `test/fixtures/dependencies.tsx`: inject repositories into tests instead of mocking modules.
-- An integration test proves no environment-specific value is compiled in.
-- Metrics per the Enterprise Platform Observability Standard, through the SDK's `/metrics` (`getServiceMeter`), exported by the shell. There are three Tier 3 metrics: `portal_dashboard_ticket_loads_total` (`view`, `trigger`, `outcome`), `portal_dashboard_ticket_load_duration_seconds` (`view`, `outcome`) and `portal_dashboard_step_up_requests_total`. Every label has a closed value set (typed), and the SDK injects `domain`, `service` and `environment` and validates every point. No Tier 1 or Tier 2 metric applies, and none was invented. `test/unit/metrics` enforces the standard in CI (namespace, suffixes, required and prohibited labels, vocabularies, SDK acceptance) against the inventory in `docs/observability/metrics.md`, which also proposes recording rules, alerts and SLOs and has a runbook. The remote now also consumes the shell's SDK `/metrics` (web-shell already provides it).
-- `dependency-rules.test.ts` guards more SDK territory: metrics only through `frontend-sdk/metrics` in `src/metrics.ts` (no OpenTelemetry, Prometheus client or web-vitals library), host-page start-up only in `src/standalone.ts`, no shell-only SDK APIs (manifest, `loadRemote`, auth, flags, telemetry start) in `src/`, and no `console` except the standalone config warning. An audit of every SDK export against `src/` found no reimplementation; `recordMetric` no longer repeats the SDK's run-time label checks.
+### Changed (2026-11-06 — documentation in the structure of iam-org-membership's, #35–#37)
 
-### Changed
+- **`ARCHITECTURE.md` rewritten** (#35): 252 → 907 lines.
+  - **Sections:** layer model and module dependency graph (mirroring `.dependency-cruiser.cjs`), mount flow, routing, data flow, domain model, data freshness and caching, access control, concurrency, observability, failure domains with a degradation matrix, key invariants with where each is enforced, deployment, testing strategy, host conformance checklist, contract lifecycle, STRIDE threat model, developer tools, decisions and documentation assets.
+  - **Diagrams:** five new sources in `docs/architecture/mermaid/`, 8 in all, each embedded verbatim (`diagrams.test.ts`).
+  - *(Previously: it placed `ticketsForView` and `kpiCounts` in the fixtures and exposed `./src/App.tsx`, both stale after #32. A comment in `rsbuild.config.ts` named `src/app/bootstrap/standalone.ts` for `src/infrastructure/configuration/standalone.ts`.)*
+- **`README.md` rewritten** (#36): 190 → 625 lines.
+  - **Sections:** mental model, why the remote exists, UI overview, errors and input, architecture, integrating with web-shell in 8 steps, local development, running inside a local web-shell, troubleshooting, canonical tests, configuration, security, observability, deployment, CI, Docker, cross-service dependencies.
+  - *(Previously: it named preset `alpha.4`, `src/locales/`, the old test counts, and a `docker build` without the `npm_token` secret.)*
+- **`VERSIONING.md` rewritten** (#37): the runtime contract now lists the eight shared SDK subpaths, metrics, storage keys and release assets. New sections:
+  - retired names;
+  - platform-package coupling (an upgrade is never a PATCH);
+  - deploy and rollback via the manifest entry;
+  - the release process as `release.yml` runs it;
+  - pre-release tags;
+  - a compatibility matrix.
 
-- **ARCHITECTURE.md rewritten** in the structure of iam-org-membership's: layer model and module dependency graph (mirroring `.dependency-cruiser.cjs`), mount flow, routing, data flow, domain model, data freshness and caching, access control, concurrency, observability, failure domains with a degradation matrix, key invariants with where each is enforced, deployment, testing strategy, host conformance checklist, contract lifecycle, STRIDE threat model, developer tools, decisions and documentation assets. Five new diagram sources in `docs/architecture/mermaid/` (8 in all); stale references fixed (`ticketsForView` and `kpiCounts` in fixtures, `./src/App.tsx`).
-- Use cases are classes with `execute()`: `LoadTicketQueueUseCase`, `LoadDashboardSummaryUseCase`, `GetDashboardInfoUseCase`, `ListMembersUseCase`. The composition root builds them on the repositories, and pages call `useDependencies().useCases.<name>.execute(...)`, never a repository.
-- Routes moved to `src/app/routes/DashboardRoutes.tsx`, and the standalone runtime config to `src/infrastructure/configuration/standalone.ts`.
-- **Frontend Architecture Constitution:** `src/` is now in the constitution's layers. Behaviour and the `./App` contract are unchanged. Assessment, violations, roadmap: `docs/architecture/constitution-assessment.md`; decisions: `docs/adr/0001`–`0008`.
-  - `app/`: the composition root (App, bootstrap, layouts, providers, configuration).
+  *(Previously: it listed removing `PUBLIC_APP1_URL` as a future MAJOR, though #32 had already removed it, and only five SDK subpaths.)*
+
+### Added (2026-11-06 — architecture lint, #33)
+
+- **Architecture lint:** run with `npm run arch-lint`; CI runs it as the `Architecture lint` step in Validate / Quality.
+  - **Tool:** dependency-cruiser `18.7.0` with `.dependency-cruiser.cjs`, written like the Go services' `.go-arch-lint.yml`: one commented component per layer, a `mayDependOn` allow-list, and `anyVendorDeps` (only `app`, `presentation`, `infrastructure` and `shared` may import packages).
+  - **It also rejects:**
+    - import cycles;
+    - OpenTelemetry, prom-client and web-vitals;
+    - TanStack Query, SWR, axios and ky;
+    - `src/` → `test/`;
+    - unresolvable imports.
+  - **Proven:** five injected violations were each reported, with exit code 1.
+  - **Overlap:** `layers.test.ts` stays, for the folder set and browser globals, which an import graph cannot see. ADR 0001 lists what each check enforces.
+
+### Fixed (2026-11-06 — tender filter, failed-load states, sample dates, #33)
+
+- **Tender filter matched inside words.** "IT" also listed "Hospital Campus Redevelopment" (hosp-*it*-al). The keyword now matches whole words, case-insensitive and for any script (`titleHasKeyword` in `src/domain/rules/filters.ts`). *(Previously: a substring match.)*
+- **Failed loads besides the ticket list were silent.**
+  - **Before:** a failed dashboard summary left the KPI counts at "—", the filter lists empty and no right panel, with no reason given; a failed member list left an empty table.
+  - **Now:** `useLoadable` (`src/presentation/features/useLoadable.ts`) wraps `useApi`, keeps the failure for the UI, offers `retry`, and logs a `warn` through the SDK. The dashboard shows an alert with Retry, and the member table a row with Retry.
+  - **Tests:** `test/unit/dashboard/summary-and-members-errors.test.tsx`.
+- **The member table had no loading state.** It now shows "Loading users…" and `aria-busy` on the table while it loads.
+- **Sample due days were fixed October 2026 dates.** After October, the "This week" filter showed nothing and "on track" tickets were weeks overdue.
+  - **Now:** due days are offsets from the local today (`sampleTicketsAt`), consistent with each SLA state: breached is past due; warning is due in 1–3 days; on track in 5 or more.
+  - **Delegation:** the sample delegation period runs from two days before today to two days after.
+  - **Tests:** `test/unit/domain/filters.test.ts` checks the consistency.
+
+### Changed (2026-11-06 — Frontend Architecture Constitution, #32)
+
+- **`src/` is in the constitution's layers** (ADR 0001). Behaviour and the `./App` contract are unchanged. Assessment, violations and roadmap: `docs/architecture/constitution-assessment.md`. Decisions: ADRs 0001–0009.
+  - `app/`: the composition root (App, bootstrap, routes, layouts, providers, configuration).
   - `presentation/`: pages, widgets, components, features, theme.
   - `application/`: use cases and the telemetry port, with no React.
-  - `domain/`: entities, rules and repository contracts, as pure TypeScript.
-  - `infrastructure/`: fixture repositories, storage, telemetry, sign-in.
+  - `domain/`: entities, value objects, rules and repository contracts, as pure TypeScript.
+  - `infrastructure/`: fixture repositories, runtime configuration, storage, telemetry, sign-in.
   - `shared/`.
-- Business rules moved out of the sample data and the React hook into `domain/rules`: view queues, SLA ordering, the deadline filter, KPI counts, the SLA overview, ticket and member search.
-- Pages reach data only through use cases and repository contracts (`TicketRepository`, `DashboardInfoRepository`, `MemberRepository`), injected by `app/providers/dependencies.ts`. As with a real API, KPI counts, filter options, the right panel, the notification count and the member list now appear once loaded.
-- Server state stays on the platform SDK's `useApi`, not TanStack Query (ADR 0002), and UI state stays in React state, not Zustand (ADR 0003). Both are approved deviations from the constitution.
-- **Build once, deploy everywhere (ADR 0006):** `PUBLIC_APP1_URL` and `VITE_APP1_URL` are removed: `config/app1Url.ts`, the Rsbuild define, the Dockerfile `ARG`s, and the CI and release build args and check. Logout without a shell goes to the runtime config's `auth.signInUrl`, else `/`. The dev server serves `config/runtime.local.json` at `/config/runtime.json`. The `PUBLIC_APP1_URL` repository variable is unused.
-- **Platform packages `1.0.0-alpha.6`** (`frontend-sdk`, `webpack-preset`, `eslint-plugin`, pinned exactly; peer `^1.0.0-alpha.6`). A remote built on alpha.6 needs the shell's SDK `^1.0.0-alpha.6`; web-shell moved first (web-shell #44). Release and deploy both together.
-- The two workarounds from the SDK audit are gone, now that alpha.6 covers them. Calendar days use `formatDate('YYYY-MM-DD')` instead of the `calendarDate()` helper (`src/lib/dates.ts`, removed), and the deadline filter compares them as day strings. The standalone page's "runtime config unavailable" warning goes through `getLogger` only, which the SDK writes to the console while logging is off; the `console.warn` is removed. `dependency-rules.test.ts` now rejects any `console` call, `calendarDate(` and a `Date` built from a `YYYY-MM-DD` literal.
-- The standalone page takes its environment from `/config/runtime.json` (alpha.6). It loads the file, calls `initializeCore` with its `environment`, then `setRuntimeConfig`, so one build serves every environment. Without a file, or a file without `environment`, it runs as `prod` in a build and `local` on the dev server. `PLATFORM_ENVIRONMENT` is removed (`rsbuild.config.ts`, Dockerfile `ARG`).
+- **Use cases are classes with `execute()`:** `LoadTicketQueueUseCase`, `LoadDashboardSummaryUseCase`, `GetDashboardInfoUseCase`, `ListMembersUseCase`.
+  - The composition root (`app/providers/dependencies.ts`) builds them on the repositories.
+  - Pages call `useDependencies().useCases.<name>.execute(...)`, never a repository.
+- **Business rules moved into `domain/rules`**, out of the sample data and the React hook: view queues, SLA ordering, the deadline filter, KPI counts, the SLA overview, ticket and member search.
+- **Data goes through repository contracts** (`TicketRepository`, `DashboardInfoRepository`, `MemberRepository`), injected by the composition root. As with a real API, KPI counts, filter options, the right panel, the notification count and the member list now appear once loaded.
+- **Files moved:** the routes to `src/app/routes/DashboardRoutes.tsx`, and the standalone runtime config to `src/infrastructure/configuration/standalone.ts`.
+- **Server and UI state:** server state stays on the platform SDK's `useApi`, not TanStack Query (ADR 0002), and UI state stays in React state, not Zustand (ADR 0003). Both are approved deviations from the constitution.
+- **Build once, deploy everywhere** (ADR 0006).
+  - **Logout:** without a shell, logout goes to the runtime config's `auth.signInUrl`, else `/`.
+  - **Dev server:** serves `config/runtime.local.json` at `/config/runtime.json`.
+  - **Removed:** see the *Removed* subsection below.
 
-### Fixed
+### Added (2026-11-06 — browser tests, WCAG 2.1 AA, layer and domain tests, #32)
 
-- **Tender filter matched inside words:** "IT" also listed "Hospital Campus Redevelopment" (hosp-it-al). The keyword now matches whole words (`titleHasKeyword`).
-- **Failed loads besides the ticket list were silent.** A failed dashboard summary left the KPI counts at "—", the filter lists empty and no right panel, with no reason given; a failed member list left an empty table. Both now show an alert with Retry, and every failure is logged through the SDK (`useLoadable`). The member table shows "Loading users…" and `aria-busy` while it loads.
-- **Sample due days were fixed October 2026 dates**, so after October the "This week" filter showed nothing and "on track" tickets were weeks overdue. They are now offsets from today, consistent with each SLA state; the sample delegation period too.
-- **Ticket rows at 1280px:** every title column collapsed to zero width, so titles were invisible and the client and pills wrapped one word per line. The row used viewport breakpoints, though the list shares the row with the right panel. `TicketRow` now lays out by its own width (container queries).
+- **Playwright journeys and WCAG 2.1 AA checks** (ADR 0009). They live in `test/browser`, run with `npm run test:browser`, and run in CI as the job `Browser (Playwright, axe)`, which the image push waits for. They use Chromium against the production build of the standalone page.
+  - **Journeys:** views, filters, clear and search, nested-route reload, logout to `auth.signInUrl`.
+  - **axe-core:** the dashboard, the open filter drawer and the dark theme.
+- **`CalendarDay`** (`src/domain/value-objects`), for due days and the deadline filter.
+- **`test/unit/architecture/layers.test.ts`.** It fails on:
+  - a misplaced top-level folder;
+  - a wrong-way import;
+  - React, an SDK or a browser API in `domain/` or `application/`;
+  - the SDK's storage, metrics or config in `presentation/`.
+- **Domain and use-case tests** (`test/unit/domain`, `test/unit/application`).
+- **The coverage gate** also holds every `src/domain/` file above 90%, the constitution's domain target.
+- **`test/fixtures/dependencies.tsx`:** tests inject repositories (`withDependencies`, `testDependencies`) instead of mocking modules.
+- **Config and build tests:**
+  - a unit test checks the shipped `runtime.json` files against the SDK's `RuntimeConfigSchema`;
+  - an integration test proves no environment-specific value is compiled in.
+
+### Fixed (2026-11-06 — accessibility, layout and routing found by the browser suite, #32)
+
+- **Ticket rows at 1280px.** Every title column collapsed to zero width, so titles were invisible, and the client and pills wrapped one word per line. The row used viewport breakpoints, though the list shares the row with the right panel. `TicketRow` now lays out by its own width (container queries). *(Previously: `md:`/`lg:` viewport breakpoints.)*
 - **WCAG 2.1 AA contrast:** 11 colour pairs failed, as low as 1.15:1 in the dark theme.
-  - Brand-coloured text now uses ink tokens: `--aura-primary-ink`, `--aura-secondary-ink` and `--aura-*-on-soft` in `aura.css`.
-  - Ticket labels are `text-slate-500`.
-  - The KPI card text and the error text get dark-theme overrides.
-- **Notifications button:** its accessible name includes the visible count ("3 unread notifications").
-- **Unknown nested path** (`/dashboard/no/such/page`): it rendered an empty page. It now returns to the dashboard.
-- **Dev runtime config:** `config/runtime.local.json` had `auth.signInUrl` `http://localhost:5001` without the `/` the SDK's normal form requires, so the SDK rejected the whole dev config.
-- In the `test` environment, a missing or invalid standalone `/config/runtime.json` was silent: `standalone.ts` assumed the SDK logger writes to the console in `test`, but the SDK's rule is no identity, `local` or `dev`. It now matches, with a `test` case.
-- The filter drawer closed on Escape through its own `document` listener; it now uses `useDismiss` like the other popups (a press outside closes it too, and focus returns to Filters). Its backdrop is no longer a button (focus never reaches it; the drawer has its own close button), so the catalog key `filters.close` is gone.
-- `PLATFORM_ENVIRONMENT` is checked against the SDK's `ENVIRONMENTS` at build time (an empty value means the default), and the manifest entry's `ownerDomain` against `DOMAINS`. Before this, a typo reached `initializeCore` or the shell's manifest check at run time.
-- `remoteEntry.js`, its chunks and `/assets/` send `Cross-Origin-Resource-Policy: cross-origin`, as platform-reactcommon's guidance for a remote on another origin asks; the smoke script checks it.
-- nginx follows the platform's SPA rule (platform-reactcommon `examples/cloudfront/spa-rewrite.js`), as CloudFront will. It used to fall back to `index.html` for every missing path, so a missing chunk, stylesheet or JSON file (`/assets/…`, `/config/…`) came back as an HTML page with status 200. Now only paths whose last segment has no static-asset extension get the document; missing files, the platform's pass-through prefixes (`/api`, `/otel`, `/csp-report`, `/config`, `/remotes`) and dotfiles are 404. `/assets/` is a `^~` prefix so it keeps its immutable and CORS headers. The smoke script checks eight cases.
+  - **Fix:** brand-coloured text uses the ink tokens `--aura-primary-ink`, `--aura-secondary-ink` and `--aura-*-on-soft` (`aura.css`); ticket labels are `text-slate-500`; the KPI card text and the error text get dark-theme overrides.
+- **Notifications button:** its accessible name now includes the visible count ("3 unread notifications").
+- **Unknown nested path** (`/dashboard/no/such/page`): it rendered an empty page; it now returns to the dashboard (`Navigate to=".." relative="route"`).
+- **Dev runtime config.** `config/runtime.local.json` had `auth.signInUrl` `http://localhost:5001` without the trailing `/` that the SDK's normal form requires, so the SDK rejected the whole dev config.
+
+### Removed (2026-11-06 — build-time environment values, #31, #32)
+
+- **`PUBLIC_APP1_URL` and its deprecated alias `VITE_APP1_URL`** (#32; deprecated in `0.1.0`, see below). Removed from:
+  - `config/app1Url.ts`;
+  - the Rsbuild define;
+  - the Dockerfile `ARG`s;
+  - the CI and release build args and their check.
+
+  The `PUBLIC_APP1_URL` repository variable is now unused. *(Previously: the standalone logout target, compiled in per build.)*
+- **`PLATFORM_ENVIRONMENT`** (#31), from `rsbuild.config.ts` and the Dockerfile `ARG`. The standalone page's environment comes from `runtime.json` (see the alpha.6 subsection below).
+- **`calendarDate()`** (`src/lib/dates.ts`) and the standalone page's `console.warn` (#31). The SDK covers both since alpha.6.
+
+### Changed (2026-11-06 — platform packages 1.0.0-alpha.6, #31)
+
+- **Platform packages `1.0.0-alpha.6`:**
+  - **Packages:** `frontend-sdk`, `webpack-preset` and `eslint-plugin`, pinned exactly, with the peer at `^1.0.0-alpha.6`.
+  - **Shell requirement:** a remote built on alpha.6 needs the shell's SDK `^1.0.0-alpha.6`. web-shell moved first (web-shell #44). Release and deploy the two together.
+- **The two SDK-audit workarounds are gone.**
+  - **Dates:** calendar days use `formatDate('YYYY-MM-DD')`, and the deadline filter compares them as day strings.
+  - **Logging:** the "runtime config unavailable" warning goes through `getLogger` only, which the SDK writes to the console while logging is off.
+  - **Rules:** `dependency-rules.test.ts` now rejects any `console` call, `calendarDate(`, and a `Date` built from a `YYYY-MM-DD` literal.
+- **The standalone page takes its environment from `/config/runtime.json`.**
+  - **Start-up order:** it loads the file, calls `initializeCore` with the file's `environment`, then `setRuntimeConfig`, so one build serves every environment.
+  - **Fallback:** without a file, or with a file that has no `environment`, it runs as `prod` in a build and `local` on the dev server.
+
+### Changed (2026-11-05 — Dependabot, #29)
+
+- **Dependabot reads GitHub Packages** through the Dependabot secret `PACKAGES_READ_TOKEN`, and ignores the three platform packages: they move by hand, together with web-shell.
+
+### Added (2026-11-05 — metrics per the Enterprise Platform Observability Standard, #28)
+
+- **Three Tier 3 metrics**, through the SDK's `/metrics` (`getServiceMeter`) and exported by the shell:
+  - `portal_dashboard_ticket_loads_total` (`view`, `trigger`, `outcome`);
+  - `portal_dashboard_ticket_load_duration_seconds` (`view`, `outcome`);
+  - `portal_dashboard_step_up_requests_total`.
+
+  **Labels:** every label has a closed value set (typed). The SDK injects `domain`, `service` and `environment`, and validates every point. No Tier 1 or Tier 2 metric applies, and none was invented.
+
+  **Enforcement:** `test/unit/metrics` checks the standard in CI against the inventory in `docs/observability/metrics.md`. That page also proposes recording rules, alerts and SLOs, and has a runbook. The remote now consumes the shell's SDK `/metrics` too; web-shell already provides it.
+- **`dependency-rules.test.ts` guards more SDK territory:**
+  - metrics only through `frontend-sdk/metrics`, in one module (no OpenTelemetry, Prometheus client or web-vitals library);
+  - host-page start-up only in the standalone module;
+  - no shell-only SDK APIs (manifest, `loadRemote`, auth, flags, starting telemetry);
+  - no `console`.
+
+  An audit of every SDK export against `src/` found no reimplementation. `recordMetric` no longer repeats the SDK's run-time label checks.
+
+### Fixed (2026-11-05 — second SDK audit, #28)
+
+- **Silent config failure in `test`.** A missing or invalid standalone `/config/runtime.json` was silent in the `test` environment: `standalone.ts` assumed the SDK logger writes to the console in `test`, but the SDK's rule is no identity, `local` or `dev`. It now matches, with a `test` case.
+- **The filter drawer** closed on Escape through its own `document` listener. It now uses `useDismiss` like the other popups:
+  - a press outside closes it too;
+  - focus returns to Filters;
+  - its backdrop is no longer a button, so the catalog key `filters.close` is gone.
+- **Build-time checks.** `PLATFORM_ENVIRONMENT` is checked against the SDK's `ENVIRONMENTS`, and the manifest entry's `ownerDomain` against `DOMAINS`. *(Previously: a typo reached `initializeCore` or the shell's manifest check at run time. `PLATFORM_ENVIRONMENT` was later removed in #31.)*
+
+### Security (2026-11-05 — cross-origin resources and the platform SPA rule, #28)
+
+- **`Cross-Origin-Resource-Policy: cross-origin`** on `remoteEntry.js`, its chunks and `/assets/`, as platform-reactcommon's guidance for a remote on another origin asks. The smoke script checks it.
+- **nginx follows the platform's SPA rule** (platform-reactcommon `examples/cloudfront/spa-rewrite.js`), as CloudFront will.
+  - **Only real routes get the document:** paths whose last segment has no static-asset extension.
+  - **Everything else is `404`:** missing files, the platform's pass-through prefixes (`/api`, `/otel`, `/csp-report`, `/config`, `/remotes`) and dotfiles.
+  - **`/assets/`** is a `^~` prefix, so it keeps its immutable and CORS headers.
+  - **The smoke script** checks eight cases.
+
+  *(Previously: every missing path fell back to `index.html`, so a missing chunk, stylesheet or JSON file came back as an HTML page with status 200.)*
+
+### Known gaps
+
+- **No backend yet.** Tickets, notifications, delegation and members are in-repo fixtures behind repository contracts. The ticket, notification and membership APIs replace them in `src/infrastructure` and `app/providers/dependencies.ts` only ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 1).
+- **Not deployed.** The remote ships with web-shell's first release (item 12). At deploy:
+  - dev manifests switch the key `app2` → `dashboard` (item 15);
+  - each environment's standalone `runtime.json` sets `environment` and `auth.signInUrl` (item 14).
+- **Docs-only pull requests cannot satisfy the required checks.** `ci.yml` ignores Markdown-only changes (`paths-ignore: ['**.md']`), so its required checks never report.
+- **The `Browser (Playwright, axe)` check is not a required status check yet.** The image push waits for it, but branch protection does not.
+- **`package.json` `version` is not checked against the tag.** The release takes its version from the tag (`BUILD_VERSION`); bumping `package.json` is a manual step (VERSIONING.md).
+- **A failed notification count is only logged.** The chrome shows no count; there is no visible error.
+- **Alerts and SLOs are proposals.** `docs/observability/metrics.md` proposes recording rules, alerts and SLOs; no environment runs them yet.
+- **Dev-only advisories are outside the CI audit gate** (`npm audit --omit=dev --audit-level=high`). The image is scanned by Trivy.
+- **Repository housekeeping open on 2026-11-06:**
+  - delete the unused `PUBLIC_APP1_URL` repository variable;
+  - create the Dependabot secret `PACKAGES_READ_TOKEN`;
+  - make the Browser check required.
+
+### Current architecture notes
+
+- **Remote:** container `dashboard` (`var __platform_mfe_dashboard`, defined synchronously), exposing `./App` with the optional props `userLabel` and `onLogout`, mounted by web-shell at `/t/<slug>/dashboard/*`.
+- **Shared from the shell** (strict singletons, never bundled): `react` and `react/jsx-runtime` `^19.0.0`, and the SDK subpaths `auth`, `config`, `i18n`, `logging`, `metrics`, `problem`, `react` and `storage` at `^1.0.0-alpha.6`. `react-router-dom` is not shared.
+- **Layers:** `app`, `presentation`, `application`, `domain`, `infrastructure`, `shared`, enforced by `npm run arch-lint` and `layers.test.ts`.
+  - Server state is the SDK's `useApi`; UI state is React state.
+  - Configuration comes from the runtime only.
+- **Image:** `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard`, `linux/amd64`, nginx 1.31 unprivileged, listening on 8080, `USER 101`.
+  - Bases are digest-pinned: `node:26-bookworm` and `nginxinc/nginx-unprivileged:1.31-alpine` (with `apk upgrade`).
+  - Releases are pushed by digest, scanned, signed and then tagged.
+- **Remotes:** the shell loads this remote; this remote loads no other remotes.
 
 ## [0.3.0] - 2026-11-05
 
