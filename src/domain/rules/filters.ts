@@ -16,14 +16,25 @@ export function matchesDeadline(dueDate: string, deadline: string, now: Date): b
   return true
 }
 
-/** `tickets` narrowed by every filter that is not 'all'. Role matches a substring of `roleLevel`; tender a keyword in the title. */
+/**
+ * Whether `title` contains `keyword` as whole words, case-insensitive: "IT" matches
+ * "IT Infrastructure" but not "Hospital". Letters and digits of any script count as word characters.
+ */
+export function titleHasKeyword(title: string, keyword: string): boolean {
+  const k = keyword.trim()
+  if (!k) return true
+  const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu').test(title)
+}
+
+/** `tickets` narrowed by every filter that is not 'all'. Role matches a substring of `roleLevel`; tender a whole-word keyword in the title. */
 export function applyFilters(tickets: readonly TicketItem[], filters: DashboardFilters, now: Date): TicketItem[] {
   return tickets.filter(
     (t) =>
       (filters.status === 'all' || t.status === filters.status) &&
       (filters.department === 'all' || t.department === filters.department) &&
       (filters.role === 'all' || t.roleLevel.includes(filters.role)) &&
-      (filters.tender === 'all' || t.tenderTitle.toLowerCase().includes(filters.tender.toLowerCase())) &&
+      (filters.tender === 'all' || titleHasKeyword(t.tenderTitle, filters.tender)) &&
       matchesDeadline(t.dueDate, filters.deadline, now),
   )
 }

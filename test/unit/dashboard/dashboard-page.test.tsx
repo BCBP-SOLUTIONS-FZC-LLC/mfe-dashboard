@@ -2,7 +2,7 @@
 // formatted by the SDK in the page locale.
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import App from '../../../src/app/App'
 import { departmentsOf } from '../../../src/domain/rules/filters'
 import { FIXTURE_TICKETS } from '../../../src/infrastructure/fixtures/tickets'
@@ -24,10 +24,16 @@ describe('filters', () => {
 })
 
 describe('delegation panel', () => {
-  it('formats the coverage period in the page locale', async () => {
-    window.history.replaceState({}, '', '/t/acme/dashboard')
-    render(<App userLabel="Ada" />)
-    expect(await screen.findByText('Oct 12, 2026 – Oct 16, 2026')).toBeInTheDocument()
+  it('formats the coverage period (two days either side of today) in the page locale', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 14, 12))
+    try {
+      window.history.replaceState({}, '', '/t/acme/dashboard')
+      render(<App userLabel="Ada" />)
+      expect(await screen.findByText('Oct 12, 2026 – Oct 16, 2026')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

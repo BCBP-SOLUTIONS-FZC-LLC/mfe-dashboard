@@ -1,9 +1,9 @@
-import { useApi } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import type { Member } from '../../../domain/entities/member'
 import { useDependencies } from '../../dependencies'
+import { useLoadable, type Loadable } from '../useLoadable'
 
-/** The tenant's members (the injected ListMembersUseCase through the SDK's useApi); undefined while loading. */
-export function useMembers(): readonly Member[] | undefined {
+/** The tenant's members (the injected ListMembersUseCase through the SDK's useApi); a failed load is `failed`, with `retry`. */
+export function useMembers(): Loadable<readonly Member[]> {
   const { useCases } = useDependencies()
-  return useApi((_api, signal) => useCases.listMembers.execute({ signal }), []).data
+  return useLoadable('members', (signal) => useCases.listMembers.execute({ signal }), [])
 }

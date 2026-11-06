@@ -6,7 +6,7 @@ Exact behaviour, the runtime contract and open items are in the [LLD](docs/lld/m
 
 ## Layers
 
-The Frontend Architecture Constitution's layers (ADR [0001](docs/adr/0001-layered-structure.md)); `test/unit/architecture/layers.test.ts` enforces the directions. Assessment and migration: [docs/architecture/constitution-assessment.md](docs/architecture/constitution-assessment.md).
+The Frontend Architecture Constitution's layers (ADR [0001](docs/adr/0001-layered-structure.md)); `npm run arch-lint` (`.dependency-cruiser.cjs`) and `test/unit/architecture/layers.test.ts` enforce the directions. Assessment and migration: [docs/architecture/constitution-assessment.md](docs/architecture/constitution-assessment.md).
 
 ```mermaid
 flowchart TB

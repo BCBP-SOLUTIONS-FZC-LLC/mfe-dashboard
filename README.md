@@ -82,7 +82,7 @@ Every build writes this remote's entry to `dist/remote-manifest-entry.json` (ser
 
 ## Repository layout
 
-`src/` follows the Frontend Architecture Constitution's layers ([ADR 0001](docs/adr/0001-layered-structure.md), enforced by `test/unit/architecture/layers.test.ts`):
+`src/` follows the Frontend Architecture Constitution's layers ([ADR 0001](docs/adr/0001-layered-structure.md), enforced by `npm run arch-lint` and `test/unit/architecture/layers.test.ts`):
 
 ```
 src/app/                         composition root: App.tsx (./App), routes/, bootstrap/ (main, remote), layouts/,
@@ -126,6 +126,7 @@ The shell, when you want them together, is a separate repo and expects this dev 
 | `npm run dev` | Rsbuild dev server on port 5002 (CORS open for the shell) |
 | `npm run build` | `tsc` (TypeScript 7), then both builds into a clean `dist/` |
 | `npm run lint` | ESLint with `@bcbp-solutions-fzc-llc/eslint-plugin` and React hooks rules (as web-shell). typescript-eslint needs the TypeScript 6 API, so `typescript` is the `@typescript/typescript6` alias and `tsc` comes from `@typescript/native` (TypeScript 7), as the TypeScript 7 release notes recommend |
+| `npm run arch-lint` | dependency-cruiser with `.dependency-cruiser.cjs`: layer directions (an allow-list), no packages in `domain/` or `application/`, no SDK storage, metrics or config in `presentation/`, no cycles. CI runs it in Validate / Quality |
 | `npm test` | Vitest once: unit, integration and e2e (`npm run test:unit`, `test:integration`, `test:e2e` run one suite) |
 | `npm run test:coverage` | Vitest with the v8 report |
 | `npm run test:ci` | Coverage plus the 95% gate and the domain-layer >90% gate (`.github/scripts/coverage-gate.mjs`) |

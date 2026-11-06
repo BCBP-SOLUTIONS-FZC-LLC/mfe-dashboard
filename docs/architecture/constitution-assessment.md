@@ -14,7 +14,7 @@ The refactor that resolves the violations is on branch `refactor/constitution-la
 |---|---|---|
 | Domain ownership (bounded context) | Owns the dashboard and the member list UI; no other domain's rules | Unchanged: compliant |
 | Required project structure | Flat, by technical kind (`components/`, `hooks/`, `pages/`, `mocks/`, `theme/`, `types/`) | `app/`, `presentation/`, `application/`, `domain/`, `infrastructure/`, `shared/` (ADR 0001) |
-| Architecture layers and dependency rules | No layers. Rules in sample data and a React hook; pages imported sample data | Enforced by `test/unit/architecture/layers.test.ts` |
+| Architecture layers and dependency rules | No layers. Rules in sample data and a React hook; pages imported sample data | Enforced by `npm run arch-lint` (`.dependency-cruiser.cjs`) and `test/unit/architecture/layers.test.ts` |
 | Presentation layer | Pages filtered and searched tickets, read sample data, stored the theme | Pages call use cases through feature hooks; rules are in the domain |
 | Application layer | None | Use-case classes with `execute()` and a telemetry port, with no React and no browser |
 | Domain layer | None (types only) | Entities, a value object (`CalendarDay`), rules and repository contracts; >90% coverage enforced |
@@ -108,6 +108,7 @@ shared ◄── used by every layer; depends on nothing of ours
 | build → `PUBLIC_APP1_URL` | removed; `runtime.json` only |
 
 Guards that keep it clean:
+- `npm run arch-lint` (`.dependency-cruiser.cjs`, CI `Architecture lint`): the layer allow-list, packages only outside domain and application, no forbidden libraries, no cycles.
 - `test/unit/architecture/layers.test.ts`: layer directions, framework-free domain and application, no SDK storage, metrics or config in presentation.
 - `test/unit/sdk/dependency-rules.test.ts`: the platform SDK is used, not reimplemented.
 - `.github/scripts/coverage-gate.mjs`: 95% overall, and every domain file above 90%.

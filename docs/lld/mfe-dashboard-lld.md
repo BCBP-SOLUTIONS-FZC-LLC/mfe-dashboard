@@ -109,7 +109,8 @@ src/
 │   ├── widgets/dashboard/            TicketRow (container queries), DashboardRightPanel
 │   ├── components/                   BrandLogo, ThemePicker, DashboardIcons
 │   ├── features/                     tickets/useDashboardData, summary/useDashboardSummary + useDashboardInfo,
-│   │                                 members/useMembers + useMemberAccess (useCases.*.execute through the SDK's useApi)
+│   │                                 members/useMembers + useMemberAccess (useCases.*.execute through the SDK's useApi;
+│   │                                 useLoadable adds failed + retry)
 │   ├── theme/                        themeMode.ts (show a theme, surface classes), aura.css (+ WCAG ink tokens), daisyAuraBridge.css
 │   └── dependencies.tsx              Dependencies { useCases, telemetry }, DependenciesProvider, useDependencies
 ├── application/                      use cases, no React or browser (domain, shared)
@@ -136,7 +137,7 @@ src/
     └── assets/images/                logos (imported; emitted as assets/<name>.<hash>.png)
 ```
 
-`test/unit/architecture/layers.test.ts` enforces the import directions in brackets, keeps `domain/` and `application/` free of React, the SDK and browser APIs, and keeps the SDK's storage, metrics and config out of `presentation/`. `test/unit/sdk/dependency-rules.test.ts` enforces the SDK rules in §5.
+`npm run arch-lint` (dependency-cruiser, `.dependency-cruiser.cjs`; CI step `Architecture lint`) and `test/unit/architecture/layers.test.ts` enforce the import directions in brackets and reject import cycles (arch-lint), keeps `domain/` and `application/` free of React, the SDK and browser APIs, and keeps the SDK's storage, metrics and config out of `presentation/`. `test/unit/sdk/dependency-rules.test.ts` enforces the SDK rules in §5.
 
 ## 4. Runtime Contract with the Shell
 
@@ -238,7 +239,7 @@ Standalone, with no shell, every SDK API answers with its anonymous defaults (de
 | `delegated` | `delegatedFrom` set | everyone |
 | `all-tenders` | every row when `canSeeAllTenders`, otherwise `[]` | `read:tender` |
 
-Filter options come from the data: `DEPARTMENT_OPTIONS` (distinct departments), `ROLE_OPTIONS`, `TENDER_OPTIONS`. Status, department, role (`roleLevel.includes`) and tender (title substring) are applied in `useDashboardData`. Deadline is applied by local calendar day (`matchesDeadline`): `overdue` is before today, `week` is today and the next six days. The header search then filters title, client and department.
+Filter options come from the data: `DEPARTMENT_OPTIONS` (distinct departments), `ROLE_OPTIONS`, `TENDER_OPTIONS`. Status, department, role (`roleLevel.includes`) and tender (whole words of the title, case-insensitive: `titleHasKeyword`, so "IT" does not match "Hospital") are applied in `useDashboardData`. Deadline is applied by local calendar day (`matchesDeadline`): `overdue` is before today, `week` is today and the next six days. The header search then filters title, client and department.
 
 KPI numbers are `kpiCounts()`: each view's row count before filters, from the same fixtures the list shows. The list heading shows the rows actually listed (after filters and search). The SLA overview counts `my-tickets` rows by `slaState`, and its total is their sum.
 
@@ -252,7 +253,9 @@ KPI numbers are `kpiCounts()`: each view's row count before filters, from the sa
 | `empty` | Zero rows |
 | `ready` | Otherwise |
 
-`refreshing` is true while a reload of the same key runs; the last rows stay on screen. The fixture loader waits 700 ms (400 ms on refresh) on an abortable delay, so a superseded load is aborted by `useApi`.
+`refreshing` is true while a reload of the same key runs; the last rows stay on screen. The fixture loader waits 700 ms (400 ms on refresh) on an abortable delay, so a superseded load is aborted by `useApi`. The sample due days are offsets from the local today (`sampleTicketsAt`), consistent with each SLA state (breached: past due; warning: due in 1–3 days; on track: 5 or more), so the demo always has overdue and this-week rows; the sample delegation runs from two days before today to two days after.
+
+The other loads (`useDashboardSummary`, `useMembers`, `useDashboardInfo`) go through `useLoadable` (`src/presentation/features/useLoadable.ts`): `useApi` plus `failed` and `retry`, and a `warn` through the SDK logger (`<what> failed to load`) on an API error.
 
 ## 7. Key Flows
 
@@ -337,10 +340,13 @@ No tokens, user data or permissions are stored by this repo. Raw `localStorage` 
 | Filters match nothing / search matches nothing | "No tickets found" with Clear Filters / "No matching tickets" |
 | No `read:members` / `manage:members` | Link hidden; route redirects to the dashboard |
 | No shell `signOut` | Fallback navigation to `auth.signInUrl`, else `/` |
-| Standalone `/config/runtime.json` missing, invalid or slow (> 5 s) | `warn` through the SDK logger (on the console in every environment while logging is off, alpha.6); the page renders with no config, as `prod` (`local` on the dev server), and logout uses `PUBLIC_APP1_URL`. Deploy check in `docs/runbook-release.md` |
+| Standalone `/config/runtime.json` missing, invalid or slow (> 5 s) | `warn` through the SDK logger (on the console in every environment while logging is off, alpha.6); the page renders with no config, as `prod` (`local` on the dev server), and logout goes to `/` (no `auth.signInUrl`). Deploy check in `docs/runbook-release.md` |
 | Reload of a nested standalone route (`/dashboard/user-management`) | Works: the standalone HTML links `/assets/…` and `/favicon.png` root-absolute (`assetPrefix: '/'`); the CI smoke script checks it |
 | `#app` missing (standalone) | `main.tsx` throws before render |
 | Ticket load fails with an API error | `error` state: alert with the SDK's problem message and Retry; rows cleared |
+| Dashboard summary fails (KPI counts, filter options, SLA overview, notifications) | Alert under the title with Retry; KPI cards show "—", the filter lists only "All", no right panel; logged |
+| Member list fails / is loading | Table row "Users could not be loaded." with Retry / "Loading users…" with `aria-busy` on the table; logged on failure |
+| Shell info (notification count, delegation) fails | No count shown; logged |
 | Ticket loader throws anything else (a bug) | `useApi` rethrows; the page's `MFEErrorBoundary` in `AppShellLayout` (only the page is replaced; it clears when the path changes) shows its fallback and logs it |
 | Shell does not provide a shared SDK subpath | `get('./App')` rejects ("Shared module … doesn't exist in shared scope default"); the shell's `RemoteBoundary` shows its error |
 | Shell's SDK outside `^1.0.0-alpha.6`, or React outside `^19.0.0` | Strict singleton check fails at load; the shell shows its error |

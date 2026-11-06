@@ -104,7 +104,7 @@ export default function DashboardPage() {
   const activeFilterCount = countActiveFilters(filters)
 
   // KPI counts, SLA overview, filter options, notifications, delegation (loadDashboardSummary).
-  const summary = useDashboardSummary(canSeeAllTenders)
+  const { data: summary, failed: summaryFailed, retry: retrySummary } = useDashboardSummary(canSeeAllTenders)
   const { telemetry } = useDependencies()
 
   const visibleViews = useMemo(
@@ -135,6 +135,24 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
             <p className="text-sm text-aura-muted">{t('dashboard.subtitle')}</p>
           </div>
+
+          {/* The KPI counts, filter options and right panel come from the summary: without it they
+              would stay empty with no reason given. */}
+          {summaryFailed ? (
+            <div
+              role="alert"
+              className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-500/45 dark:bg-transparent dark:text-red-300"
+            >
+              <span>{t('dashboard.summaryFailed')}</span>
+              <button
+                type="button"
+                onClick={retrySummary}
+                className="cursor-pointer font-semibold text-red-800 underline dark:text-red-300"
+              >
+                {t('dashboard.retry')}
+              </button>
+            </div>
+          ) : null}
 
           <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {visibleViews.map((v) => (
