@@ -30,4 +30,11 @@ describe('App inside the shell', () => {
     const dashboardLink = screen.getAllByRole('link', { name: /dashboard/i })[0]!
     expect(dashboardLink).toHaveAttribute('href', '/t/acme/dashboard')
   })
+
+  it('sends an unknown nested path back to the dashboard instead of rendering nothing', async () => {
+    window.history.replaceState({}, '', '/t/acme/dashboard/no/such/page')
+    render(<App userLabel="Ada" />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/t/acme/dashboard')
+  })
 })

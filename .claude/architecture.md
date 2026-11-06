@@ -7,14 +7,15 @@ The narrative with diagrams is [`ARCHITECTURE.md`](../ARCHITECTURE.md); exact be
 ```
 mfe-dashboard/
 ├── src/                           the constitution's layers (ADR 0001; test/unit/architecture/layers.test.ts)
-│   ├── app/                       composition root: App.tsx (./App, routes, basename, DependenciesProvider),
-│   │                              bootstrap/ (main, standalone, remote), layouts/AppShellLayout, providers/dependencies.ts,
+│   ├── app/                       composition root: App.tsx (./App, DependenciesProvider), routes/ (routes, basename),
+│   │                              bootstrap/ (main, remote), layouts/AppShellLayout, providers/dependencies.ts (use cases),
 │   │                              configuration/ (i18n.ts, locales/en.json), styles/index.css
-│   ├── presentation/              pages/, widgets/dashboard/, components/, features/ (hooks running use cases via useApi),
+│   ├── presentation/              pages/, widgets/dashboard/, components/, features/ (useCases.*.execute via useApi),
 │   │                              theme/ (show a theme, CSS), dependencies.tsx (injected contracts)
-│   ├── application/               use-cases/ (loadTicketQueue, loadDashboardSummary, listMembers), ports/telemetry.ts
-│   ├── domain/                    entities/, rules/ (views, filters, deadline, SLA, search), repositories/ (contracts)
-│   ├── infrastructure/            fixtures/ (Fixture*Repository), storage/themePreference, telemetry/metrics, auth/signIn
+│   ├── application/               use-cases/ (*UseCase classes with execute()), ports/telemetry.ts
+│   ├── domain/                    entities/, value-objects/ (CalendarDay), rules/, repositories/ (contracts)
+│   ├── infrastructure/            fixtures/ (Fixture*Repository), configuration/standalone (runtime.json), storage/,
+│   │                              telemetry/metrics, auth/signIn
 │   └── shared/                    constants/app.ts (APP_ID), hooks/ (useDismiss, useFocusTrap, useNow), ui/themes.ts,
 │                                  types/appShellContext.ts, assets/images
 ├── test/
@@ -22,7 +23,8 @@ mfe-dashboard/
 │   ├── fixtures/                  platform.ts (startPlatform, permission sets), dependencies.tsx (inject repositories), remote-build.ts
 │   ├── unit/<area>/               architecture, domain, application, app, authz, dashboard, components, theme, i18n, metrics, sdk, docs
 │   ├── integration/               remote-entry: built container via init(shareScope) / get('./App')
-│   └── e2e/                       app flows
+│   ├── e2e/                       app flows (happy-dom)
+│   └── browser/                   Playwright journeys + axe WCAG 2.1 AA (playwright.config.ts)
 ├── docs/
 │   ├── lld/mfe-dashboard-lld.md
 │   ├── architecture/              constitution-assessment.md; mermaid/ diagram sources (embedded in ARCHITECTURE.md)
@@ -33,7 +35,7 @@ mfe-dashboard/
 ├── nginx/default.conf, Dockerfile
 ├── rsbuild.config.ts              environments: remote (pluginPlatform dashboard) and standalone
 ├── config/remote-manifest-entry.mjs  post-build: dist/remote-manifest-entry.json (remoteEntry.js sha384)
-├── config/runtime.local.json      the dev server's /config/runtime.json (environment local, signInUrl localhost:5001)
+├── config/runtime.local.json      the dev server's /config/runtime.json (environment local, signInUrl http://localhost:5001/)
 ├── vitest.config.ts               happy-dom; test/{unit,integration,e2e}; coverage on src/
 ├── eslint.config.js               @bcbp-solutions-fzc-llc/eslint-plugin + React hooks (as web-shell)
 └── .github/                       ci.yml, validate-test.yml, validate-quality.yml, changelog-check.yml, release.yml,
@@ -57,7 +59,7 @@ mfe-dashboard/
 | Render errors | `MFEErrorBoundary` (page, `resetKeys` = path; standalone also around `App`) | `app/layouts/AppShellLayout.tsx`, `app/bootstrap/main.tsx` |
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` | `app/configuration/i18n.ts`, components |
 | Storage | `storage('dashboard')` | `infrastructure/storage/themePreference.ts` |
-| Runtime config, identity | `loadRuntimeConfig`, `initializeCore`, `setRuntimeConfig`, `tryGetConfig` | `app/bootstrap/standalone.ts`, `infrastructure/auth/signIn.ts` |
+| Runtime config, identity | `loadRuntimeConfig`, `initializeCore`, `setRuntimeConfig`, `tryGetConfig` | `infrastructure/configuration/standalone.ts`, `infrastructure/auth/signIn.ts` |
 | Metrics | `getServiceMeter` | `infrastructure/telemetry/metrics.ts` |
 | Tests | `createTestPlatform` | `test/fixtures/platform.ts` |
 

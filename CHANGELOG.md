@@ -8,6 +8,11 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ### Added
 
+- **Playwright journeys and WCAG 2.1 AA checks** (`test/browser`, `npm run test:browser`, CI job `Browser (Playwright, axe)`, which the image push waits for; ADR 0009). They run in Chromium against the production build of the standalone page.
+  - Journeys: views, filters, clear and search, nested-route reload, logout to `auth.signInUrl`.
+  - axe-core on the dashboard, the open filter drawer and the dark theme.
+- A unit test checks the shipped `runtime.json` files against the SDK's `RuntimeConfigSchema`.
+- The `CalendarDay` value object (`src/domain/value-objects`) for due days and the deadline filter.
 - `test/unit/architecture/layers.test.ts` fails on a misplaced top-level folder, a wrong-way import, React, an SDK or a browser API in `domain/` or `application/`, and the SDK's storage, metrics or config in `presentation/`.
 - Domain and use-case tests (`test/unit/domain`, `test/unit/application`).
 - The coverage gate also holds every `src/domain/` file above 90% (the constitution's domain target).
@@ -18,6 +23,8 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ### Changed
 
+- Use cases are classes with `execute()`: `LoadTicketQueueUseCase`, `LoadDashboardSummaryUseCase`, `GetDashboardInfoUseCase`, `ListMembersUseCase`. The composition root builds them on the repositories, and pages call `useDependencies().useCases.<name>.execute(...)`, never a repository.
+- Routes moved to `src/app/routes/DashboardRoutes.tsx`, and the standalone runtime config to `src/infrastructure/configuration/standalone.ts`.
 - **Frontend Architecture Constitution:** `src/` is now in the constitution's layers. Behaviour and the `./App` contract are unchanged. Assessment, violations, roadmap: `docs/architecture/constitution-assessment.md`; decisions: `docs/adr/0001`–`0008`.
   - `app/`: the composition root (App, bootstrap, layouts, providers, configuration).
   - `presentation/`: pages, widgets, components, features, theme.
@@ -35,6 +42,14 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ### Fixed
 
+- **Ticket rows at 1280px:** every title column collapsed to zero width, so titles were invisible and the client and pills wrapped one word per line. The row used viewport breakpoints, though the list shares the row with the right panel. `TicketRow` now lays out by its own width (container queries).
+- **WCAG 2.1 AA contrast:** 11 colour pairs failed, as low as 1.15:1 in the dark theme.
+  - Brand-coloured text now uses ink tokens: `--aura-primary-ink`, `--aura-secondary-ink` and `--aura-*-on-soft` in `aura.css`.
+  - Ticket labels are `text-slate-500`.
+  - The KPI card text and the error text get dark-theme overrides.
+- **Notifications button:** its accessible name includes the visible count ("3 unread notifications").
+- **Unknown nested path** (`/dashboard/no/such/page`): it rendered an empty page. It now returns to the dashboard.
+- **Dev runtime config:** `config/runtime.local.json` had `auth.signInUrl` `http://localhost:5001` without the `/` the SDK's normal form requires, so the SDK rejected the whole dev config.
 - In the `test` environment, a missing or invalid standalone `/config/runtime.json` was silent: `standalone.ts` assumed the SDK logger writes to the console in `test`, but the SDK's rule is no identity, `local` or `dev`. It now matches, with a `test` case.
 - The filter drawer closed on Escape through its own `document` listener; it now uses `useDismiss` like the other popups (a press outside closes it too, and focus returns to Filters). Its backdrop is no longer a button (focus never reaches it; the drawer has its own close button), so the catalog key `filters.close` is gone.
 - `PLATFORM_ENVIRONMENT` is checked against the SDK's `ENVIRONMENTS` at build time (an empty value means the default), and the manifest entry's `ownerDomain` against `DOMAINS`. Before this, a typo reached `initializeCore` or the shell's manifest check at run time.

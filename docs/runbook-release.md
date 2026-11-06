@@ -44,12 +44,12 @@ OIDC issuer: `https://token.actions.githubusercontent.com`.
 
 ## Standalone runtime config (`auth.signInUrl`)
 
-The standalone image serves `/config/runtime.json` (web-shell's defaults, no `signInUrl`). Mount the environment's file over `/usr/share/nginx/html/config/runtime.json`, with `environment` (`dev`, `test`, `staging` or `prod`; since this remote runs SDK alpha.6) and `auth.signInUrl` (an absolute `https` URL, where logout returns). The SDK validates it strictly: an unknown key or an `http` origin outside local and dev makes the page ignore the whole file.
+The standalone image serves `/config/runtime.json` (web-shell's defaults, no `signInUrl`). Mount the environment's file over `/usr/share/nginx/html/config/runtime.json`, with `environment` (`dev`, `test`, `staging` or `prod`; since this remote runs SDK alpha.6) and `auth.signInUrl` (where logout returns: an absolute `https` URL in normal form, as `new URL(x).href` writes it, so `https://app.dev.bcbpsolutions.com/` with its trailing `/`; `http` only for `localhost`). The SDK validates the file strictly: an unknown key or a URL not in normal form makes the page ignore the whole file, and logout then returns to `/`.
 
 Check after each deploy:
 
 ```bash
-curl -fsS https://<standalone-host>/config/runtime.json | jq -e '(.environment | IN("dev","test","staging","prod")) and (.auth.signInUrl | startswith("https://"))'
+curl -fsS https://<standalone-host>/config/runtime.json | jq -e '(.environment | IN("dev","test","staging","prod")) and (.auth.signInUrl | test("^https://[^/?#]+/"))'
 ```
 
 A failure in the browser shows as a console warning `[dashboard] runtime config unavailable; logout uses the build-time sign-in URL`. It comes from the SDK logger, which writes warnings to the console while logging is off; that line is the only trace, since the standalone page sends no telemetry. Without `environment` the page runs as `prod`.

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { getLogger } from '@bcbp-solutions-fzc-llc/frontend-sdk/logging'
 import { useApi } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
-import { loadTicketQueue } from '../../../application/use-cases/loadTicketQueue'
 import type { DashboardFilters, DashboardView, TicketItem } from '../../../domain/entities/ticket'
 import { APP_ID } from '../../../shared/constants/app'
 import { useDependencies } from '../../dependencies'
@@ -17,7 +16,7 @@ type Options = {
 type Loaded = { key: string; tickets: TicketItem[]; partialFailure: boolean; cachedAt: number }
 
 /**
- * The dashboard's ticket list: the loadTicketQueue use case over the injected TicketRepository, run by
+ * The dashboard's ticket list: the injected LoadTicketQueueUseCase, run by
  * the platform SDK's useApi (run on change, abort the superseded load, reload; ADR 0002). Finished
  * loads are reported to the injected telemetry.
  */
@@ -25,7 +24,7 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
   const key = JSON.stringify([view, filters, canSeeAllTenders])
   const refreshRequested = useRef(false)
 
-  const { tickets: repository, telemetry } = useDependencies()
+  const { useCases, telemetry } = useDependencies()
 
   const { data, error, loading, reload } = useApi(async (_api, signal): Promise<Loaded> => {
     const refresh = refreshRequested.current
@@ -37,7 +36,7 @@ export function useDashboardData({ view, filters, canSeeAllTenders }: Options) {
       telemetry.ticketLoadFinished({ view, trigger: refresh ? 'refresh' : 'initial', outcome, seconds: (performance.now() - started) / 1000 })
     }
     try {
-      const queue = await loadTicketQueue(repository, { view, filters, canSeeAllTenders, now: new Date(), refresh, signal })
+      const queue = await useCases.loadTicketQueue.execute({ view, filters, canSeeAllTenders, now: new Date(), refresh, signal })
       finish('success')
       return { key, ...queue, cachedAt: Date.now() }
     } catch (failure) {

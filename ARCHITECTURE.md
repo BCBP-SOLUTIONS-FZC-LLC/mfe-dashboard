@@ -13,26 +13,26 @@ flowchart TB
     host["web-shell (shell)\nloadRemote: init(shareScope), get('./App')\nPlatformProvider: auth, telemetry, i18n"]
     sdk["platform SDK (shell singleton)\nuseApi, ApiClient, permissions, step-up,\ni18n, storage, logging, metrics"]
     subgraph app["app/ (composition root)"]
-        appRoot["App.tsx: ./App, routes, basename\nproviders/dependencies.ts\nbootstrap: main, standalone, remote"]
+        appRoot["App.tsx: ./App; routes/DashboardRoutes\nproviders/dependencies.ts (builds use cases)\nbootstrap: main, remote"]
         layout["layouts/AppShellLayout"]
     end
     subgraph presentation["presentation/"]
         pages["pages: DashboardPage, UserManagementPage"]
         widgets["widgets, components, theme"]
-        features["features: useDashboardData, useDashboardSummary,\nuseMembers, useMemberAccess (run use cases via useApi)"]
+        features["features: useDashboardData, useDashboardSummary,\nuseMembers, useMemberAccess (useCases.*.execute via useApi)"]
     end
     subgraph application["application/"]
-        usecases["use-cases: loadTicketQueue,\nloadDashboardSummary, listMembers"]
+        usecases["use-cases: LoadTicketQueueUseCase, LoadDashboardSummaryUseCase,\nGetDashboardInfoUseCase, ListMembersUseCase"]
         ports["ports: DashboardTelemetry"]
     end
     subgraph domain["domain/"]
-        entities["entities: Ticket, Member, DashboardInfo"]
+        entities["entities: Ticket, Member, DashboardInfo\nvalue-objects: CalendarDay"]
         rules["rules: views, filters, deadline, SLA, search"]
         repos["repositories: Ticket, DashboardInfo, Member (contracts)"]
     end
     subgraph infrastructure["infrastructure/"]
         fixtures["fixtures: Fixture*Repository\n(later api: *ApiRepository on ApiClient)"]
-        infraOther["storage: themePreference\ntelemetry: metrics\nauth: signIn"]
+        infraOther["configuration: standalone (runtime.json)\nstorage: themePreference\ntelemetry: metrics\nauth: signIn"]
     end
     shared["shared/: constants, hooks, ui/themes, types, assets"]
 
@@ -56,11 +56,11 @@ flowchart TB
 
 | Layer | Contents | May import |
 |---|---|---|
-| `src/app/` | Composition root. `App.tsx`: the exposed `./App` (props `userLabel?`, `onLogout?`), routes, the workspace basename, `DependenciesProvider`. `bootstrap/`: `main.tsx` (standalone entry), `standalone.ts` (runtime config, page identity), `remote.ts` (the remote build's placeholder entry). `layouts/AppShellLayout.tsx` (sidebar, search, theme, user menu, logout). `providers/dependencies.ts` (which implementation backs each contract). `configuration/` (i18n catalog). `styles/` | every layer |
+| `src/app/` | Composition root. `App.tsx`: the exposed `./App` (props `userLabel?`, `onLogout?`), `DependenciesProvider`. `routes/DashboardRoutes.tsx`: the routes and the workspace basename. `bootstrap/`: `main.tsx` (standalone entry), `remote.ts` (the remote build's placeholder entry). `layouts/AppShellLayout.tsx` (sidebar, search, theme, user menu, logout). `providers/dependencies.ts` (which implementation backs each contract, and the use cases built on them). `configuration/` (i18n catalog). `styles/` | every layer |
 | `src/presentation/` | `pages/` (DashboardPage, UserManagementPage), `widgets/dashboard/` (TicketRow, DashboardRightPanel), `components/` (BrandLogo, ThemePicker, DashboardIcons), `features/` (useDashboardData, useDashboardSummary, useDashboardInfo, useMembers, useMemberAccess: run use cases through the SDK's `useApi`), `theme/` (show a theme, Aura CSS), `dependencies.tsx` (the injected contracts) | application, domain, shared |
-| `src/application/` | `use-cases/` (loadTicketQueue, loadDashboardSummary, listMembers), `ports/` (DashboardTelemetry). No React, no browser, no SDK | domain, shared |
-| `src/domain/` | `entities/` (Ticket, Member, DashboardInfo), `rules/` (views, filters and deadline, SLA, search), `repositories/` (contracts). Pure TypeScript | nothing |
-| `src/infrastructure/` | `fixtures/` (Fixture*Repository: today's sample data), `storage/themePreference.ts` (SDK `storage()`), `telemetry/metrics.ts` (SDK metrics, the telemetry adapter), `auth/signIn.ts` (logout without a shell) | application, domain, shared |
+| `src/application/` | `use-cases/` (LoadTicketQueueUseCase, LoadDashboardSummaryUseCase, GetDashboardInfoUseCase, ListMembersUseCase: classes with `execute()`), `ports/` (DashboardTelemetry). No React, no browser, no SDK | domain, shared |
+| `src/domain/` | `entities/` (Ticket, Member, DashboardInfo), `value-objects/` (CalendarDay), `rules/` (views, filters and deadline, SLA, search), `repositories/` (contracts). Pure TypeScript | nothing |
+| `src/infrastructure/` | `fixtures/` (Fixture*Repository: today's sample data), `configuration/standalone.ts` (the standalone page's runtime config and identity), `storage/themePreference.ts` (SDK `storage()`), `telemetry/metrics.ts` (SDK metrics, the telemetry adapter), `auth/signIn.ts` (logout without a shell) | application, domain, shared |
 | `src/shared/` | `constants/app.ts` (`APP_ID`), `hooks/` (useDismiss, useFocusTrap, useNow), `ui/themes.ts`, `types/appShellContext.ts`, `assets/` | nothing of ours |
 | `nginx/default.conf` | Port 8080, `/healthz`, no-cache `remoteEntry.js`, immutable hashed chunks, CORS, the platform SPA rule | — |
 
@@ -76,7 +76,7 @@ flowchart TB
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` |
 | Per-app storage | `storage('dashboard')` |
 
-`npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports, metrics not through `frontend-sdk/metrics` in `src/infrastructure/telemetry/metrics.ts`, host-page start-up outside `src/app/bootstrap/standalone.ts`, shell-only SDK APIs, and any `console` call or calendar day turned into a `Date`.
+`npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports, metrics not through `frontend-sdk/metrics` in `src/infrastructure/telemetry/metrics.ts`, host-page start-up outside `src/infrastructure/configuration/standalone.ts`, shell-only SDK APIs, and any `console` call or calendar day turned into a `Date`.
 
 ## Federation
 
@@ -157,7 +157,7 @@ Load state is `partial_failure` when the view is `my-tickets` and a row has `ten
 
 ## Logout and theme
 
-`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `goToSignIn()` (`src/infrastructure/auth/signIn.ts`) runs: `window.location.assign`, without a trailing slash, of the runtime config's `auth.signInUrl` (per environment), else the page root `/`. Nothing environment-specific is compiled in (ADR 0006). Only the standalone page has a config with `signInUrl`: `src/app/bootstrap/standalone.ts` loads `/config/runtime.json` through the SDK, sets the page identity in the file's `environment`, then the config, before rendering, and renders anyway when that fails. Inside web-shell the shell's config applies and has no `signInUrl`.
+`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `goToSignIn()` (`src/infrastructure/auth/signIn.ts`) runs: `window.location.assign`, without a trailing slash, of the runtime config's `auth.signInUrl` (per environment), else the page root `/`. Nothing environment-specific is compiled in (ADR 0006). Only the standalone page has a config with `signInUrl`: `src/infrastructure/configuration/standalone.ts` loads `/config/runtime.json` through the SDK, sets the page identity in the file's `environment`, then the config, before rendering, and renders anyway when that fails. Inside web-shell the shell's config applies and has no `signInUrl`.
 
 | Key | Values |
 |---|---|
@@ -239,6 +239,7 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 | `USER 101` | The unprivileged nginx image's uid. `USER nginx` fails Hadolint DL3066 |
 | Constitution layers (`app`, `presentation`, `application`, `domain`, `infrastructure`, `shared`), enforced by a test | Business rules independent of React and the SDK; data access behind repositories; ADR [0001](docs/adr/0001-layered-structure.md), [0004](docs/adr/0004-repositories-and-composition-root.md) |
 | Platform SDK `useApi` for server state, React state for UI state (not TanStack Query or Zustand) | One request lifecycle with the shell; small local state. ADR [0002](docs/adr/0002-server-state-platform-sdk.md), [0003](docs/adr/0003-client-state-react.md) |
+| Playwright journeys and axe WCAG 2.1 AA in CI | happy-dom has no layout or colour: a collapsed ticket layout and contrast failures had gone unnoticed. ADR [0009](docs/adr/0009-browser-tests-and-accessibility.md) |
 | Runtime configuration only | Build once, deploy everywhere. ADR [0006](docs/adr/0006-runtime-configuration-only.md) |
 | Coverage script instead of a Vitest threshold | Same gate the shell uses, overridable with `COVERAGE_THRESHOLD` |
 | Standalone build `assetPrefix: '/'`, remote left at the preset's `'auto'` | The remote is loaded from any base URL; the standalone page is always at `/`, and relative asset URLs break a reload of `/dashboard/user-management` |

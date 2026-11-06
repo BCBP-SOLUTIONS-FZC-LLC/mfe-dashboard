@@ -5,7 +5,7 @@ import { isInitialized } from '@bcbp-solutions-fzc-llc/frontend-sdk/core'
 import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { goToSignIn } from '../../../src/infrastructure/auth/signIn'
-import { startStandalone } from '../../../src/app/bootstrap/standalone'
+import { startStandalone } from '../../../src/infrastructure/configuration/standalone'
 
 const seen: { settled?: boolean; initialized?: boolean; config?: unknown; warnings: string[]; logoutTo?: unknown } = { warnings: [] }
 

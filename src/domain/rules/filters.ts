@@ -1,11 +1,7 @@
 // The dashboard filters and the deadline rule. Calendar days (`YYYY-MM-DD`) are compared as strings,
 // never turned into instants (which would shift them a day west of UTC).
 import type { DashboardFilters, TicketItem } from '../entities/ticket'
-
-/** The local calendar day of `d` as `YYYY-MM-DD`, comparable as a string with a ticket's due day. */
-export function dayKey(d: Date): string {
-  return [d.getFullYear(), d.getMonth() + 1, d.getDate()].map((n, i) => String(n).padStart(i === 0 ? 4 : 2, '0')).join('-')
-}
+import { CalendarDay } from '../value-objects/CalendarDay'
 
 /**
  * Deadline filter on a ticket's due day, against the local day of `now`: 'overdue' is before today,
@@ -13,9 +9,10 @@ export function dayKey(d: Date): string {
  */
 export function matchesDeadline(dueDate: string, deadline: string, now: Date): boolean {
   if (deadline === 'all') return true
-  const today = dayKey(now)
-  if (deadline === 'overdue') return dueDate < today
-  if (deadline === 'week') return dueDate >= today && dueDate < dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7))
+  const due = CalendarDay.parse(dueDate)
+  const today = CalendarDay.fromLocalDate(now)
+  if (deadline === 'overdue') return due.isBefore(today)
+  if (deadline === 'week') return !due.isBefore(today) && due.isBefore(today.addDays(7))
   return true
 }
 

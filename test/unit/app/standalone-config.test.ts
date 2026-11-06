@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { goToSignIn } from '../../../src/infrastructure/auth/signIn'
-import { startStandalone } from '../../../src/app/bootstrap/standalone'
+import { startStandalone } from '../../../src/infrastructure/configuration/standalone'
 
 const shipped = JSON.parse(readFileSync(join(__dirname, '../../../public/config/runtime.json'), 'utf8')) as {
   auth: Record<string, unknown>

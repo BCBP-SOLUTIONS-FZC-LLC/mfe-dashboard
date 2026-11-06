@@ -1,14 +1,22 @@
-// What presentation needs from the layers below, as contracts: repositories (domain) and telemetry
-// (application port). The composition root (src/app/providers) supplies the implementations, so no
-// page, widget or feature imports infrastructure.
+// What presentation needs from the layers below: the use cases (application) and telemetry (an
+// application port). Pages call use cases (`useCases.loadTicketQueue.execute(...)`); they never see a
+// repository or an implementation. The composition root (src/app/providers) builds them.
 import { createContext, useContext, type ReactNode } from 'react'
 import type { DashboardTelemetry } from '../application/ports/telemetry'
-import type { DashboardInfoRepository, MemberRepository, TicketRepository } from '../domain/repositories'
+import type { GetDashboardInfoUseCase } from '../application/use-cases/GetDashboardInfoUseCase'
+import type { ListMembersUseCase } from '../application/use-cases/ListMembersUseCase'
+import type { LoadDashboardSummaryUseCase } from '../application/use-cases/LoadDashboardSummaryUseCase'
+import type { LoadTicketQueueUseCase } from '../application/use-cases/LoadTicketQueueUseCase'
+
+export type UseCases = {
+  loadTicketQueue: LoadTicketQueueUseCase
+  loadDashboardSummary: LoadDashboardSummaryUseCase
+  getDashboardInfo: GetDashboardInfoUseCase
+  listMembers: ListMembersUseCase
+}
 
 export type Dependencies = {
-  tickets: TicketRepository
-  dashboardInfo: DashboardInfoRepository
-  members: MemberRepository
+  useCases: UseCases
   telemetry: DashboardTelemetry
 }
 

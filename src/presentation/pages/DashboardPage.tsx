@@ -151,9 +151,9 @@ export default function DashboardPage() {
                   <KpiViewIcon view={v.id} />
                   <IconChevronRight className="h-5 w-5 text-aura-muted" />
                 </div>
-                <p className="mt-3 text-xs font-medium text-aura-muted">{t(`views.${v.id}.label`)}</p>
+                <p className="mt-3 text-xs font-medium text-aura-muted dark:text-aura-text">{t(`views.${v.id}.label`)}</p>
                 <p className="text-2xl font-bold text-aura-text">{summary ? formatNumber(summary.viewCounts[v.id]) : '—'}</p>
-                <p className="mt-1 text-[0.65rem] text-aura-muted">{t(`views.${v.id}.subtitle`)}</p>
+                <p className="mt-1 text-[0.65rem] text-aura-muted dark:text-aura-text">{t(`views.${v.id}.subtitle`)}</p>
               </button>
             ))}
           </div>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
                   className={`cursor-pointer rounded-xl px-4 py-2.5 text-sm transition-colors ${
                     view === v.id
                       ? 'bg-aura-secondary font-semibold text-white shadow-sm'
-                      : 'bg-aura-secondary-soft font-medium text-aura-secondary hover:bg-aura-secondary/15'
+                      : 'bg-aura-secondary-soft font-medium text-[color:var(--aura-secondary-on-soft)] hover:bg-aura-secondary/15'
                   }`}
                 >
                   {t(`views.${v.id}.label`)}
@@ -327,7 +327,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={refresh}
                     disabled={refreshing}
-                    className="cursor-pointer text-aura-secondary hover:underline disabled:opacity-50"
+                    className="cursor-pointer text-[color:var(--aura-secondary-ink)] hover:underline disabled:opacity-50"
                     aria-label={t('dashboard.refresh')}
                   >
                     <IconRefresh className="h-4 w-4" />
@@ -384,7 +384,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setFilters(defaultFilters)}
-                    className="mt-3 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
+                    className="mt-3 cursor-pointer text-xs font-semibold text-[color:var(--aura-secondary-ink)] hover:underline"
                   >
                     {t('dashboard.clearFilters')}
                   </button>
@@ -421,7 +421,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setFilters(defaultFilters)}
-                className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary"
+                className="mt-2 cursor-pointer text-xs font-semibold text-[color:var(--aura-secondary-ink)]"
               >
                 {t('dashboard.clearFilters')}
               </button>
@@ -441,7 +441,7 @@ export default function DashboardPage() {
               icon={<IconAlertTriangle className="h-4 w-4 text-red-500" />}
             >
               <p className="text-xs text-aura-muted">{t('states.partial.body')}</p>
-              <button type="button" className="mt-1.5 text-xs font-semibold text-aura-secondary">
+              <button type="button" className="mt-1.5 text-xs font-semibold text-[color:var(--aura-secondary-ink)]">
                 {t('states.viewDetails')}
               </button>
             </StateCard>

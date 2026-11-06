@@ -1,6 +1,6 @@
 import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { describe, expect, it, vi } from 'vitest'
-import { FALLBACK_ENVIRONMENT, standaloneIdentity } from '../../../src/app/bootstrap/standalone'
+import { FALLBACK_ENVIRONMENT, standaloneIdentity } from '../../../src/infrastructure/configuration/standalone'
 import { startPlatform } from '../../fixtures/platform'
 
 const render = vi.fn()

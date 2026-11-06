@@ -16,8 +16,8 @@ The refactor that resolves the violations is on branch `refactor/constitution-la
 | Required project structure | Flat, by technical kind (`components/`, `hooks/`, `pages/`, `mocks/`, `theme/`, `types/`) | `app/`, `presentation/`, `application/`, `domain/`, `infrastructure/`, `shared/` (ADR 0001) |
 | Architecture layers and dependency rules | No layers. Rules in sample data and a React hook; pages imported sample data | Enforced by `test/unit/architecture/layers.test.ts` |
 | Presentation layer | Pages filtered and searched tickets, read sample data, stored the theme | Pages call use cases through feature hooks; rules are in the domain |
-| Application layer | None | Use cases and a telemetry port, with no React and no browser |
-| Domain layer | None (types only) | Entities, rules and repository contracts; >90% coverage enforced |
+| Application layer | None | Use-case classes with `execute()` and a telemetry port, with no React and no browser |
+| Domain layer | None (types only) | Entities, a value object (`CalendarDay`), rules and repository contracts; >90% coverage enforced |
 | Infrastructure layer | Sample data mixed with rules; storage and metrics called from UI code | Fixture repositories, theme storage, telemetry adapter, sign-in navigation |
 | Server state: TanStack Query | Platform SDK `useApi` | Unchanged: **approved deviation** (ADR 0002) |
 | Client state: Zustand | React state | Unchanged: **approved deviation** (ADR 0003) |
@@ -29,12 +29,12 @@ The refactor that resolves the violations is on branch `refactor/constitution-la
 | Shared libraries: no domain logic shared | Platform SDK, preset, ESLint plugin only | Unchanged: compliant |
 | Design system | Tailwind + daisyUI; `platform-design-system` does not exist | **Interim** (ADR 0008) |
 | Observability | SDK logging, metrics (Tier 3) and error boundaries; the shell owns the provider | Unchanged: compliant through the SDK (ADR 0007) |
-| Accessibility (WCAG 2.1 AA) | Keyboard, focus traps, ARIA roles, live regions, logical layout | Unchanged; colour-contrast audit and automated checks still open (§6) |
+| Accessibility (WCAG 2.1 AA) | Keyboard, focus traps, ARIA roles, live regions, logical layout; contrast never checked | axe-core in CI (light, dark, drawer); contrast and label-in-name violations fixed (ADR 0009) |
 | Security | CSP same-origin, SRI, no tokens or secrets, no unsafe HTML (lint) | Unchanged: compliant |
 | Internationalization | SDK `useT`; every string in the catalog (tested) | Unchanged: compliant (ADR 0005) |
 | Testing: Vitest, React Testing Library | Unit, integration, e2e (happy-dom) | Plus domain, use-case and architecture tests; domain coverage gate |
 | Testing: contract tests (API schema) | None (no API) | Open: with the first API repository (§6) |
-| Testing: Playwright e2e | Only in web-shell's contract suite, against this remote | Open: own Playwright journeys (§6) |
+| Testing: Playwright e2e | Only in web-shell's contract suite, against this remote | `test/browser` journeys in Chromium, a CI job gating the image push (ADR 0009) |
 | Deployment: S3 + CloudFront, build once | Nginx image; per-environment build value | Build once (ADR 0006); CloudFront/S3 layout still open (LLD §15 item 6) |
 | Repository standards | Builds, tests and deploys independently | Unchanged: compliant (name `mfe-dashboard`, not `<domain>-ui`) |
 
@@ -52,7 +52,9 @@ The refactor that resolves the violations is on branch `refactor/constitution-la
 | V8 | TanStack Query not used | Medium | Approved deviation (ADR 0002) |
 | V9 | Zustand not used | Low | Approved deviation (ADR 0003) |
 | V10 | No `platform-design-system` components | Low | Interim (ADR 0008); depends on the platform |
-| V11 | No Playwright journeys, contract tests or automated a11y checks in this repo | Medium | Roadmap §6 |
+| V11 | No Playwright journeys or automated a11y checks in this repo | Medium | Fixed (ADR 0009). The browser run also found and fixed: the ticket-row layout collapsing at 1280px, 11 colour-contrast failures (light and dark), a notifications label mismatch, a blank page for unknown nested paths, and a dev `runtime.json` the SDK rejected |
+| V12 | No contract tests (API schema validation) | Medium | Open: no API yet; with the first `infrastructure/api` repository (§6) |
+| V13 | Use cases as functions; routes inside `App.tsx`; runtime configuration in `app/` | Low | Fixed: use-case classes with `execute()` injected by the composition root, `app/routes/`, `infrastructure/configuration/` |
 
 ## 3. Target architecture
 
@@ -69,8 +71,9 @@ shared ◄── used by every layer; depends on nothing of ours
 
 | Before | After |
 |---|---|
-| `src/App.tsx` | `src/app/App.tsx` (exposed `./App`; wraps `DependenciesProvider`) |
-| `src/main.tsx`, `src/standalone.ts`, `src/remote.ts` | `src/app/bootstrap/` |
+| `src/App.tsx` | `src/app/App.tsx` (exposed `./App`; wraps `DependenciesProvider`); routes → `src/app/routes/DashboardRoutes.tsx` |
+| `src/main.tsx`, `src/remote.ts` | `src/app/bootstrap/` |
+| `src/standalone.ts` (runtime config, page identity) | `src/infrastructure/configuration/standalone.ts` |
 | `src/index.css` | `src/app/styles/index.css` |
 | `src/i18n.ts`, `src/locales/en.json` | `src/app/configuration/` (`APP_ID` → `src/shared/constants/app.ts`) |
 | `src/layouts/AppShellLayout.tsx` | `src/app/layouts/` |
@@ -81,7 +84,7 @@ shared ◄── used by every layer; depends on nothing of ours
 | `src/hooks/useDashboardData`, `useMemberAccess` | `src/presentation/features/{tickets,members}/`, plus `useDashboardSummary`, `useDashboardInfo`, `useMembers` |
 | `src/hooks/useDismiss`, `useFocusTrap`, `useNow` | `src/shared/hooks/` |
 | `src/types/ticket.ts` | `src/domain/entities/ticket.ts`, plus `member.ts` and `dashboardInfo.ts` |
-| `src/mocks/dashboardTickets.ts` (data + rules) | Data → `src/infrastructure/fixtures/tickets.ts` (`FixtureTicketRepository`); rules → `src/domain/rules/views.ts`, `filters.ts` |
+| `src/mocks/dashboardTickets.ts` (data + rules) | Data → `src/infrastructure/fixtures/tickets.ts` (`FixtureTicketRepository`); rules → `src/domain/rules/views.ts`, `filters.ts`; calendar days → `src/domain/value-objects/CalendarDay.ts` |
 | `src/mocks/dashboardStats.ts` | `src/infrastructure/fixtures/dashboardInfo.ts`; counts and SLA → `src/domain/rules/` |
 | `UserManagementPage`'s member list | `src/infrastructure/fixtures/members.ts`; search → `src/domain/rules/members.ts` |
 | `src/theme/themeMode.ts` | Display → `src/presentation/theme/themeMode.ts`; storage → `src/infrastructure/storage/themePreference.ts` |
@@ -97,7 +100,7 @@ shared ◄── used by every layer; depends on nothing of ours
 | From → to (before) | Now |
 |---|---|
 | pages, widgets, layout → `mocks/*` | → feature hooks → use cases → repository contracts; the composition root injects the fixtures |
-| `useDashboardData` → `mocks` and its own filter code | → `loadTicketQueue` (domain rules) through `useApi`; telemetry through the injected port |
+| `useDashboardData` → `mocks` and its own filter code | → the injected `LoadTicketQueueUseCase.execute` (domain rules) through `useApi`; telemetry through the injected port |
 | layout, `main` → `theme/themeMode` (storage + DOM) | `app/` → `infrastructure/storage` (store) and `presentation/theme` (show) |
 | page → `metrics` | page → `useDependencies().telemetry` (port) |
 | every layer → `i18n.ts` for `APP_ID` | → `shared/constants/app` |
@@ -113,15 +116,15 @@ Guards that keep it clean:
 
 | Phase | Work | Owner | Status |
 |---|---|---|---|
-| 1 | Layers, domain rules, use cases, repositories, composition root, runtime config only, guards, ADRs | mfe-dashboard | **Done** (this branch) |
+| 1 | Layers, domain rules and value objects, use-case classes, repositories, composition root, runtime config only, guards, ADRs | mfe-dashboard | **Done** (this branch) |
 | 2 | Deploy standalone `runtime.json` with `environment` and `auth.signInUrl`; delete the unused `PUBLIC_APP1_URL` repository variable | platform deployment, maintainers | Next |
 | 3 | `infrastructure/api/*ApiRepository` on the SDK `ApiClient` for tickets, notifications and members (IAM P-4/P-6), plus contract tests against their OpenAPI schemas (as platform-reactcommon does for PUB-1/P-35) | mfe-dashboard, API owners | When the APIs exist (LLD §15 item 1) |
-| 4 | Playwright journeys in this repo: dashboard views, filters, member list, logout; or extend web-shell's contract suite and run it from this repo's CI | mfe-dashboard, web-shell | Next |
-| 5 | Accessibility: automated checks (axe in the Playwright run) and a WCAG 2.1 AA colour-contrast audit of the Aura and daisyUI themes | mfe-dashboard | Next |
+| 4 | Playwright journeys in this repo (views, filters, search, nested routes, logout) | mfe-dashboard | **Done** (ADR 0009) |
+| 5 | Accessibility: axe-core WCAG 2.1 AA in the Playwright run, with the contrast fixes; next, the remaining daisyUI themes from the theme picker | mfe-dashboard | **Done** for Aura light and dark; daisyUI themes next |
 | 6 | Replace components with `platform-design-system` ones as they ship | mfe-dashboard, platform | When published (ADR 0008) |
 | 7 | Revisit ADR 0002 (server-state cache) and 0003 (Zustand) when the APIs, or a wizard or drafts, arrive | mfe-dashboard, platform-reactcommon | On trigger |
 | 8 | S3 + CloudFront under `/remotes/dashboard/<version>/` | platform deployment | LLD §15 item 6 |
 
 ## 7. Architecture decision records
 
-[`docs/adr/`](../adr/README.md): 0001 layers, 0002 server state, 0003 client state, 0004 repositories and the composition root, 0005 localization, 0006 runtime configuration, 0007 observability, 0008 design system.
+[`docs/adr/`](../adr/README.md): 0001 layers, 0002 server state, 0003 client state, 0004 repositories and the composition root, 0005 localization, 0006 runtime configuration, 0007 observability, 0008 design system, 0009 browser journeys and accessibility.

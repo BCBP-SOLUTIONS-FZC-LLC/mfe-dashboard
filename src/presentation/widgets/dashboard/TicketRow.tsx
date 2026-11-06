@@ -27,7 +27,10 @@ function formatDue(day: string) {
 export function TicketRow({ ticket }: { ticket: TicketItem }) {
   const t = useT(APP_ID)
   return (
-    <article className="flex flex-col gap-3 rounded-xl border border-aura-border bg-aura-surface px-4 py-4 shadow-sm transition-shadow hover:shadow-md lg:flex-row lg:items-center">
+    // Laid out by the card's own width (a container query), not the viewport's: the list shares the
+    // row with the right panel, so at 1280px a viewport breakpoint squeezed the title column to zero.
+    <article className="@container rounded-xl border border-aura-border bg-aura-surface px-4 py-4 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex flex-col gap-3 @4xl:flex-row @4xl:items-center">
       <div className="flex min-w-0 flex-1 gap-3">
         <TicketTypeIcon />
         <div className="min-w-0 flex-1">
@@ -41,23 +44,23 @@ export function TicketRow({ ticket }: { ticket: TicketItem }) {
             <Pill label={t('ticket.section', { section: ticket.section })} />
           </div>
           {ticket.tenderDetailsUnavailable ? (
-            <p className="mt-2 text-xs font-medium text-red-600">{t('ticket.detailsUnavailable')}</p>
+            <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-300">{t('ticket.detailsUnavailable')}</p>
           ) : null}
         </div>
       </div>
 
-      <div className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600 dark:text-aura-text sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+      <div className="grid shrink-0 grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600 dark:text-aura-text @lg:grid-cols-4">
         <Meta icon="building" label={t('ticket.department')} value={ticket.department} />
         <Meta icon="user" label={t('ticket.roleLevel')} value={ticket.roleLevel} />
         <div>
-          <p className="text-[0.65rem] text-slate-400 dark:text-aura-muted">{t('ticket.dueDate')}</p>
+          <p className="text-[0.65rem] text-slate-500 dark:text-aura-muted">{t('ticket.dueDate')}</p>
           <p className="inline-flex items-center gap-1.5 font-medium text-slate-800 dark:text-aura-text">
             <IconCalendar className="h-4 w-4 text-slate-400 dark:text-aura-muted" />
             {formatDue(ticket.dueDate)}
           </p>
         </div>
         <div>
-          <p className="text-[0.65rem] text-slate-400 dark:text-aura-muted">{t('ticket.slaState')}</p>
+          <p className="text-[0.65rem] text-slate-500 dark:text-aura-muted">{t('ticket.slaState')}</p>
           <p className="inline-flex items-center gap-1.5 font-medium text-slate-800 dark:text-aura-text">
             <span className={`h-2 w-2 rounded-full ${slaDot[ticket.slaState]}`} />
             {t(`sla.${ticket.slaState}`)}
@@ -65,7 +68,7 @@ export function TicketRow({ ticket }: { ticket: TicketItem }) {
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center gap-2 lg:flex-col lg:items-end xl:flex-row">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         {ticket.restricted ? (
           <Badge tone="red" icon="lock">
             {t('ticket.restricted')}
@@ -84,6 +87,7 @@ export function TicketRow({ ticket }: { ticket: TicketItem }) {
           </span>
         ) : null}
         <IconChevronRight className="h-5 w-5 text-slate-300" aria-hidden />
+      </div>
       </div>
     </article>
   )
@@ -109,7 +113,7 @@ function Meta({
   const Icon = icon === 'building' ? IconBuilding : IconUser
   return (
     <div>
-      <p className="text-[0.65rem] text-slate-400 dark:text-aura-muted">{label}</p>
+      <p className="text-[0.65rem] text-slate-500 dark:text-aura-muted">{label}</p>
       <p className="inline-flex items-center gap-1.5 font-medium text-slate-800 dark:text-aura-text">
         <Icon className="h-4 w-4 shrink-0 text-slate-400 dark:text-aura-muted" />
         {value}

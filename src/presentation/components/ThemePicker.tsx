@@ -102,7 +102,7 @@ function ThemeOption({
       tabIndex={-1}
       onClick={onSelect}
       className={`flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-start text-sm transition-colors hover:bg-aura-hover ${
-        selected ? 'bg-aura-primary-soft font-medium text-aura-primary' : 'text-aura-text'
+        selected ? 'bg-aura-primary-soft font-medium text-[color:var(--aura-primary-on-soft)]' : 'text-aura-text'
       }`}
     >
       <span

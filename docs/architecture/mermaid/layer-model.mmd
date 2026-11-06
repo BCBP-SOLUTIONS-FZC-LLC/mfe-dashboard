@@ -2,26 +2,26 @@ flowchart TB
     host["web-shell (shell)\nloadRemote: init(shareScope), get('./App')\nPlatformProvider: auth, telemetry, i18n"]
     sdk["platform SDK (shell singleton)\nuseApi, ApiClient, permissions, step-up,\ni18n, storage, logging, metrics"]
     subgraph app["app/ (composition root)"]
-        appRoot["App.tsx: ./App, routes, basename\nproviders/dependencies.ts\nbootstrap: main, standalone, remote"]
+        appRoot["App.tsx: ./App; routes/DashboardRoutes\nproviders/dependencies.ts (builds use cases)\nbootstrap: main, remote"]
         layout["layouts/AppShellLayout"]
     end
     subgraph presentation["presentation/"]
         pages["pages: DashboardPage, UserManagementPage"]
         widgets["widgets, components, theme"]
-        features["features: useDashboardData, useDashboardSummary,\nuseMembers, useMemberAccess (run use cases via useApi)"]
+        features["features: useDashboardData, useDashboardSummary,\nuseMembers, useMemberAccess (useCases.*.execute via useApi)"]
     end
     subgraph application["application/"]
-        usecases["use-cases: loadTicketQueue,\nloadDashboardSummary, listMembers"]
+        usecases["use-cases: LoadTicketQueueUseCase, LoadDashboardSummaryUseCase,\nGetDashboardInfoUseCase, ListMembersUseCase"]
         ports["ports: DashboardTelemetry"]
     end
     subgraph domain["domain/"]
-        entities["entities: Ticket, Member, DashboardInfo"]
+        entities["entities: Ticket, Member, DashboardInfo\nvalue-objects: CalendarDay"]
         rules["rules: views, filters, deadline, SLA, search"]
         repos["repositories: Ticket, DashboardInfo, Member (contracts)"]
     end
     subgraph infrastructure["infrastructure/"]
         fixtures["fixtures: Fixture*Repository\n(later api: *ApiRepository on ApiClient)"]
-        infraOther["storage: themePreference\ntelemetry: metrics\nauth: signIn"]
+        infraOther["configuration: standalone (runtime.json)\nstorage: themePreference\ntelemetry: metrics\nauth: signIn"]
     end
     shared["shared/: constants, hooks, ui/themes, types, assets"]
 

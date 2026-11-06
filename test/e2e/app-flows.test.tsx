@@ -93,7 +93,8 @@ describe('dashboard flows', () => {
     await user.click(screen.getByRole('button', { name: /Balaji S/ }))
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Balaji S/ }))
-    await user.click(screen.getByRole('button', { name: 'Notifications' }))
+    // The name carries the visible count (WCAG 2.5.3, label in name).
+    await user.click(screen.getByRole('button', { name: '3 unread notifications' }))
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Choose theme' }))

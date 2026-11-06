@@ -12,3 +12,4 @@ Decisions taken to bring mfe-dashboard in line with the Frontend Architecture Co
 | [0006](0006-runtime-configuration-only.md) | Runtime configuration only: no environment-specific build values | Accepted |
 | [0007](0007-observability-platform-sdk.md) | Observability through the platform SDK; the shell owns the telemetry provider | Accepted |
 | [0008](0008-design-system-interim.md) | Tailwind + daisyUI until `platform-design-system` exists | Accepted (interim) |
+| [0009](0009-browser-tests-and-accessibility.md) | Browser journeys and WCAG 2.1 AA checks with Playwright and axe-core | Accepted |

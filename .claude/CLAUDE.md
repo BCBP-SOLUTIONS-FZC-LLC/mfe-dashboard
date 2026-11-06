@@ -21,7 +21,8 @@ npm ci                     # needs NODE_AUTH_TOKEN (read:packages)
 npm run dev                # http://localhost:5002 (strictPort; remote + standalone)
 npm test                   # Vitest: unit, integration (builds the remote), e2e
 npm run test:unit | test:integration | test:e2e
-npm run test:ci            # coverage + 95% gate (.github/scripts/coverage-gate.mjs)
+npm run test:ci            # coverage + 95% gate + domain >90% (.github/scripts/coverage-gate.mjs)
+npm run test:browser       # build, then Playwright journeys + axe WCAG 2.1 AA (test/browser)
 npm run lint               # ESLint with the platform rules
 npm run build              # tsc (TypeScript 7), then both Rsbuild environments into dist/
 ```
@@ -37,11 +38,12 @@ One test: `npx vitest run test/unit/authz/permissions.test.tsx -t "read-only"`. 
 - **Access by permission, never by role name.** `read:tender`, `read:members`, `manage:members`, plus `useReadOnly()`. Roles belong to IAM and web-shell's map.
 - **Every UI string is a key in `src/app/configuration/locales/en.json`, and every key is used** (`test/unit/i18n/catalog.test.ts`).
 - **No raw browser storage, no tokens, no identity headers, no unsafe HTML** (lint). No third-party origins in the standalone page: the image's CSP is same-origin only (fonts are self-hosted).
-- **Config:** per-environment values come from the SDK runtime config (`/config/runtime.json`, loaded only by the standalone page in `src/app/bootstrap/standalone.ts`; inside web-shell the shell's applies). Never fetch a config of our own. The standalone page's environment and sign-in URL (`auth.signInUrl`) come from `runtime.json` too: build once, deploy everywhere (ADR 0006). **Never compile in an environment-specific value** (no `PUBLIC_*`/`VITE_*` URLs; `BUILD_VERSION` is the only build-time value). The dev server serves `config/runtime.local.json`.
+- **Config:** per-environment values come from the SDK runtime config (`/config/runtime.json`, loaded only by the standalone page in `src/infrastructure/configuration/standalone.ts`; inside web-shell the shell's applies). Never fetch a config of our own. The standalone page's environment and sign-in URL (`auth.signInUrl`) come from `runtime.json` too: build once, deploy everywhere (ADR 0006). **Never compile in an environment-specific value** (no `PUBLIC_*`/`VITE_*` URLs; `BUILD_VERSION` is the only build-time value). The dev server serves `config/runtime.local.json`.
 - **Calendar dates** (`YYYY-MM-DD`) are formatted with `formatDate('YYYY-MM-DD')` (SDK alpha.6) and compared as day strings; never `new Date('YYYY-MM-DD')`, which is UTC and shows the previous day west of UTC (`dependency-rules.test.ts`).
 - **Images and fonts are imported** (`import logo from '../assets/images/logo.png'`), never root-relative (`/image/…`, `url(/…)`): inside web-shell those resolve on the shell's origin. `public/` is only the standalone favicons.
 - **Layout classes are logical** (`ps/pe`, `ms/me`, `start/end`, `border-s/e`, `text-start/end`), never `pl/pr/left/right/text-left`, so RTL works.
 - **Fonts and `tailwind.config.js` stay identical to web-shell's** (`@fontsource-variable/geist`, `/inter`).
+- **Accessibility is WCAG 2.1 AA, checked by axe in `test/browser`:** brand-coloured *text* uses the ink tokens (`text-[color:var(--aura-primary-ink)]`, `--aura-secondary-ink`, or `--aura-*-on-soft` on a soft tint), never `text-aura-primary`/`text-aura-secondary` (those are fills and icons); small labels `text-slate-500` or darker; a control's accessible name contains its visible text. Lay out components by their own width (container queries), not the viewport, when they sit beside a panel.
 - **Popups and dialogs** use `useDismiss` (outside press, Escape, menu arrow keys) and `useFocusTrap`; do not hand-roll document listeners.
 - **Diagrams:** edit `docs/architecture/mermaid/*.mmd` and the matching fence in `ARCHITECTURE.md` together; `test/unit/docs/diagrams.test.ts` fails when they differ.
 - **Changelog:** a PR touching `src/`, dependencies, the Dockerfile, nginx, `rsbuild.config.ts` or `index.html` adds a line under `[Unreleased]` (`changelog` check).

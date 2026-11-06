@@ -8,7 +8,7 @@ import '@fontsource-variable/inter'
 import { MFEErrorBoundary } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import App from '../App'
 import { APP_ID } from '../../shared/constants/app'
-import { startStandalone } from './standalone'
+import { startStandalone } from '../../infrastructure/configuration/standalone'
 import { readStoredAppTheme } from '../../infrastructure/storage/themePreference'
 import { showAppTheme } from '../../presentation/theme/themeMode'
 

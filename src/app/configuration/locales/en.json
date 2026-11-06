@@ -16,6 +16,7 @@
   "header.searchTickets": "Search tickets, tenders, clients...",
   "header.searchUsers": "Search users by name or email…",
   "header.notifications": "Notifications",
+  "header.notificationsUnread": "{count} unread notifications",
   "header.available": "Available",
 
   "userMenu.profile": "User profile",

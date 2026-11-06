@@ -21,6 +21,12 @@ html[data-theme='light'] {
   --aura-hover: #ece8f4;
   --aura-input: #eeebf3;
   --aura-shadow: rgba(9, 10, 15, 0.06);
+  /* Text in the brand colours, WCAG 2.1 AA (4.5:1) on the surfaces and on the soft tints. The brand
+     fills (--aura-primary, --aura-secondary) stay for backgrounds with white text and for icons. */
+  --aura-primary-ink: #b81d5f;
+  --aura-secondary-ink: #7329e0;
+  --aura-primary-on-soft: #b81d5f;
+  --aura-secondary-on-soft: #7329e0;
 }
 
 html[data-theme='dark'] {
@@ -43,4 +49,10 @@ html[data-theme='dark'] {
   --aura-hover: #382a7e;
   --aura-input: #2f226e;
   --aura-shadow: rgba(15, 8, 40, 0.45);
+  /* On the dark surfaces the brand text is lightened; on the brighter soft tints only near-white
+     text reaches 4.5:1. */
+  --aura-primary-ink: #ffb3d1;
+  --aura-secondary-ink: #d0baff;
+  --aura-primary-on-soft: #f5f3ff;
+  --aura-secondary-on-soft: #f5f3ff;
 }

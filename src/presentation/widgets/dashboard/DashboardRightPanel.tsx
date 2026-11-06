@@ -2,7 +2,7 @@ import { formatDate, formatNumber } from '@bcbp-solutions-fzc-llc/frontend-sdk/i
 import { useT } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { IconAlertCircle, IconBell, IconUser } from '../../components/DashboardIcons'
 import { APP_ID } from '../../../shared/constants/app'
-import type { DashboardSummary } from '../../../application/use-cases/loadDashboardSummary'
+import type { DashboardSummary } from '../../../application/use-cases/LoadDashboardSummaryUseCase'
 
 const DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
 
@@ -36,7 +36,7 @@ export function DashboardRightPanel({ summary, showTenderError }: Props) {
             </p>
             <button
               type="button"
-              className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
+              className="mt-2 cursor-pointer text-xs font-semibold text-[color:var(--aura-secondary-ink)] hover:underline"
             >
               {t('panel.viewDetails')}
             </button>
@@ -56,7 +56,7 @@ export function DashboardRightPanel({ summary, showTenderError }: Props) {
             <h3 className="text-sm font-semibold text-aura-text">{t('panel.notifications.title')}</h3>
             <button
               type="button"
-              className="mt-2 cursor-pointer text-xs font-semibold text-aura-secondary hover:underline"
+              className="mt-2 cursor-pointer text-xs font-semibold text-[color:var(--aura-secondary-ink)] hover:underline"
             >
               {t('panel.notifications.viewAll')}
             </button>

@@ -4,48 +4,18 @@
 // passes still win, so a shell that sends userLabel/onLogout keeps working unchanged.
 import { useCallback, useState, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useInRouterContext } from 'react-router-dom'
-import { slugFromPath } from '@bcbp-solutions-fzc-llc/frontend-sdk/auth'
-import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
-import { useCurrentUser, useRouteTemplate, useSignOut } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
-import { useMemberAccess } from '../presentation/features/members/useMemberAccess'
+import { DashboardRoutes, workspaceBasename, type DashboardRoutesProps } from './routes/DashboardRoutes'
+import { useCurrentUser, useSignOut } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { goToSignIn } from '../infrastructure/auth/signIn'
 import { DependenciesProvider, useProvidedDependencies } from '../presentation/dependencies'
-import AppShellLayout from './layouts/AppShellLayout'
 import { createDependencies } from './providers/dependencies'
-import DashboardPage from '../presentation/pages/DashboardPage'
-import UserManagementPage from '../presentation/pages/UserManagementPage'
 import './configuration/i18n'
 import './styles/index.css'
 
-export type DashboardAppProps = {
-  userLabel?: string
-  onLogout?: () => void
-}
+/** ./App's props (the shell's contract): both optional. */
+export type DashboardAppProps = DashboardRoutesProps
 
-function UserManagementRoute() {
-  // The shell registers /t/:slug/dashboard; the nested page is this remote's to name.
-  useRouteTemplate('/t/:slug/dashboard/user-management')
-  const { canView } = useMemberAccess()
-  return canView ? <UserManagementPage /> : <Navigate to=".." relative="path" replace />
-}
-
-function DashboardRoutes({ userLabel, onLogout }: DashboardAppProps) {
-  return (
-    <Routes>
-      <Route element={<AppShellLayout userLabel={userLabel} onLogout={onLogout} />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="user-management" element={<UserManagementRoute />} />
-      </Route>
-    </Routes>
-  )
-}
-
-/** The shell's router basename for `pathname`: '<workspacePathPrefix><slug>', or '' outside a workspace. */
-export function workspaceBasename(pathname: string): string {
-  const auth = tryGetConfig()?.auth
-  const slug = auth && slugFromPath(pathname, auth)
-  return slug ? `${auth.workspacePathPrefix}${slug}` : ''
-}
+export { workspaceBasename }
 
 /** The composition root's implementations, unless an outer provider (a test) supplies its own. */
 function WithDependencies({ children }: { children: ReactNode }) {

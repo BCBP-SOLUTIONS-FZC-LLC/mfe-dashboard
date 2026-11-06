@@ -12,7 +12,7 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | Deploy | Not deployed yet. Ships with web-shell's first release (on alpha.6 since web-shell #44, loading `dashboard` since web-shell #35), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). At deploy, dev manifests switch the key `app2` → `dashboard` (item 15); then each environment's standalone `runtime.json` can set `auth.signInUrl` (item 14) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.6` (same as web-shell, since web-shell #44); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.6`. Released from `v0.2.0` |
 | Data | Fixtures (`src/infrastructure/fixtures/`, `UserManagementPage`); no backend calls yet |
-| Tests | 28 files, 153 tests (unit incl. architecture, domain and use cases; integration; e2e); coverage 99.0% statements, 97.8% branches, 100% functions, 99.3% lines (gate 95%) |
+| Tests | 29 files, 158 Vitest tests (unit incl. architecture, domain and use cases; integration; e2e), coverage 99.1% statements, 97.8% branches, 100% functions, 99.4% lines; plus 7 Playwright journeys and WCAG 2.1 AA checks (`test/browser`) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
 
 Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, flows, failure handling) and [ARCHITECTURE.md](ARCHITECTURE.md) (diagrams, decisions). Claude Code guidance: [.claude/CLAUDE.md](.claude/CLAUDE.md).
@@ -38,7 +38,7 @@ Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell
 | `userLabel` | Display name or email. Initials are derived from it. Default: the SDK user's email, then name, then `User` |
 | `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to the runtime config's `auth.signInUrl` (else `/`) |
 
-`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.6`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.6`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload. The standalone page is its own host page: before rendering, `src/app/bootstrap/standalone.ts` loads `/config/runtime.json` through the SDK, sets the page identity (`mfe-dashboard`, `portal`, the file's `environment`), so logout can use that environment's `auth.signInUrl`.
+`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.6`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.6`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload. The standalone page is its own host page: before rendering, `src/infrastructure/configuration/standalone.ts` loads `/config/runtime.json` through the SDK, sets the page identity (`mfe-dashboard`, `portal`, the file's `environment`), so logout can use that environment's `auth.signInUrl`.
 
 Use the SDK for anything it covers (storage, dates and numbers, messages, permissions, data loading, navigation) instead of writing it here. `npm run lint` runs the platform's ESLint rules, which reject raw `localStorage`/`sessionStorage`, unsanitised HTML and SDK deep imports.
 
@@ -85,19 +85,20 @@ Every build writes this remote's entry to `dist/remote-manifest-entry.json` (ser
 `src/` follows the Frontend Architecture Constitution's layers ([ADR 0001](docs/adr/0001-layered-structure.md), enforced by `test/unit/architecture/layers.test.ts`):
 
 ```
-src/app/                         composition root: App.tsx (./App), bootstrap/ (main, standalone, remote), layouts/,
-                                 providers/dependencies.ts, configuration/ (i18n, locales/en.json), styles/
+src/app/                         composition root: App.tsx (./App), routes/, bootstrap/ (main, remote), layouts/,
+                                 providers/dependencies.ts (use cases), configuration/ (i18n, locales/en.json), styles/
 src/presentation/                pages/, widgets/dashboard/, components/, features/ (hooks running use cases), theme/
-src/application/                 use-cases/ (loadTicketQueue, loadDashboardSummary, listMembers), ports/
-src/domain/                      entities/, rules/ (views, filters, deadline, SLA, search), repositories/ (contracts)
-src/infrastructure/              fixtures/ (Fixture*Repository), storage/, telemetry/ (metrics), auth/ (sign-in)
+src/application/                 use-cases/ (*UseCase classes with execute()), ports/
+src/domain/                      entities/, value-objects/ (CalendarDay), rules/, repositories/ (contracts)
+src/infrastructure/              fixtures/ (Fixture*Repository), configuration/ (runtime.json), storage/, telemetry/, auth/
 src/shared/                      constants/, hooks/, ui/, types/, assets/
 rsbuild.config.ts                Rsbuild + platform plugin (remote dashboard, standalone)
 config/runtime.local.json        the dev server's /config/runtime.json (environment local, sign-in http://localhost:5001)
 nginx/default.conf
 Dockerfile
 .github/                         CI, release, coverage gate
-test/                            unit/<area>, integration, e2e, fixtures (test/README.md)
+test/                            unit/<area>, integration, e2e, browser (Playwright, axe), fixtures (test/README.md)
+playwright.config.ts             Chromium against `rsbuild preview` of the production build
 docs/lld/                        low-level design
 docs/adr/                        architecture decision records
 docs/architecture/               constitution assessment; mermaid/ diagram sources embedded in ARCHITECTURE.md
@@ -127,7 +128,8 @@ The shell, when you want them together, is a separate repo and expects this dev 
 | `npm run lint` | ESLint with `@bcbp-solutions-fzc-llc/eslint-plugin` and React hooks rules (as web-shell). typescript-eslint needs the TypeScript 6 API, so `typescript` is the `@typescript/typescript6` alias and `tsc` comes from `@typescript/native` (TypeScript 7), as the TypeScript 7 release notes recommend |
 | `npm test` | Vitest once: unit, integration and e2e (`npm run test:unit`, `test:integration`, `test:e2e` run one suite) |
 | `npm run test:coverage` | Vitest with the v8 report |
-| `npm run test:ci` | Coverage plus the 95% gate (`.github/scripts/coverage-gate.mjs`) |
+| `npm run test:ci` | Coverage plus the 95% gate and the domain-layer >90% gate (`.github/scripts/coverage-gate.mjs`) |
+| `npm run test:browser` | Builds, then Playwright (Chromium) journeys and axe-core WCAG 2.1 AA on the standalone page (`test/browser`; first run: `npx playwright install chromium`) |
 | `npm run hooks:install` | Copy `.githooks/pre-commit` into `.git/hooks` |
 | `npm run preview` | Preview the production build on port 5002 (the standalone page and `remoteEntry.js`) |
 

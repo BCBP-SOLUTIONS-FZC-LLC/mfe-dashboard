@@ -1,4 +1,4 @@
-// Use case: the tickets of one dashboard view, filtered. Framework-free (no React, no browser): the
+// Use case: the tickets of one dashboard view, filtered. Framework-free (no React, no browser); the
 // presentation layer runs it through the platform SDK's useApi (ADR 0002), which supplies the signal.
 import type { DashboardFilters, DashboardView, TicketItem } from '../../domain/entities/ticket'
 import type { TicketRepository } from '../../domain/repositories'
@@ -17,8 +17,16 @@ export type TicketQueueQuery = {
 
 export type TicketQueue = { tickets: TicketItem[]; partialFailure: boolean }
 
-export async function loadTicketQueue(tickets: TicketRepository, q: TicketQueueQuery): Promise<TicketQueue> {
-  const all = await tickets.list({ signal: q.signal, refresh: q.refresh })
-  const queue = applyFilters(ticketsInView(all, q.view, q.canSeeAllTenders), q.filters, q.now)
-  return { tickets: queue, partialFailure: hasPartialFailure(q.view, queue) }
+export class LoadTicketQueueUseCase {
+  private readonly tickets: TicketRepository
+
+  constructor(tickets: TicketRepository) {
+    this.tickets = tickets
+  }
+
+  async execute(q: TicketQueueQuery): Promise<TicketQueue> {
+    const all = await this.tickets.list({ signal: q.signal, refresh: q.refresh })
+    const queue = applyFilters(ticketsInView(all, q.view, q.canSeeAllTenders), q.filters, q.now)
+    return { tickets: queue, partialFailure: hasPartialFailure(q.view, queue) }
+  }
 }

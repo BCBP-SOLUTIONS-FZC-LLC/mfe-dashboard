@@ -9,7 +9,7 @@ import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
 import AppShellLayout from '../../../src/app/layouts/AppShellLayout'
 import { goToSignIn } from '../../../src/infrastructure/auth/signIn'
 import { withDependencies } from '../../fixtures/dependencies'
-import { FALLBACK_ENVIRONMENT, standaloneIdentity, startStandalone } from '../../../src/app/bootstrap/standalone'
+import { FALLBACK_ENVIRONMENT, standaloneIdentity, startStandalone } from '../../../src/infrastructure/configuration/standalone'
 import { startPlatform } from '../../fixtures/platform'
 
 function userButton(userLabel?: string) {

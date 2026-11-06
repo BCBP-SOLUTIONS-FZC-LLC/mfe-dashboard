@@ -90,7 +90,7 @@ export default function UserManagementPage() {
                       <td className="px-4 py-3 text-end">
                         <button
                           type="button"
-                          className="cursor-pointer text-sm font-semibold text-aura-secondary hover:underline"
+                          className="cursor-pointer text-sm font-semibold text-[color:var(--aura-secondary-ink)] hover:underline"
                         >
                           {t('users.edit')}
                         </button>

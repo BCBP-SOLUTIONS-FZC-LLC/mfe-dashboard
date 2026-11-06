@@ -10,7 +10,8 @@
 | `npm test` | Vitest once: unit, integration, e2e |
 | `npm run test:unit` / `test:integration` / `test:e2e` | One suite. Integration builds the remote into a temp dir (a few seconds) |
 | `npm run test:coverage` | With the v8 report |
-| `npm run test:ci` | Coverage + the 95% gate; what CI runs |
+| `npm run test:ci` | Coverage + the 95% gate + domain >90%; what CI runs |
+| `npm run test:browser` | Build, then Playwright (Chromium) + axe WCAG 2.1 AA on the standalone page; CI job `Browser (Playwright, axe)` |
 | `npm run lint` | ESLint (platform rules, React hooks) |
 | `npx tsc --noEmit -p .` | Type check `src/` (also the first step of `npm run build`) |
 | `npm run build` | `tsc`, empty `dist/`, both Rsbuild environments |
@@ -29,6 +30,7 @@ Port 5002 may already be taken on this machine by another process; preview on an
 | `Build image (cache)` | Hadolint, then a cached `linux/amd64` build |
 | `Trivy CVE scan` | CRITICAL / HIGH / UNKNOWN unfixed fail |
 | `Smoke tests` | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, the platform SPA rule (routes → document; missing files, pass-through prefixes, dotfiles → 404) |
+| `Browser (Playwright, axe)` | Journeys in Chromium against the production build; axe WCAG 2.1 AA (light, dark, drawer). Not yet a required check; the image push waits for it |
 | `PR summary` | One comment with the results |
 | `changelog` | `CHANGELOG.md` touched when `src/`, deps, Dockerfile, nginx, `rsbuild.config.ts` or `index.html` changed |
 

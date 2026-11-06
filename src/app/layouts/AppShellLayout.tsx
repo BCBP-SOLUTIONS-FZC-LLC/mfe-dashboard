@@ -60,7 +60,7 @@ function formatDisplayName(name: string) {
 function navLinkClass({ isActive }: { isActive: boolean }) {
   return `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium no-underline transition-colors ${
     isActive
-      ? 'bg-aura-primary-soft text-aura-primary'
+      ? 'bg-aura-primary-soft text-[color:var(--aura-primary-on-soft)]'
       : 'text-aura-muted hover:bg-aura-hover hover:text-aura-text'
   }`
 }
@@ -247,7 +247,7 @@ export default function AppShellLayout({ userLabel: userLabelProp, onLogout = go
             <button
               type="button"
               className="relative rounded-lg p-2 text-aura-muted hover:bg-aura-hover"
-              aria-label={t('header.notifications')}
+              aria-label={info ? t('header.notificationsUnread', { count: formatNumber(info.unreadNotifications) }) : t('header.notifications')}
             >
               <IconBell className="h-5 w-5 text-aura-text" />
               <span className="absolute end-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[0.55rem] font-bold text-white">

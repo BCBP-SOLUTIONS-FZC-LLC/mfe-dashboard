@@ -10,7 +10,7 @@ The constitution requires "build once, deploy everywhere" and forbids `PUBLIC_AP
 
 - **Removed:** `PUBLIC_APP1_URL` and `VITE_APP1_URL`, from `config/app1Url.ts`, `rsbuild.config.ts`, the Dockerfile `ARG`s, and the CI and release build args and check.
 - **Logout without a shell** (`src/infrastructure/auth/signIn.ts`) goes to the runtime config's `auth.signInUrl`; without one, it goes to the page root `/`.
-- **The standalone page's environment** comes from `runtime.json` (`src/app/bootstrap/standalone.ts`).
+- **The standalone page's environment** comes from `runtime.json` (`src/infrastructure/configuration/standalone.ts`).
 - **The dev server** serves `config/runtime.local.json` at `/config/runtime.json`, with environment `local` and `auth.signInUrl` `http://localhost:5001`.
 - `test/integration/remote-entry.test.tsx` builds with the old variables set and fails if any of their values reaches the bundle.
 

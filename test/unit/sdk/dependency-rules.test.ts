@@ -78,7 +78,7 @@ describe('the SDK is used, not reimplemented', () => {
 
   it('does host-page start-up only on the standalone page, with the SDK, and leaves remotes and auth to the shell', () => {
     expect(
-      offenders(/\b(initializeCore|loadRuntimeConfig|setRuntimeConfig)\b/, { 'src/app/bootstrap/standalone.ts': 'standalone host page (SDK alpha.5)' }),
+      offenders(/\b(initializeCore|loadRuntimeConfig|setRuntimeConfig)\b/, { 'src/infrastructure/configuration/standalone.ts': 'standalone host page (SDK alpha.5)' }),
     ).toEqual([])
     expect(offenders(/\b(loadManifest|loadRemote|registerNavigator|initializeAuth|createOidcProvider|setTokenSource|setAuthorizer|setFlagProvider|startVersionPolling)\b/)).toEqual([])
   })

@@ -12,14 +12,14 @@ The constitution requires Clean Architecture, DDD and Feature-Sliced Design, wit
 
 | Layer | Holds | May import |
 |---|---|---|
-| `app/` | Composition root: bootstrap (`main`, `standalone`, `remote`), `App.tsx` (the exposed `./App` and routes), layouts, providers, configuration (i18n catalog), styles | every layer |
-| `presentation/` | Pages, widgets, components, features (hooks that run use cases), theme display | application, domain, shared |
-| `application/` | Use cases and ports; no React, no browser, no SDK | domain, shared |
-| `domain/` | Entities, rules, repository contracts; pure TypeScript | nothing |
-| `infrastructure/` | Repository implementations (fixtures today), storage, telemetry, sign-in navigation | application, domain, shared |
+| `app/` | Composition root: `bootstrap/` (`main`, `remote`), `App.tsx` (the exposed `./App`), `routes/`, `layouts/`, `providers/` (builds the use cases on their implementations), `configuration/` (i18n catalog), `styles/` | every layer |
+| `presentation/` | Pages, widgets, components, features (hooks that call the injected use cases' `execute`), theme display | application, domain, shared |
+| `application/` | Use-case classes (`LoadTicketQueueUseCase`, … with `execute()`) and ports; no React, no browser, no SDK | domain, shared |
+| `domain/` | Entities, value objects (`CalendarDay`), rules, repository contracts; pure TypeScript | nothing |
+| `infrastructure/` | Repository implementations (fixtures today), runtime configuration (`configuration/standalone.ts`), storage, telemetry, sign-in navigation | application, domain, shared |
 | `shared/` | Constants, hooks without business meaning, theme vocabulary, assets, shared types | nothing of ours |
 
-Folders the constitution lists but that have no content yet (`domain/value-objects`, `domain/events`, `application/commands`, `application/queries`, `infrastructure/api`, `infrastructure/federation`) are not created empty. They appear when there is something to put in them, for example `infrastructure/api` with the first ApiClient repository.
+Folders the constitution lists but that have no content yet (`domain/events`, `application/commands`, `application/queries`, `application/services`, `infrastructure/api`, `infrastructure/federation`, `shared/utilities`) are not created empty. Tests stay in the repository's `test/` (as in platform-reactcommon and web-shell), not in `src/tests/`. They appear when there is something to put in them, for example `infrastructure/api` with the first ApiClient repository.
 
 `test/unit/architecture/layers.test.ts` fails on:
 - a top-level folder outside the six;

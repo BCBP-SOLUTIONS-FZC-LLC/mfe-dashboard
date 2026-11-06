@@ -11,7 +11,8 @@ The constitution requires all API access to go through repositories (`TenderRepo
 - **Contracts** live in `src/domain/repositories`: `TicketRepository`, `DashboardInfoRepository` and `MemberRepository`. They are asynchronous and cancellable (`{ signal }`), as an API is.
 - **Implementations** live in `src/infrastructure/fixtures`: `FixtureTicketRepository`, which keeps the simulated latency, `FixtureDashboardInfoRepository` and `FixtureMemberRepository`. When the APIs exist, `infrastructure/api/*ApiRepository` classes built on the SDK's `ApiClient` replace them.
 - **Telemetry** is a port in `src/application/ports/telemetry.ts`, implemented by `src/infrastructure/telemetry/metrics.ts`.
-- **Composition root:** `src/app/providers/dependencies.ts` chooses the implementations. `App` provides them through `DependenciesProvider` (`src/presentation/dependencies.tsx`), and presentation reads them with `useDependencies()`. An outer provider (a test) wins, so tests inject failing or slow repositories without mocking modules.
+- **Use cases** are classes with `execute()` (`LoadTicketQueueUseCase`, `LoadDashboardSummaryUseCase`, `GetDashboardInfoUseCase`, `ListMembersUseCase`), constructed with their repositories.
+- **Composition root:** `src/app/providers/dependencies.ts` chooses the implementations and builds the use cases on them. `App` provides `{ useCases, telemetry }` through `DependenciesProvider` (`src/presentation/dependencies.tsx`), and presentation calls `useDependencies().useCases.<name>.execute(...)`, as the constitution's `getTendersUseCase.execute()`. Presentation never sees a repository. An outer provider (a test) wins: `createDependencies({ tickets: failing })` builds the same use cases on a failing or slow repository, without mocking modules.
 
 ## Consequences
 
