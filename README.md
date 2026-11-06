@@ -33,7 +33,7 @@ The same code also runs as a standalone page.
 
 | | |
 |---|---|
-| Release | [`v0.3.0`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.3.0) (2026-11-05): signed image with SBOM and provenance; platform packages alpha.5; needs web-shell #35 or later. `main` is on alpha.6 (same as web-shell since web-shell #44), unreleased. See [CHANGELOG.md](CHANGELOG.md) |
+| Release | [`v0.4.0`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.4.0) (2026-11-06): signed image with SBOM and provenance; platform packages alpha.6; needs web-shell #44 or later. Previous: `v0.3.0` (alpha.5, web-shell #35). See [CHANGELOG.md](CHANGELOG.md) |
 | Deploy | Not deployed yet. Ships with web-shell's first release ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). At deploy, dev manifests switch the key `app2` → `dashboard` (item 15) and each environment's standalone `runtime.json` sets `auth.signInUrl` (item 14) |
 | Platform packages | `@bcbp-solutions-fzc-llc/frontend-sdk`, `webpack-preset`, `eslint-plugin` all `1.0.0-alpha.6` |
 | Data | In-repo fixtures behind repository contracts (`src/infrastructure/fixtures/`); no backend calls yet |
@@ -255,7 +255,7 @@ Every build writes `dist/remote-manifest-entry.json`, served at `/remote-manifes
 ```json
 "dashboard": {
   "entry": "https://<origin>/remoteEntry.js",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "ownerDomain": "portal",
   "integrity": "sha384-…"
 }

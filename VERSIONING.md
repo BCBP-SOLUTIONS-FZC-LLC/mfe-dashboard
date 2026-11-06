@@ -68,13 +68,14 @@ This coupling is part of the contract. The [compatibility matrix](#compatibility
 
 | Version | Status | Image tags | Notes |
 |---------|--------|------------|-------|
-| *next* (`main`) | Unreleased | `main`, `sha-<short>` (not a release) | Platform packages `1.0.0-alpha.6`: needs a shell SDK `^1.0.0-alpha.6` (web-shell #44 or later). Constitution layers, arch-lint, metrics, the standalone environment from `runtime.json`, visible failure states. See `[Unreleased]` in the CHANGELOG |
-| `v0.3.0` | **Current** (pre-1.0) | `0.3.0`, `0.3`, `0`, `latest` | **Breaking for the shell:** remote renamed `app2` → `dashboard` (global `__platform_mfe_dashboard`, manifest key `dashboard`). Platform packages alpha.5; needs web-shell #35 or later |
+| *next* (`main`) | Unreleased | `main`, `sha-<short>` (not a release) | See `[Unreleased]` in the CHANGELOG |
+| `v0.4.0` | **Current** (pre-1.0) | `0.4.0`, `0.4`, `0`, `latest` | Platform packages `1.0.0-alpha.6`: needs a shell SDK `^1.0.0-alpha.6` (web-shell #44 or later). Constitution layers, arch-lint, metrics, the standalone environment from `runtime.json`, visible failure states, `PUBLIC_APP1_URL` removed |
+| `v0.3.0` | Superseded | `0.3.0`, `0.3` | **Breaking for the shell:** remote renamed `app2` → `dashboard` (global `__platform_mfe_dashboard`, manifest key `dashboard`). Platform packages alpha.5; needs web-shell #35 or later |
 | `v0.2.0` | Superseded | `0.2.0`, `0.2` | Container `app2`. Platform packages `1.0.0-alpha.5`, so web-shell must be on alpha.5. Standalone runtime config (`auth.signInUrl`), logo fix inside the shell |
 | `v0.1.1` | Superseded | `0.1.1`, `0.1` | Container `app2`. Platform packages `1.0.0-alpha.4` (`^1.0.0-alpha.4`, so it also loads in web-shell on alpha.5). Logo broken inside the shell |
 | `v0.1.0` | **Withdrawn** | — (deleted from GHCR on 2026-11-05) | The release workflow failed after the push: no GitHub Release and no signature, so the unsigned image was deleted. Same application as `v0.1.1` |
 
-**Before tagging the next release:**
+**Before deploying `v0.4.0`:**
 - web-shell must be on alpha.6 in every environment that will load it;
 - each environment's standalone `runtime.json` needs `environment` and `auth.signInUrl` ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items), items 14 and 16).
 
@@ -90,14 +91,14 @@ Do not add this repository as an npm dependency. A release is consumed in one of
 ### Pull and verify the image
 
 ```bash
-# Git tag v0.3.0 publishes the image as 0.3.0 (no v prefix)
-docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.3.0
+# Git tag v0.4.0 publishes the image as 0.4.0 (no v prefix)
+docker pull ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.4.0
 
 # Resolve the digest you will deploy and verify
-docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.3.0 --format '{{ json .Manifest }}' | jq -r .digest
+docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.4.0 --format '{{ json .Manifest }}' | jq -r .digest
 
 # The SLSA provenance BuildKit stored in the image index (also attached to the GitHub Release)
-docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.3.0 --format '{{ json .Provenance }}'
+docker buildx imagetools inspect ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.4.0 --format '{{ json .Provenance }}'
 ```
 
 Every image is signed keylessly with Sigstore/Cosign (no long-lived key). That covers tagged releases (from `v0.1.1`) and every push to `main` or `master`. Verify before deploying:
@@ -119,7 +120,7 @@ cosign verify \
 ### Verify the bundle
 
 ```bash
-gh release download v0.3.0 -R BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard
+gh release download v0.4.0 -R BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard
 sha256sum -c checksums.txt
 ```
 
@@ -215,6 +216,7 @@ Both match `release.yml`'s `v[0-9]*.[0-9]*.[0-9]*-*` trigger, and produce a sign
 | mfe-dashboard | Container / manifest key | Platform packages | Needs web-shell | Shared React |
 |---|---|---|---|---|
 | *next* (`main`) | `dashboard` | `1.0.0-alpha.6` | #44 or later (alpha.6) | `^19.0.0` |
+| `v0.4.0` | `dashboard` | `1.0.0-alpha.6` | #44 or later (alpha.6) | `^19.0.0` |
 | `v0.3.0` | `dashboard` | `1.0.0-alpha.5` | #35 or later (alpha.5) | `^19.0.0` |
 | `v0.2.0` | `app2` | `1.0.0-alpha.5` | on alpha.5, before #35 | `^19.0.0` |
 | `v0.1.1` | `app2` | `1.0.0-alpha.4` | on alpha.4 or alpha.5, before #35 | `^19.0.0` |
