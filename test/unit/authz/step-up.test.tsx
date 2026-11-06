@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
-import App from '../../../src/App'
+import App from '../../../src/app/App'
 import { startPlatform } from '../../fixtures/platform'
 
 const anHourAgo = () => Math.floor(Date.now() / 1000) - 3600

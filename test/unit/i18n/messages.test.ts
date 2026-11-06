@@ -1,7 +1,8 @@
 import { initializeI18n, setLocale, t } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { createTestPlatform } from '@bcbp-solutions-fzc-llc/frontend-sdk/testing'
 import { describe, expect, it } from 'vitest'
-import { APP_ID, registerMessages } from '../../../src/i18n'
+import { APP_ID } from '../../../src/shared/constants/app'
+import { registerMessages } from '../../../src/app/configuration/i18n'
 
 describe('dashboard messages', () => {
   it('formats plurals through the SDK', () => {

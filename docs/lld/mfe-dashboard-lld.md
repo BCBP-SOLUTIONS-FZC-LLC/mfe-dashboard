@@ -18,6 +18,8 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.19 | 2026-11-06 | Use-case classes injected by the composition root; `app/routes`; runtime config in `infrastructure/configuration`; `CalendarDay` value object (§3). Playwright journeys and axe WCAG 2.1 AA in CI (§14, ADR 0009), with the fixes they found: ticket-row layout, contrast tokens, notifications label, catch-all route, the dev `runtime.json` sign-in URL in normal form |
+| 1.18 | 2026-11-06 | Frontend Architecture Constitution: layered `src/` (§3), repositories and use cases, runtime configuration only (`PUBLIC_APP1_URL` removed; §7.2, §7.6, §11, §12.3, §12.4, §12.5), ADRs 0001–0008 |
 | 1.17 | 2026-11-06 | Platform packages `1.0.0-alpha.6` (after web-shell #44): `formatDate('YYYY-MM-DD')` replaces `calendarDate()`, the SDK logger replaces the standalone `console.warn`, and the standalone page takes its environment from `runtime.json` (`PLATFORM_ENVIRONMENT` removed) (§5, §6.1, §7.2, §11, §12.3, §12.4; open items 14, 16) |
 | 1.16 | 2026-11-05 | Open item 13 closed: the unsigned `0.1.0` image was deleted from GHCR |
 | 1.15 | 2026-11-05 | Metrics per the Enterprise Platform Observability Standard: three Tier 3 `portal_dashboard_*` metrics through SDK `/metrics` (§5, §15 item 10), CI validation in `test/unit/metrics`; SDK and platform-reactcommon audit (§5), nginx follows the platform SPA rule (§12.3); second audit fixes (standalone `test` logging, `useDismiss`, build-time `ENVIRONMENTS`/`DOMAINS` checks, CORP) |
@@ -60,7 +62,7 @@
 
 This LLD records how the remote is built and what it promises its host: the exposed module and its props, routes, shared modules, the SDK APIs it depends on, the data it shows, and how it fails. Where this document and the code disagree, the code is right and this document has a bug.
 
-The remote has no backend of its own yet. Tickets, KPI counts, notifications, delegation and users are fixtures in `src/mocks/` and `src/pages/UserManagementPage.tsx`. §15 lists what replaces them.
+The remote has no backend of its own yet. Tickets, KPI counts, notifications, delegation and users are fixtures in `src/infrastructure/fixtures/` and `src/presentation/pages/UserManagementPage.tsx`. §15 lists what replaces them.
 
 ## 2. Responsibilities and Boundaries
 
@@ -68,12 +70,12 @@ The remote has no backend of its own yet. Tickets, KPI counts, notifications, de
 
 | Concern | Where |
 |---|---|
-| The ticket dashboard: five views, KPI cards, filters, search, refresh, load states, right panel (delegation, notifications, SLA overview, tender-details error) | `src/pages/DashboardPage.tsx`, `src/components/dashboard/`, `src/hooks/useDashboardData.ts` |
-| User management: member table, search, Invite and Edit for managers | `src/pages/UserManagementPage.tsx`, `src/hooks/useMemberAccess.ts` |
-| Chrome inside the remote: sidebar, search box, theme picker, user menu, logout | `src/layouts/AppShellLayout.tsx`, `src/components/ThemePicker.tsx` |
-| Routing under the shell's workspace prefix, and standalone | `src/App.tsx` |
-| The `dashboard` message catalog | `src/i18n.ts`, `src/locales/en.json` |
-| Themes (Aura light/dark and daisyUI) | `src/theme/` |
+| The ticket dashboard: five views, KPI cards, filters, search, refresh, load states, right panel (delegation, notifications, SLA overview, tender-details error) | `src/presentation/pages/DashboardPage.tsx`, `src/presentation/widgets/dashboard/`, `src/presentation/features/tickets/useDashboardData.ts` |
+| User management: member table, search, Invite and Edit for managers | `src/presentation/pages/UserManagementPage.tsx`, `src/presentation/features/members/useMemberAccess.ts` |
+| Chrome inside the remote: sidebar, search box, theme picker, user menu, logout | `src/app/layouts/AppShellLayout.tsx`, `src/presentation/components/ThemePicker.tsx` |
+| Routing under the shell's workspace prefix, and standalone | `src/app/App.tsx` |
+| The `dashboard` message catalog | `src/app/configuration/i18n.ts`, `src/app/configuration/locales/en.json` |
+| Themes (Aura light/dark and daisyUI) | `src/presentation/theme/` |
 | Static hosting of `remoteEntry.js`, chunks and the standalone page | `nginx/default.conf`, `Dockerfile` |
 
 ### 2.2 Out of scope (owned elsewhere)
@@ -90,27 +92,51 @@ The remote has no backend of its own yet. Tickets, KPI counts, notifications, de
 
 ## 3. Architecture and Source Layout
 
+The Frontend Architecture Constitution's layers (ADR [0001](../adr/0001-layered-structure.md); assessment in [`../architecture/constitution-assessment.md`](../architecture/constitution-assessment.md)):
+
 ```
 src/
-├── App.tsx                     exposed ./App and standalone root: SDK user/sign-out, routing, workspaceBasename()
-├── remote.ts                   remote build's placeholder entry (the shell loads remoteEntry.js only)
-├── main.tsx                    standalone entry: stored theme, then <App /> on #app
-├── i18n.ts                     APP_ID = 'dashboard', registerMessages()
-├── locales/en.json             every UI string
-├── layouts/AppShellLayout.tsx  sidebar, search, theme, user menu, logout; defaultLogout()
-├── layouts/appShellContext.ts  outlet context { search }
-├── pages/DashboardPage.tsx     views, KPI cards, filters, banners, ticket list
-├── pages/UserManagementPage.tsx member table (fixture rows)
-├── components/                 BrandLogo, ThemePicker, dashboard/{TicketRow, DashboardRightPanel, DashboardIcons}
-├── assets/images/              logos, imported by BrandLogo (emitted as assets/<name>.<hash>.png)
-├── hooks/useDashboardData.ts   tickets through the SDK's useApi (fixture loader)
-├── hooks/useMemberAccess.ts    canView / canManage from read:members, manage:members, useReadOnly
-├── mocks/                      dashboardTickets (rows, ticketsForView, filter options), dashboardStats (KPI, notifications, delegation, SLA)
-├── theme/                      themeMode.ts (storage('dashboard')), daisyThemes.ts, aura.css, daisyAuraBridge.css
-└── types/ticket.ts             DashboardView, SlaState, TicketItem, DashboardFilters
+├── app/                              composition root (may import every layer)
+│   ├── App.tsx                       exposed ./App and standalone root: SDK user/sign-out, own router, DependenciesProvider
+│   ├── routes/DashboardRoutes.tsx    layout, dashboard, User management, catch-all; workspaceBasename()
+│   ├── bootstrap/                    main.tsx (standalone entry: runtime config, then render), remote.ts (placeholder entry)
+│   ├── layouts/AppShellLayout.tsx    sidebar, search, theme, user menu, logout (goToSignIn)
+│   ├── providers/dependencies.ts     which implementation backs each contract (fixtures today) and the use cases built on them
+│   ├── configuration/                i18n.ts (registerMessages), locales/en.json (every UI string)
+│   └── styles/index.css              Tailwind, daisyUI, Aura
+├── presentation/                     UI (application, domain, shared)
+│   ├── pages/                        DashboardPage, UserManagementPage
+│   ├── widgets/dashboard/            TicketRow (container queries), DashboardRightPanel
+│   ├── components/                   BrandLogo, ThemePicker, DashboardIcons
+│   ├── features/                     tickets/useDashboardData, summary/useDashboardSummary + useDashboardInfo,
+│   │                                 members/useMembers + useMemberAccess (useCases.*.execute through the SDK's useApi)
+│   ├── theme/                        themeMode.ts (show a theme, surface classes), aura.css (+ WCAG ink tokens), daisyAuraBridge.css
+│   └── dependencies.tsx              Dependencies { useCases, telemetry }, DependenciesProvider, useDependencies
+├── application/                      use cases, no React or browser (domain, shared)
+│   ├── use-cases/                    LoadTicketQueueUseCase, LoadDashboardSummaryUseCase, GetDashboardInfoUseCase,
+│   │                                 ListMembersUseCase (classes with execute())
+│   └── ports/telemetry.ts            DashboardTelemetry
+├── domain/                           pure TypeScript (nothing)
+│   ├── entities/                     ticket.ts (TicketItem, DashboardView, DashboardFilters, SlaOverview, FilterOptions), member.ts, dashboardInfo.ts
+│   ├── value-objects/CalendarDay.ts  a YYYY-MM-DD day: parse, fromLocalDate, addDays, isBefore
+│   ├── rules/                        views.ts (ticketsInView, countByView, hasPartialFailure), filters.ts (applyFilters,
+│   │                                 matchesDeadline, departmentsOf, searchTickets), sla.ts (slaOverview), members.ts (searchMembers)
+│   └── repositories/                 TicketRepository, DashboardInfoRepository, MemberRepository (contracts)
+├── infrastructure/                   implementations (application, domain, shared)
+│   ├── fixtures/                     FixtureTicketRepository, FixtureDashboardInfoRepository, FixtureMemberRepository (sample data)
+│   ├── configuration/standalone.ts   the standalone page: load runtime.json, initializeCore(environment), setRuntimeConfig
+│   ├── storage/themePreference.ts    appTheme / themeMode in storage('dashboard')
+│   ├── telemetry/metrics.ts          Tier 3 metrics; metricsTelemetry (the DashboardTelemetry adapter)
+│   └── auth/signIn.ts                goToSignIn(): runtime config auth.signInUrl, else /
+└── shared/                           depends on nothing of ours
+    ├── constants/app.ts              APP_ID = 'dashboard'
+    ├── hooks/                        useDismiss, useFocusTrap, useNow
+    ├── ui/themes.ts                  theme vocabulary (Aura and daisyUI ids)
+    ├── types/appShellContext.ts      outlet context { search }
+    └── assets/images/                logos (imported; emitted as assets/<name>.<hash>.png)
 ```
 
-Layering, top to bottom: `App` → `AppShellLayout` → pages → components and hooks → mocks, theme and types. Every layer may import the SDK's public subpaths; nothing imports upward. `test/unit/sdk/dependency-rules.test.ts` enforces the SDK rules in §5.
+`test/unit/architecture/layers.test.ts` enforces the import directions in brackets, keeps `domain/` and `application/` free of React, the SDK and browser APIs, and keeps the SDK's storage, metrics and config out of `presentation/`. `test/unit/sdk/dependency-rules.test.ts` enforces the SDK rules in §5.
 
 ## 4. Runtime Contract with the Shell
 
@@ -121,7 +147,7 @@ This is the SemVer surface ([VERSIONING.md](../../VERSIONING.md)).
 | Item | Value |
 |---|---|
 | Container name / global | `dashboard`, defined synchronously by `remoteEntry.js` as `var __platform_mfe_dashboard` (Module Federation v1). Since `1.0.0-alpha.4` the preset's `containerName('dashboard')` and the SDK's `loadRemote` both use `__platform_mfe_<name>`; a bare global could collide with an element `id` or a browser global. An entry built with an older preset defines `var dashboard`, which the alpha.4 SDK does not read |
-| Exposed module | `./App` → `src/App.tsx` (default export `App`, named export `workspaceBasename`) |
+| Exposed module | `./App` → `src/app/App.tsx` (default export `App`, named export `workspaceBasename`) |
 | Chunk loading | Relative to `remoteEntry.js` (`self.rspackChunk_platform_mfe_dashboard`); CSS is a lazy chunk under `assets/async/` |
 | Images and fonts | Imported from `src/`, so they are emitted under `assets/` and resolved against the remote's public path (where `remoteEntry.js` came from). Never root-relative: inside web-shell `/image/…` resolves on the shell's origin (web-shell #29 found the logo broken this way). `public/` holds only the standalone favicons. `dependency-rules.test.ts` and `remote-entry.test.tsx` check it |
 | Split chunks | Async only (`splitChunks: { preset: 'none', chunks: 'async' }`); a split entry would make `window.__platform_mfe_dashboard` a Promise, which `loadRemote` refuses |
@@ -144,7 +170,7 @@ The preset's `sharedFor('remote')` configures `react`, `react/jsx-runtime`, `rea
 | Prop | Type | Default |
 |---|---|---|
 | `userLabel` | `string?` | `useCurrentUser()` email, then name, then the catalog's `User` |
-| `onLogout` | `() => void?` | `useSignOut()()` (global sign-out); when it rejects (no shell `signOut`), `defaultLogout()` → `PUBLIC_APP1_URL` |
+| `onLogout` | `() => void?` | `useSignOut()()` (global sign-out); when it rejects (no shell `signOut`), `goToSignIn()` → `auth.signInUrl`, else `/` |
 
 web-shell passes neither today. A new required prop is a MAJOR change.
 
@@ -160,29 +186,29 @@ web-shell passes neither today. A new required prop is a MAJOR change.
 
 ## 5. Platform SDK Usage
 
-The rule: anything the SDK provides is used from the SDK, through public subpaths only. `npm run lint` (`@bcbp-solutions-fzc-llc/eslint-plugin`: `no-raw-storage`, `no-sdk-deep-import`, `no-sdk-root-import`, `no-unsafe-html`, `no-identity-headers`, `no-eval`, …) and `test/unit/sdk/dependency-rules.test.ts` enforce it. The latter also keeps metrics in `src/metrics.ts` through `/metrics` (no OpenTelemetry or Prometheus client), host-page start-up (`initializeCore`, runtime config) in `src/standalone.ts`, shell-only APIs (manifest, `loadRemote`, auth, flags, telemetry start) out of `src/`, and `console` out except for the standalone config warning.
+The rule: anything the SDK provides is used from the SDK, through public subpaths only. `npm run lint` (`@bcbp-solutions-fzc-llc/eslint-plugin`: `no-raw-storage`, `no-sdk-deep-import`, `no-sdk-root-import`, `no-unsafe-html`, `no-identity-headers`, `no-eval`, …) and `test/unit/sdk/dependency-rules.test.ts` enforce it. The latter also keeps metrics in `src/infrastructure/telemetry/metrics.ts` through `/metrics` (no OpenTelemetry or Prometheus client), host-page start-up (`initializeCore`, runtime config) in `src/infrastructure/configuration/standalone.ts`, shell-only APIs (manifest, `loadRemote`, auth, flags, telemetry start) out of `src/`, and `console` out except for the standalone config warning.
 
-Audit (2026-11-05), every SDK export against `src/`: nothing the SDK provides is reimplemented. Our own helpers have no SDK counterpart: `workspaceBasename` (composes `slugFromPath` and `workspacePathPrefix`), `useNow`, `useDismiss`, `useFocusTrap`, the theme (stored with `storage()`), and `defaultLogout`'s full navigation to an absolute sign-in URL (`navigate()` takes same-origin paths only). `recordMetric` used to check label values again after the SDK; it now leaves run-time validation to the SDK. The two gap-fillers this audit found (a `calendarDate()` helper, because `formatDate` took only instants; a `console.warn` in `standalone.ts`, because the SDK logger was silent before logging outside local and dev) were raised with platform-reactcommon, which shipped both in `1.0.0-alpha.6` (`formatDate('YYYY-MM-DD')`; warn and error reach the console while logging is off). Both are gone from this repo, and `dependency-rules.test.ts` now rejects `calendarDate(`, a `Date` built from a `YYYY-MM-DD` literal, and any `console` call. The rest of platform-reactcommon: `webpack-preset` is used for the build (`pluginPlatform`), the container name and SRI (`containerName`, `integrityOf` in `config/remote-manifest-entry.mjs`; the preset has no manifest-entry generator); `eslint-plugin` as is; the SDK's `/testing` for every test; the observability registry is read from the SDK, not copied. One divergence was fixed: nginx's SPA fallback now follows `examples/cloudfront/spa-rewrite.js` (§12.3). An independent second audit (library source and docs, not only its types) found and fixed: `standalone.ts` treated `test` as an environment where the SDK logger writes to the console, so a config failure in `test` was silent (moot since alpha.6); `DashboardPage` closed the filter drawer with its own Escape listener instead of `useDismiss`; `ownerDomain` is checked against the SDK's `DOMAINS` at build time (and the build-time environment against `ENVIRONMENTS`, until alpha.6 moved the environment into `runtime.json`); remote assets send `Cross-Origin-Resource-Policy: cross-origin`. Kept on purpose: `src/metrics.ts` makes instruments per call, not once at module scope (the SDK binds an instrument to the runtime it was made in, so module-scope instruments would outlive a test platform or a standalone start-up; the SDK keeps one per name). Copies the library only offers as examples, not as code to import: nginx's SPA lists (`spa-rewrite.js`, checked by the smoke script) and the standalone page's CSP (stricter than none, but not `buildCsp()`'s: no Trusted Types policy or `/csp-report` on the standalone page, which is not deployed behind CloudFront). The CI scripts under `.github/scripts/` started as copies of platform-reactcommon's; they are this repository's own CI (its workflows are for its pnpm monorepo, not published for reuse).
+Audit (2026-11-05), every SDK export against `src/`: nothing the SDK provides is reimplemented. Our own helpers have no SDK counterpart: `workspaceBasename` (composes `slugFromPath` and `workspacePathPrefix`), `useNow`, `useDismiss`, `useFocusTrap`, the theme (stored with `storage()`), and `defaultLogout`'s full navigation to an absolute sign-in URL (`navigate()` takes same-origin paths only). `recordMetric` used to check label values again after the SDK; it now leaves run-time validation to the SDK. The two gap-fillers this audit found (a `calendarDate()` helper, because `formatDate` took only instants; a `console.warn` in `standalone.ts`, because the SDK logger was silent before logging outside local and dev) were raised with platform-reactcommon, which shipped both in `1.0.0-alpha.6` (`formatDate('YYYY-MM-DD')`; warn and error reach the console while logging is off). Both are gone from this repo, and `dependency-rules.test.ts` now rejects `calendarDate(`, a `Date` built from a `YYYY-MM-DD` literal, and any `console` call. The rest of platform-reactcommon: `webpack-preset` is used for the build (`pluginPlatform`), the container name and SRI (`containerName`, `integrityOf` in `config/remote-manifest-entry.mjs`; the preset has no manifest-entry generator); `eslint-plugin` as is; the SDK's `/testing` for every test; the observability registry is read from the SDK, not copied. One divergence was fixed: nginx's SPA fallback now follows `examples/cloudfront/spa-rewrite.js` (§12.3). An independent second audit (library source and docs, not only its types) found and fixed: `standalone.ts` treated `test` as an environment where the SDK logger writes to the console, so a config failure in `test` was silent (moot since alpha.6); `DashboardPage` closed the filter drawer with its own Escape listener instead of `useDismiss`; `ownerDomain` is checked against the SDK's `DOMAINS` at build time (and the build-time environment against `ENVIRONMENTS`, until alpha.6 moved the environment into `runtime.json`); remote assets send `Cross-Origin-Resource-Policy: cross-origin`. Kept on purpose: `src/infrastructure/telemetry/metrics.ts` makes instruments per call, not once at module scope (the SDK binds an instrument to the runtime it was made in, so module-scope instruments would outlive a test platform or a standalone start-up; the SDK keeps one per name). Copies the library only offers as examples, not as code to import: nginx's SPA lists (`spa-rewrite.js`, checked by the smoke script) and the standalone page's CSP (stricter than none, but not `buildCsp()`'s: no Trusted Types policy or `/csp-report` on the standalone page, which is not deployed behind CloudFront). The CI scripts under `.github/scripts/` started as copies of platform-reactcommon's; they are this repository's own CI (its workflows are for its pnpm monorepo, not published for reuse).
 
 | Concern | SDK API | Used in |
 |---|---|---|
-| Signed-in user | `useCurrentUser` (`/react`) | `App.tsx` |
-| Sign-out | `useSignOut` (`/react`) | `App.tsx` |
-| Workspace basename | `slugFromPath` (`/auth`), `tryGetConfig().auth.workspacePathPrefix` (`/config`) | `App.tsx` `workspaceBasename` |
-| Route naming | `useRouteTemplate` (`/react`) | `App.tsx` |
-| Permissions | `useHasPermission('read','tender')`, `('read','members')`, `('manage','members')` (`/react`) | `DashboardPage.tsx`, `useMemberAccess.ts` |
-| Read-only tenant | `useReadOnly` (`/react`) | `useMemberAccess.ts` |
+| Signed-in user | `useCurrentUser` (`/react`) | `app/App.tsx` |
+| Sign-out | `useSignOut` (`/react`) | `app/App.tsx` |
+| Workspace basename | `slugFromPath` (`/auth`), `tryGetConfig().auth.workspacePathPrefix` (`/config`) | `app/App.tsx` `workspaceBasename` |
+| Route naming | `useRouteTemplate` (`/react`) | `app/App.tsx` |
+| Permissions | `useHasPermission('read','tender')`, `('read','members')`, `('manage','members')` (`/react`) | `presentation/pages/DashboardPage.tsx`, `presentation/features/members/useMemberAccess.ts` |
+| Read-only tenant | `useReadOnly` (`/react`) | `presentation/features/members/useMemberAccess.ts` |
 | Step-up MFA | `useStepUp` (`needed`, `reauthenticate()`) (`/react`) | `DashboardPage.tsx` |
-| Data loading | `useApi(loader, deps)` (run on change, abort superseded loads, `reload`) (`/react`) | `useDashboardData.ts` |
+| Data loading | `useApi(loader, deps)` (run on change, abort superseded loads, `reload`) (`/react`) | `presentation/features/*` (running the use cases; ADR 0002) |
 | API errors | `isProblemError` (`/problem`), `problemMessage` (`/i18n`) | `DashboardPage.tsx` |
 | Logs | `getLogger({ mfe: 'dashboard' })` (`/logging`): a failed ticket load is a `warn` with the error and view (redacted by the SDK, exported by the shell) | `useDashboardData.ts` |
-| Render errors | `MFEErrorBoundary` (`/react`): around the routed page with `resetKeys={[pathname]}` (embedded and standalone), and around `App` standalone | `AppShellLayout.tsx`, `main.tsx` |
-| Messages and plurals | `registerNamespace` (`/i18n`), `useT('dashboard')`, `useLocale` (`/react`) | `i18n.ts`, every component |
+| Render errors | `MFEErrorBoundary` (`/react`): around the routed page with `resetKeys={[pathname]}` (embedded and standalone), and around `App` standalone | `app/layouts/AppShellLayout.tsx`, `app/bootstrap/main.tsx` |
+| Messages and plurals | `registerNamespace` (`/i18n`), `useT('dashboard')`, `useLocale` (`/react`) | `app/configuration/i18n.ts`, every component |
 | Dates and numbers | `formatDate`, `formatNumber` (`/i18n`) | `TicketRow`, `DashboardRightPanel`, `DashboardPage`, `AppShellLayout`, `UserManagementPage` |
-| Per-app storage | `storage('dashboard')` (`/storage`) | `theme/themeMode.ts` |
-| Standalone host page | `loadRuntimeConfig`, then `initializeCore` (`/core`) with the file's `environment` (since `1.0.0-alpha.6`), then `setRuntimeConfig` (`/config`) | `standalone.ts` (from `main.tsx` only; never in the remote) |
-| Standalone logout target | `tryGetConfig()?.auth.signInUrl` (`/config`) | `AppShellLayout.tsx` `defaultLogout` |
-| Metrics | `getServiceMeter({ mfe: 'dashboard' })` (`/metrics`): Tier 3 `portal_dashboard_ticket_loads_total`, `portal_dashboard_ticket_load_duration_seconds`, `portal_dashboard_step_up_requests_total`; the SDK injects `domain`, `service`, `environment` and enforces the observability standard; the shell exports. Inventory and rules: [`docs/observability/metrics.md`](../observability/metrics.md) | `metrics.ts`, `useDashboardData.ts`, `DashboardPage.tsx` |
+| Per-app storage | `storage('dashboard')` (`/storage`) | `infrastructure/storage/themePreference.ts` |
+| Standalone host page | `loadRuntimeConfig`, then `initializeCore` (`/core`) with the file's `environment` (since `1.0.0-alpha.6`), then `setRuntimeConfig` (`/config`) | `infrastructure/configuration/standalone.ts` (from `main.tsx` only; never in the remote) |
+| Standalone logout target | `tryGetConfig()?.auth.signInUrl` (`/config`) | `infrastructure/auth/signIn.ts` `goToSignIn` |
+| Metrics | `getServiceMeter({ mfe: 'dashboard' })` (`/metrics`): Tier 3 `portal_dashboard_ticket_loads_total`, `portal_dashboard_ticket_load_duration_seconds`, `portal_dashboard_step_up_requests_total`; the SDK injects `domain`, `service`, `environment` and enforces the observability standard; the shell exports. Inventory and rules: [`docs/observability/metrics.md`](../observability/metrics.md) | `infrastructure/telemetry/metrics.ts` (through the `DashboardTelemetry` port) |
 | Tests | `createTestPlatform` (`/testing`) | `test/fixtures/platform.ts`, `test/setup.ts` |
 
 Not used yet, and the place to start when the need arrives: `useApiClient` / `createApiClient` (real APIs, §15), `useFeatureFlag`, `Can`, `useAppUpdate`, `useOnlineStatus`.
@@ -191,7 +217,7 @@ Standalone, with no shell, every SDK API answers with its anonymous defaults (de
 
 ## 6. Domain Model
 
-### 6.1 Types (`src/types/ticket.ts`)
+### 6.1 Types (`src/domain/entities/ticket.ts`)
 
 | Type | Values / fields |
 |---|---|
@@ -202,7 +228,7 @@ Standalone, with no shell, every SDK API answers with its anonymous defaults (de
 | Calendar dates | `dueDate` and the delegation period are `YYYY-MM-DD` days: `formatDate('YYYY-MM-DD')` (SDK alpha.6) shows that day in every time zone, and the deadline filter compares them as day strings with the local today (`matchesDeadline`). No `Date` is built from a calendar day |
 | `ManagedUser` (page-local) | `id`, `name`, `email`, `role`, `department`, `status: 'Active' \| 'Invited' \| 'Disabled'` |
 
-### 6.2 Views (`ticketsForView`, `src/mocks/dashboardTickets.ts`)
+### 6.2 Views (`ticketsForView`, `src/infrastructure/fixtures/tickets.ts`)
 
 | View | Rows | Visible to |
 |---|---|---|
@@ -240,7 +266,7 @@ KPI numbers are `kpiCounts()`: each view's row count before filters, from the sa
 
 ### 7.2 Standalone
 
-`src/main.tsx` applies the stored theme (`readStoredAppTheme` → `applyAppTheme`), throws if `#app` is missing, then awaits `startStandalone()` (`src/standalone.ts`) and renders `<App />` on `#app`. `startStandalone` is the host-page start a shell would do, in the SDK's order (alpha.6): `loadRuntimeConfig({ timeoutMs: 5000 })` (`/config/runtime.json`), then `initializeCore({ serviceName: 'mfe-dashboard', domain: 'portal', environment: <the file's environment>, buildVersion: BUILD_VERSION })`, then `setRuntimeConfig`. One build serves every environment: each deployed `runtime.json` names its own. Without a file, or a file without `environment`, the page runs as `local` on the dev server and `prod` in a build. Any failure (no file, bad JSON, schema, timeout) is a `warn` through the SDK logger, which writes it to the console while logging is off; the page still renders without a config, and it never rejects. The basename is empty, the user is anonymous, permissions deny all (User management and All Tenders are hidden), and logout goes to `auth.signInUrl` when the config has one, else `PUBLIC_APP1_URL`. `App` renders inside the SDK's `MFEErrorBoundary` (the shell's `RemoteBoundary` does this job when embedded).
+`src/app/bootstrap/main.tsx` applies the stored theme (`readStoredAppTheme` from `infrastructure/storage` → `showAppTheme`), throws if `#app` is missing, then awaits `startStandalone()` (`src/infrastructure/configuration/standalone.ts`) and renders `<App />` on `#app`. `startStandalone` is the host-page start a shell would do, in the SDK's order (alpha.6): `loadRuntimeConfig({ timeoutMs: 5000 })` (`/config/runtime.json`), then `initializeCore({ serviceName: 'mfe-dashboard', domain: 'portal', environment: <the file's environment>, buildVersion: BUILD_VERSION })`, then `setRuntimeConfig`. One build serves every environment: each deployed `runtime.json` names its own. Without a file, or a file without `environment`, the page runs as `local` on the dev server and `prod` in a build. Any failure (no file, bad JSON, schema, timeout) is a `warn` through the SDK logger, which writes it to the console while logging is off; the page still renders without a config, and it never rejects. The basename is empty, the user is anonymous, permissions deny all (User management and All Tenders are hidden), and logout goes to `auth.signInUrl` when the config has one, else `/`. `App` renders inside the SDK's `MFEErrorBoundary` (the shell's `RemoteBoundary` does this job when embedded).
 
 ### 7.3 Ticket load and refresh
 
@@ -256,7 +282,7 @@ On `awaiting-approval`, when `useStepUp().needed` (login older than the tenant's
 
 ### 7.6 Sign-out
 
-Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the SDK's global sign-out (ends the Keycloak session; the SDK clears `storage()` for the workspace). Since `1.0.0-alpha.4` it POSTs to Keycloak's end-session endpoint with a hidden form, so **web-shell's CSP `form-action` must allow the IdP origin**; otherwise the browser blocks the POST and the SSO session stays alive. That is web-shell's header; this image's own CSP (`form-action 'self'`) only covers the standalone page, which has no shell sign-out. If `signOut()` rejects because no shell provides it, `defaultLogout()` runs `window.location.assign` of the runtime config's `auth.signInUrl`, else `PUBLIC_APP1_URL`, else `http://localhost:5001`, without a trailing slash. Inside web-shell the shell's config has no `signInUrl` (the shell is the sign-in page).
+Sidebar and user-menu **Logout** call `onLogout`. Inside web-shell that is the SDK's global sign-out (ends the Keycloak session; the SDK clears `storage()` for the workspace). Since `1.0.0-alpha.4` it POSTs to Keycloak's end-session endpoint with a hidden form, so **web-shell's CSP `form-action` must allow the IdP origin**; otherwise the browser blocks the POST and the SSO session stays alive. That is web-shell's header; this image's own CSP (`form-action 'self'`) only covers the standalone page, which has no shell sign-out. If `signOut()` rejects because no shell provides it, `goToSignIn()` (`src/infrastructure/auth/signIn.ts`) runs `window.location.assign` of the runtime config's `auth.signInUrl` without a trailing slash, else `/`. Inside web-shell the shell's config has no `signInUrl` (the shell is the sign-in page).
 
 ### 7.7 Theme
 
@@ -287,7 +313,7 @@ Role names never appear in this repo (IAM's closed set is `member`, `tenant_owne
 ## 9. i18n
 
 - Namespace `dashboard` (`APP_ID`). `registerMessages()` registers a loader that returns `en.json` for any `en*` locale and `{}` otherwise, so other locales fall back to English through the SDK, then to the key.
-- Every UI string is a key in `src/locales/en.json`. Fixture data (tickets, users), brand and theme names are not translated.
+- Every UI string is a key in `src/app/configuration/locales/en.json`. Fixture data (tickets, users), brand and theme names are not translated.
 - Keys built at runtime come from closed sets: `views.<view>.label|subtitle`, `sla.<state>`, `users.status.<status>`, `language.<locale>` (the language name; the locale code when missing).
 - ICU-lite: placeholders (`{count}`, `{view}`, …) and `plural` (`lastUpdated.ago`). Numbers inside text go through `formatNumber`, dates through `formatDate`, both in the page locale.
 - `test/unit/i18n/catalog.test.ts` fails on a missing key, an unused key, or a message that does not format.
@@ -310,7 +336,7 @@ No tokens, user data or permissions are stored by this repo. Raw `localStorage` 
 | A row's tender details unavailable | `partial_failure`: banner "Tickets are retained below", right-panel error card; rows stay |
 | Filters match nothing / search matches nothing | "No tickets found" with Clear Filters / "No matching tickets" |
 | No `read:members` / `manage:members` | Link hidden; route redirects to the dashboard |
-| No shell `signOut` | Fallback navigation to `auth.signInUrl`, else `PUBLIC_APP1_URL` |
+| No shell `signOut` | Fallback navigation to `auth.signInUrl`, else `/` |
 | Standalone `/config/runtime.json` missing, invalid or slow (> 5 s) | `warn` through the SDK logger (on the console in every environment while logging is off, alpha.6); the page renders with no config, as `prod` (`local` on the dev server), and logout uses `PUBLIC_APP1_URL`. Deploy check in `docs/runbook-release.md` |
 | Reload of a nested standalone route (`/dashboard/user-management`) | Works: the standalone HTML links `/assets/…` and `/favicon.png` root-absolute (`assetPrefix: '/'`); the CI smoke script checks it |
 | `#app` missing (standalone) | `main.tsx` throws before render |
@@ -329,8 +355,8 @@ One `rsbuild build` makes two environments into `dist/` (`npm run build` runs `t
 
 | Environment | Entry | Output | SDK |
 |---|---|---|---|
-| `remote` | `src/remote.ts` (placeholder) + `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })` | `remoteEntry.js`, chunks next to it, CSS under `assets/` | from the shell (`import: false`) |
-| `standalone` | `src/main.tsx`, `index.html` | `index.html`, `assets/` | bundled |
+| `remote` | `src/app/bootstrap/remote.ts` (placeholder) + `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })` | `remoteEntry.js`, chunks next to it, CSS under `assets/` | from the shell (`import: false`) |
+| `standalone` | `src/app/bootstrap/main.tsx`, `index.html` | `index.html`, `assets/` | bundled |
 
 The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the installed `frontend-sdk` is not the preset's own version, so the three platform packages move together. Because the container global (§4.1) and the shared range come from that version, a platform upgrade ships as one release with web-shell: a remote built with the alpha.3 preset does not load in an alpha.4 shell, and the reverse.
 
@@ -353,7 +379,7 @@ The preset sets `assetPrefix: 'auto'`: the remote's chunks and images resolve fr
 
 ### 12.3 Image
 
-`node:26-bookworm` builder → `nginxinc/nginx-unprivileged:1.31-alpine` (both digest-pinned, `apk upgrade`), uid 101, port 8080, source maps deleted. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. The environment is not a build arg: it comes from `runtime.json` (alpha.6).
+`node:26-bookworm` builder → `nginxinc/nginx-unprivileged:1.31-alpine` (both digest-pinned, `apk upgrade`), uid 101, port 8080, source maps deleted. Build args: `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. Nothing environment-specific is a build arg: the environment and sign-in URL come from `runtime.json` (ADR 0006).
 
 | Path | Behaviour (`nginx/default.conf`) |
 |---|---|
@@ -376,11 +402,9 @@ The last three rows are the platform's SPA rule, as CloudFront applies it (platf
 
 | Variable | When | Default | Note |
 |---|---|---|---|
-| `auth.signInUrl` | run time (`/config/runtime.json`, SDK `1.0.0-alpha.5`+; standalone page only) | none | Standalone logout target per environment; wins over `PUBLIC_APP1_URL`. Absolute `https` (`http` only for local, dev and test) |
-| `PUBLIC_APP1_URL` | build (`config/app1Url.ts` → `source.define` as `import.meta.env.PUBLIC_APP1_URL`; Dockerfile `ARG`; CI repository variable) | `http://localhost:5001` | Public in the bundle; standalone logout target when the runtime config has no `auth.signInUrl`. `release.yml` fails unless the repository variable is an `https://` URL, and passes it to both the image and the tarball build |
+| `auth.signInUrl` | run time (`/config/runtime.json`, SDK `1.0.0-alpha.5`+; standalone page only) | none | Standalone logout target per environment (else `/`). Absolute `https` (`http` only for local, dev and test) |
 | `environment` in `/config/runtime.json` | run time (SDK `1.0.0-alpha.6`; standalone page only) | none: `prod` in a build, `local` on the dev server | The standalone page identity's environment. One build serves every environment; also decides whether `http` origins in the runtime config are accepted |
 | `BUILD_VERSION` | build (release and Dockerfile; else the `package.json` version) | `npm_package_version` | The standalone page identity's build version |
-| `VITE_APP1_URL` | **Deprecated** alias, read only when `PUBLIC_APP1_URL` is unset or empty (build warning; CI and release fall back to the repository variable of this name, release warns) | — | Remove in a major release |
 
 ### 12.5 Release
 
@@ -389,7 +413,7 @@ A tag `vX.Y.Z` (or a manual run with a tag input) runs `.github/workflows/releas
 | Job | Does | Fails when |
 |---|---|---|
 | `validate-test`, `validate-quality` | Same as CI | Tests, the 95% gate, lint, audit |
-| `build` | `verify-release-tag.sh` (tag equals the checked-out HEAD), `verify-changelog-entry.sh`, `PUBLIC_APP1_URL` check, `prepare-release-asset.sh` (`dist` tarball, checksum, `remote-manifest-entry.json`) | The tag is not HEAD; no `## [X.Y.Z]` section; `PUBLIC_APP1_URL` is not `https://` |
+| `build` | `verify-release-tag.sh` (tag equals the checked-out HEAD), `verify-changelog-entry.sh`, `prepare-release-asset.sh` (`dist` tarball, checksum, `remote-manifest-entry.json`) | The tag is not HEAD; no `## [X.Y.Z]` section |
 | `docker` | `build-push-action` pushes **by digest only** (`push-by-digest=true`, `provenance: mode=max`, `sbom: true`); Trivy CRITICAL/HIGH and the CycloneDX SBOM on that digest; `export-image-provenance.sh`; Cosign keyless sign and verify; then `tag-signed-image.sh` adds `X.Y.Z`, `X.Y`, `X` and `latest` (no `-` in the tag) with `docker buildx imagetools create` and checks that each resolves to the signed digest | Trivy finds a fixable CRITICAL/HIGH; no provenance in the image index; signing fails; a tag resolves to another digest |
 | `publish` | `extract-release-notes.sh` (the CHANGELOG section plus image and digest), then `create-github-release.sh` | Any asset missing |
 
@@ -422,9 +446,10 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 | `test/unit/<area>` (`app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk`) | `npm run test:unit` | One area of `src/` each; the catalog and SDK-rule checks |
 | `test/integration` | `npm run test:integration` | The built `remoteEntry.js` (temp Rsbuild build of the `remote` environment) loaded through `init(shareScope)` / `get('./App')` and rendered with the shell's React and SDK |
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
+| `test/browser` | `npm run test:browser` (CI `Browser (Playwright, axe)`) | Chromium against the production build of the standalone page: views, filters (Escape, focus return), clear and search, nested-route reload and the catch-all, logout to `auth.signInUrl`; axe-core WCAG 2.1 A/AA on the dashboard, the open drawer and the dark theme (ADR 0009) |
 | Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, the platform SPA rule (8 cases), security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.2% / 98.0% / 100% / 99.3% with 142 tests in 26 files.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.0% / 97.8% / 100% / 99.3% with 153 tests in 28 files; every `src/domain/` file above 90%.
 
 ## 15. Open Items
 
@@ -440,6 +465,7 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 10 | Logs: failed loads only. Metrics: three Tier 3 metrics (ticket loads, load duration, step-up requests; `docs/observability/metrics.md`); the proposed recording rules, alerts and SLOs there need an owner in the platform's Prometheus/Grafana. Source maps are deleted rather than uploaded for symbolication | mfe-dashboard, platform observability |
 | 11 | No test loads the real `remoteEntry.js` inside the real web-shell in a browser: each repo stubs the other (web-shell's e2e stubs `__platform_mfe_dashboard`; `remote-entry.test.tsx` builds the share scope itself). Until a joint Playwright test exists (`../web-shell-mfe-dashboard-cross-repo-test.md`, frontend workspace), check platform upgrades by hand with both dev servers | web-shell, mfe-dashboard |
 | 12 | Web-shell's CSP (CloudFront) must allow the IdP origin in `form-action` for the alpha.4 global sign-out POST (§7.6). Deploying `v0.3.0` waits for web-shell's tag, which is blocked on the IAM endpoints, environment setup (interim CloudFront substitute), the Privacy and Terms URLs and Keycloak password-reset email | web-shell, platform deployment |
-| 14 | Deployed `runtime.json` for the standalone image: set `auth.signInUrl` (since alpha.5) and, once this remote runs alpha.6, `environment` (earlier SDKs refuse the unknown key). Deploy check in `docs/runbook-release.md`. Until then standalone logout uses `PUBLIC_APP1_URL` and the page runs as `prod` | platform deployment |
+| 14 | Deployed `runtime.json` for the standalone image: set `auth.signInUrl` (since alpha.5) and, once this remote runs alpha.6, `environment` (earlier SDKs refuse the unknown key). Deploy check in `docs/runbook-release.md`. Until then standalone logout returns to `/` and the page runs as `prod` | platform deployment |
 | 15 | Rename `app2` → `dashboard`: done in both repos (this repo #26, web-shell #35) and released in `v0.3.0`. Left: each dev environment's `/remotes/manifest.json` switches its key to `dashboard` (entry and integrity from `mfe-dashboard_v0.3.0_remote-manifest-entry.json`), the files are served under `/remotes/dashboard/<version>/`, and any kill-switch entry says `dashboard`; deploy together with web-shell | platform deployment |
 | 16 | Platform packages `1.0.0-alpha.6`: web-shell moved first (web-shell #44); this remote follows here. Release, then deploy both together | mfe-dashboard |
+| 17 | Constitution follow-ups (`docs/architecture/constitution-assessment.md` §6): contract tests with the first API repository; axe on the daisyUI themes in the theme picker (Aura light and dark pass); `platform-design-system` components when published; revisiting ADR 0002/0003 when the APIs arrive | mfe-dashboard, platform |

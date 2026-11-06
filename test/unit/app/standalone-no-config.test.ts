@@ -1,24 +1,23 @@
 // The standalone page when /config/runtime.json is missing (a static host without it, or a bad
 // deploy): src/standalone.ts logs a warning and the page still starts; logout falls back to the
-// build-time PUBLIC_APP1_URL. See standalone-config.test.ts for why this runs in beforeAll.
+// page root (no sign-in URL is compiled in). See standalone-config.test.ts for why this runs in beforeAll.
 import { isInitialized } from '@bcbp-solutions-fzc-llc/frontend-sdk/core'
 import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { defaultLogout } from '../../../src/layouts/AppShellLayout'
-import { startStandalone } from '../../../src/standalone'
+import { goToSignIn } from '../../../src/infrastructure/auth/signIn'
+import { startStandalone } from '../../../src/infrastructure/configuration/standalone'
 
 const seen: { settled?: boolean; initialized?: boolean; config?: unknown; warnings: string[]; logoutTo?: unknown } = { warnings: [] }
 
 beforeAll(async () => {
   vi.stubGlobal('fetch', async () => new Response('not found', { status: 404 }))
-  vi.stubEnv('PUBLIC_APP1_URL', 'https://build-time.example.com/')
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   seen.settled = await startStandalone().then(() => true, () => false)
   seen.warnings = warn.mock.calls.map((c) => c.map(String).join(' '))
   seen.initialized = isInitialized()
   seen.config = tryGetConfig()
   const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
-  defaultLogout()
+  goToSignIn()
   seen.logoutTo = assign.mock.calls[0]?.[0]
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -32,13 +31,13 @@ describe('standalone page without a runtime config', () => {
     expect(seen.config).toBeUndefined()
   })
 
-  it('warns that logout uses the build-time sign-in URL', () => {
+  it('warns that the runtime config is unavailable', () => {
     expect(seen.warnings.join('\n')).toContain('runtime config unavailable')
     // In local the SDK logger writes it to the console itself: one line, not a second copy.
     expect(seen.warnings.filter((w) => w.includes('runtime config unavailable'))).toHaveLength(1)
   })
 
-  it('logs out to PUBLIC_APP1_URL', () => {
-    expect(seen.logoutTo).toBe('https://build-time.example.com')
+  it('logs out to the page root: no sign-in URL is compiled in', () => {
+    expect(seen.logoutTo).toBe('/')
   })
 })

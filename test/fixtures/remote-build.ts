@@ -26,13 +26,13 @@ export type RemoteBuild = {
   remove(): void
 }
 
-/** `env` adds build-time variables (e.g. PUBLIC_APP1_URL) to the child process. */
+/** `env` adds environment variables to the build process (to prove none is compiled in). */
 export function buildRemote(env: Record<string, string> = {}): RemoteBuild {
   const dir = mkdtempSync(join(tmpdir(), 'mfe-dashboard-remote-'))
   execFileSync(process.execPath, ['--input-type=module', '-e', BUILD, ROOT, dir], {
     cwd: ROOT,
     stdio: 'pipe',
-    env: { ...process.env, PUBLIC_APP1_URL: '', VITE_APP1_URL: '', ...env, NODE_ENV: 'production' },
+    env: { ...process.env, ...env, NODE_ENV: 'production' },
   })
   return {
     dir,

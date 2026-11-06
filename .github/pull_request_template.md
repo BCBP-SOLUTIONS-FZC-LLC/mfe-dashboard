@@ -34,7 +34,7 @@ Provide a clear description of the changes.
 
 ### Security
 - [ ] `localStorage` is limited to the theme keys (`bcbp.themeMode`, `bcbp.appTheme`)
-- [ ] `PUBLIC_APP1_URL` is not taken from the page URL
+- [ ] No environment-specific URL or value is compiled in: it comes from `/config/runtime.json` (`auth.signInUrl`, `environment`), never from the page URL
 
 ---
 

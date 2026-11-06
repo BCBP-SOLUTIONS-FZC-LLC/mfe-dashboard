@@ -5,8 +5,11 @@ import userEvent from '@testing-library/user-event'
 import { storage } from '@bcbp-solutions-fzc-llc/frontend-sdk/storage'
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import AppShellLayout, { defaultLogout } from '../../../src/layouts/AppShellLayout'
-import { FALLBACK_ENVIRONMENT, standaloneIdentity, startStandalone } from '../../../src/standalone'
+import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
+import AppShellLayout from '../../../src/app/layouts/AppShellLayout'
+import { goToSignIn } from '../../../src/infrastructure/auth/signIn'
+import { withDependencies } from '../../fixtures/dependencies'
+import { FALLBACK_ENVIRONMENT, standaloneIdentity, startStandalone } from '../../../src/infrastructure/configuration/standalone'
 import { startPlatform } from '../../fixtures/platform'
 
 function userButton(userLabel?: string) {
@@ -14,6 +17,7 @@ function userButton(userLabel?: string) {
     <MemoryRouter>
       <AppShellLayout userLabel={userLabel} />
     </MemoryRouter>,
+    { wrapper: withDependencies() },
   )
   return screen.getByRole('button', { expanded: false, name: (_, el) => el.hasAttribute('data-user-menu-trigger') })
 }
@@ -45,6 +49,7 @@ describe('theme', () => {
       <MemoryRouter>
         <AppShellLayout userLabel="Ada" />
       </MemoryRouter>,
+      { wrapper: withDependencies() },
     )
     expect(document.documentElement.dataset.theme).toBe('light')
     expect(storage('dashboard').get('appTheme')).toBeUndefined()
@@ -64,29 +69,26 @@ describe('search box', () => {
       <MemoryRouter>
         <AppShellLayout userLabel="Ada" />
       </MemoryRouter>,
+      { wrapper: withDependencies() },
     )
     expect(screen.getByRole('searchbox', { name: 'Search tickets, tenders, clients...' })).toBeInTheDocument()
   })
 })
 
-describe('defaultLogout (no shell signOut)', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.restoreAllMocks()
-  })
+describe('goToSignIn (logout without a shell signOut)', () => {
+  afterEach(() => vi.restoreAllMocks())
 
-  it('goes to PUBLIC_APP1_URL without a trailing slash', () => {
-    vi.stubEnv('PUBLIC_APP1_URL', 'https://login.example.com/')
+  it('goes to the runtime config\'s auth.signInUrl, without a trailing slash', () => {
+    startPlatform({ config: { auth: { ...tryGetConfig()!.auth, signInUrl: 'https://login.example.com/' } } })
     const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
-    defaultLogout()
+    goToSignIn()
     expect(assign).toHaveBeenCalledWith('https://login.example.com')
   })
 
-  it('falls back to the local sign-in app when PUBLIC_APP1_URL is unset', () => {
-    vi.stubEnv('PUBLIC_APP1_URL', undefined)
+  it('reloads the page root when the runtime config names no sign-in page (nothing is compiled in)', () => {
     const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
-    defaultLogout()
-    expect(assign).toHaveBeenCalledWith('http://localhost:5001')
+    goToSignIn()
+    expect(assign).toHaveBeenCalledWith('/')
   })
 })
 
@@ -119,6 +121,7 @@ describe('page error boundary', () => {
         </Routes>
         <Link to="/ok">go ok</Link>
       </MemoryRouter>,
+      { wrapper: withDependencies() },
     )
     const main = screen.getByRole('main')
     expect(within(main).queryByText('Healthy page')).not.toBeInTheDocument()

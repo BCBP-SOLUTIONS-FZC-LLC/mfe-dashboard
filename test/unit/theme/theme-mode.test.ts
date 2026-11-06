@@ -5,15 +5,16 @@ import {
   auraModeFromAppTheme,
   isAuraTheme,
   isThemeDark,
-} from '../../../src/theme/daisyThemes'
-import {
-  applyAppTheme,
-  applyThemeMode,
-  logoThemeFromAppTheme,
-  readStoredAppTheme,
-  readStoredThemeMode,
-  toggleThemeMode,
-} from '../../../src/theme/themeMode'
+} from '../../../src/shared/ui/themes'
+import { readStoredAppTheme, readStoredThemeMode, saveAppTheme } from '../../../src/infrastructure/storage/themePreference'
+import { logoThemeFromAppTheme, showAppTheme, toggleThemeMode } from '../../../src/presentation/theme/themeMode'
+
+/** What a user's choice does: show the theme (presentation) and store it (infrastructure). */
+const applyAppTheme = (themeId: string) => {
+  showAppTheme(themeId)
+  saveAppTheme(themeId)
+}
+const applyThemeMode = applyAppTheme
 
 const store = () => storage('dashboard')
 

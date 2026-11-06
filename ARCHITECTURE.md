@@ -6,43 +6,63 @@ Exact behaviour, the runtime contract and open items are in the [LLD](docs/lld/m
 
 ## Layers
 
+The Frontend Architecture Constitution's layers (ADR [0001](docs/adr/0001-layered-structure.md)); `test/unit/architecture/layers.test.ts` enforces the directions. Assessment and migration: [docs/architecture/constitution-assessment.md](docs/architecture/constitution-assessment.md).
+
 ```mermaid
 flowchart TB
-    host["web-shell app1\nloadRemote: init(shareScope), get('./App')"]
-    sdk["platform SDK (shell singleton)\nuser, sign-out, permissions, step-up,\nuseApi, i18n, storage, route templates"]
-    app["src/App.tsx\nexpose ./App, BrowserRouter\nbasename /t/<slug>"]
-    shell["AppShellLayout\nsearch, theme, user menu, logout"]
-    pages["DashboardPage\nUserManagementPage"]
-    hooks["useDashboardData (useApi)\nuseMemberAccess"]
-    mocks["src/mocks\nfixture tickets, stats, users"]
-    nginx["nginx :8080\n/healthz, /, remoteEntry.js"]
+    host["web-shell (shell)\nloadRemote: init(shareScope), get('./App')\nPlatformProvider: auth, telemetry, i18n"]
+    sdk["platform SDK (shell singleton)\nuseApi, ApiClient, permissions, step-up,\ni18n, storage, logging, metrics"]
+    subgraph app["app/ (composition root)"]
+        appRoot["App.tsx: ./App; routes/DashboardRoutes\nproviders/dependencies.ts (builds use cases)\nbootstrap: main, remote"]
+        layout["layouts/AppShellLayout"]
+    end
+    subgraph presentation["presentation/"]
+        pages["pages: DashboardPage, UserManagementPage"]
+        widgets["widgets, components, theme"]
+        features["features: useDashboardData, useDashboardSummary,\nuseMembers, useMemberAccess (useCases.*.execute via useApi)"]
+    end
+    subgraph application["application/"]
+        usecases["use-cases: LoadTicketQueueUseCase, LoadDashboardSummaryUseCase,\nGetDashboardInfoUseCase, ListMembersUseCase"]
+        ports["ports: DashboardTelemetry"]
+    end
+    subgraph domain["domain/"]
+        entities["entities: Ticket, Member, DashboardInfo\nvalue-objects: CalendarDay"]
+        rules["rules: views, filters, deadline, SLA, search"]
+        repos["repositories: Ticket, DashboardInfo, Member (contracts)"]
+    end
+    subgraph infrastructure["infrastructure/"]
+        fixtures["fixtures: Fixture*Repository\n(later api: *ApiRepository on ApiClient)"]
+        infraOther["configuration: standalone (runtime.json)\nstorage: themePreference\ntelemetry: metrics\nauth: signIn"]
+    end
+    shared["shared/: constants, hooks, ui/themes, types, assets"]
 
-    host --> app
-    app --> shell
-    shell --> pages
-    pages --> hooks
-    hooks --> mocks
-    app -.-> sdk
-    pages -.-> sdk
-    hooks -.-> sdk
-    nginx --> host
+    host --> appRoot
+    appRoot --> layout
+    appRoot --> pages
+    pages --> widgets
+    pages --> features
+    features --> usecases
+    usecases --> rules
+    usecases --> repos
+    fixtures -. implements .-> repos
+    infraOther -. implements .-> ports
+    appRoot -. injects .-> fixtures
+    appRoot -. injects .-> infraOther
+    features -.-> sdk
+    infraOther -.-> sdk
 ```
 
 > Source: `docs/architecture/mermaid/layer-model.mmd`
 
-| Module | Responsibility |
-|---|---|
-| `src/App.tsx` | Exposed `./App` and the standalone root. Props `userLabel?`, `onLogout?`; otherwise `useCurrentUser` and `useSignOut` from the SDK. Uses the host's router when there is one, otherwise its own `BrowserRouter` with `workspaceBasename()` (`workspacePathPrefix` + `slugFromPath`, as web-shell). Registers the route template for user management |
-| `src/main.tsx` | Standalone entry: applies the stored theme, then mounts `<App />` on `#app`. Throws if `#app` is missing. The shell never runs it |
-| `src/remote.ts` | The remote build's placeholder entry (Rsbuild needs one; the shell loads only `remoteEntry.js`) |
-| `src/i18n.ts`, `src/locales/en.json` | The `dashboard` namespace (`registerNamespace`); every UI string |
-| `src/layouts/AppShellLayout.tsx` | Sidebar, search box, theme picker, user menu, logout. Publishes `{ search }` on the outlet context. `defaultLogout()` is the no-shell fallback |
-| `src/pages/DashboardPage.tsx` | Views, KPI cards, filter drawer, step-up banner, empty / loading / partial states, right panel |
-| `src/pages/UserManagementPage.tsx` | Member table filtered by the outlet search; Invite and Edit only for `canManage` |
-| `src/hooks/useDashboardData.ts` | Tickets through the SDK's `useApi` (fixture loader with an abortable delay) |
-| `src/hooks/useMemberAccess.ts` | `canView` (`read:members` or `manage:members`), `canManage` (`manage:members` and not `useReadOnly()`) |
-| `src/theme/themeMode.ts` | `appTheme` and `themeMode` in the SDK's `storage('dashboard')` |
-| `nginx/default.conf` | Port 8080, `/healthz`, no-cache `remoteEntry.js`, immutable hashed chunks, CORS |
+| Layer | Contents | May import |
+|---|---|---|
+| `src/app/` | Composition root. `App.tsx`: the exposed `./App` (props `userLabel?`, `onLogout?`), `DependenciesProvider`. `routes/DashboardRoutes.tsx`: the routes and the workspace basename. `bootstrap/`: `main.tsx` (standalone entry), `remote.ts` (the remote build's placeholder entry). `layouts/AppShellLayout.tsx` (sidebar, search, theme, user menu, logout). `providers/dependencies.ts` (which implementation backs each contract, and the use cases built on them). `configuration/` (i18n catalog). `styles/` | every layer |
+| `src/presentation/` | `pages/` (DashboardPage, UserManagementPage), `widgets/dashboard/` (TicketRow, DashboardRightPanel), `components/` (BrandLogo, ThemePicker, DashboardIcons), `features/` (useDashboardData, useDashboardSummary, useDashboardInfo, useMembers, useMemberAccess: run use cases through the SDK's `useApi`), `theme/` (show a theme, Aura CSS), `dependencies.tsx` (the injected contracts) | application, domain, shared |
+| `src/application/` | `use-cases/` (LoadTicketQueueUseCase, LoadDashboardSummaryUseCase, GetDashboardInfoUseCase, ListMembersUseCase: classes with `execute()`), `ports/` (DashboardTelemetry). No React, no browser, no SDK | domain, shared |
+| `src/domain/` | `entities/` (Ticket, Member, DashboardInfo), `value-objects/` (CalendarDay), `rules/` (views, filters and deadline, SLA, search), `repositories/` (contracts). Pure TypeScript | nothing |
+| `src/infrastructure/` | `fixtures/` (Fixture*Repository: today's sample data), `configuration/standalone.ts` (the standalone page's runtime config and identity), `storage/themePreference.ts` (SDK `storage()`), `telemetry/metrics.ts` (SDK metrics, the telemetry adapter), `auth/signIn.ts` (logout without a shell) | application, domain, shared |
+| `src/shared/` | `constants/app.ts` (`APP_ID`), `hooks/` (useDismiss, useFocusTrap, useNow), `ui/themes.ts`, `types/appShellContext.ts`, `assets/` | nothing of ours |
+| `nginx/default.conf` | Port 8080, `/healthz`, no-cache `remoteEntry.js`, immutable hashed chunks, CORS, the platform SPA rule | — |
 
 ### What comes from the SDK
 
@@ -56,7 +76,7 @@ flowchart TB
 | Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` |
 | Per-app storage | `storage('dashboard')` |
 
-`npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports, metrics not through `frontend-sdk/metrics` in `src/metrics.ts`, host-page start-up outside `src/standalone.ts`, shell-only SDK APIs, and any `console` call or calendar day turned into a `Date`.
+`npm run lint` (platform ESLint rules) and `test/unit/sdk/dependency-rules.test.ts` reject the usual reimplementations: `Intl` formatters, `fetch`, token or cookie reading, role-name checks, raw browser storage, hand-built workspace paths, SDK deep imports, metrics not through `frontend-sdk/metrics` in `src/infrastructure/telemetry/metrics.ts`, host-page start-up outside `src/infrastructure/configuration/standalone.ts`, shell-only SDK APIs, and any `console` call or calendar day turned into a `Date`.
 
 ## Federation
 
@@ -122,7 +142,7 @@ sequenceDiagram
 
 > Source: `docs/architecture/mermaid/ticket-load.mmd`
 
-`ticketsForView` in `src/mocks/dashboardTickets.ts`:
+`ticketsForView` in `src/infrastructure/fixtures/tickets.ts`:
 
 | View | Rows |
 |---|---|
@@ -133,11 +153,11 @@ sequenceDiagram
 | `all-tenders` | every fixture when the user has `read:tender`, otherwise `[]` |
 | anything else | `[]` |
 
-Load state is `partial_failure` when the view is `my-tickets` and a row has `tenderDetailsUnavailable` (ticket `T-1015`). Status, department, role (`roleLevel.includes`) and tender title are applied in the hook; filter options are derived from the data. Deadline is applied by local calendar day (`overdue`: before today; `week`: today and the next six days). The search box filters title, client and department after the hook returns. KPI numbers are `kpiCounts()` in `src/mocks/dashboardStats.ts`: each view's row count, from the same rows the list shows.
+Load state is `partial_failure` when the view is `my-tickets` and a row has `tenderDetailsUnavailable` (ticket `T-1015`). Status, department, role (`roleLevel.includes`) and tender title are applied in the hook; filter options are derived from the data. Deadline is applied by local calendar day (`overdue`: before today; `week`: today and the next six days). The search box filters title, client and department after the hook returns. KPI numbers are `kpiCounts()` in `src/infrastructure/fixtures/dashboardInfo.ts`: each view's row count, from the same rows the list shows.
 
 ## Logout and theme
 
-`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `defaultLogout()` runs: `window.location.assign`, without a trailing slash, of the runtime config's `auth.signInUrl` (per environment), else `PUBLIC_APP1_URL` (inlined at build by `source.define`), else `http://localhost:5001`. Only the standalone page has a config with `signInUrl`: `src/standalone.ts` loads `/config/runtime.json` through the SDK, sets the page identity in the file's `environment`, then the config, before rendering, and renders anyway when that fails. Inside web-shell the shell's config applies and has no `signInUrl`.
+`onLogout` from the host runs as-is. Without it, `App` calls the SDK's `useSignOut()` (global sign-out); when that rejects because no shell provides `signOut`, `goToSignIn()` (`src/infrastructure/auth/signIn.ts`) runs: `window.location.assign`, without a trailing slash, of the runtime config's `auth.signInUrl` (per environment), else the page root `/`. Nothing environment-specific is compiled in (ADR 0006). Only the standalone page has a config with `signInUrl`: `src/infrastructure/configuration/standalone.ts` loads `/config/runtime.json` through the SDK, sets the page identity in the file's `environment`, then the config, before rendering, and renders anyway when that fails. Inside web-shell the shell's config applies and has no `signInUrl`.
 
 | Key | Values |
 |---|---|
@@ -159,7 +179,7 @@ The SDK clears both on sign-out and workspace switch, refuses token-like keys, a
 
 nginx sends `nosniff` and `Referrer-Policy` on every response, and on the standalone document a same-origin-only CSP (`frame-ancestors 'none'`), `X-Frame-Options: DENY`, `Permissions-Policy` and `X-Robots-Tag: noindex` (`nginx/document-headers.conf`); gzip is on and `server_tokens` off. Routing follows the platform's SPA rule (platform-reactcommon `examples/cloudfront/spa-rewrite.js`): only a path without a static-asset extension gets `index.html`; a missing file, anything under `/api`, `/otel`, `/csp-report`, `/config`, `/remotes`, and dotfiles are `404`. Fonts are self-hosted (`@fontsource-variable/geist` and `/inter`, standalone only; the same packages and Tailwind font stack as web-shell). Each build writes `remote-manifest-entry.json`: web-shell's manifest entry for this build with `remoteEntry.js`'s sha384 integrity, which the smoke script compares with the served file. The smoke script checks the headers.
 
-`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `PUBLIC_APP1_URL` (default `http://localhost:5001`), `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. The standalone page's environment is not a build arg: it comes from `runtime.json`. `/config/runtime.json` is served `no-cache` and is a 404 when absent; an environment mounts its own file over the shipped default to set `auth.signInUrl`. `.dockerignore` excludes `.env`, so values come in as build args.
+`Dockerfile` builds with Node 26 (`npm ci` with the BuildKit secret `npm_token` for GitHub Packages), deletes source maps, and copies `dist` into `nginxinc/nginx-unprivileged:1.31-alpine` after `apk upgrade`. `USER 101`, port 8080. Build args: `BUILD_VERSION`, `SOURCE_DATE_EPOCH`. Nothing environment-specific is a build arg: the standalone page's environment and sign-in URL come from `runtime.json`. `/config/runtime.json` is served `no-cache` and is a 404 when absent; an environment mounts its own file over the shipped default to set `auth.signInUrl`. `.dockerignore` excludes `.env`.
 
 ## Release
 
@@ -175,7 +195,7 @@ A tag `vX.Y.Z` runs `release.yml`: validate, build the `dist` tarball and `remot
 | No member permission | User management link hidden; the route returns to the dashboard |
 | Ticket load fails with an API error (problem, timeout, network) | Alert "Tickets could not be loaded." with the SDK's `problemMessage` for a problem, and Retry |
 | Ticket loader throws anything else | `useApi` rethrows it to the page's `MFEErrorBoundary` (`AppShellLayout`); the sidebar keeps working and the error clears on navigation |
-| No shell `signOut` | Logout navigates to `PUBLIC_APP1_URL` |
+| No shell `signOut` | Logout navigates to the runtime config's `auth.signInUrl`, else `/` |
 | `#app` missing in standalone bootstrap | `main.tsx` throws before render |
 | Shell lacks a shared SDK subpath, or its SDK / React is outside the remote's range | `get('./App')` or the singleton check fails; the shell's `RemoteBoundary` shows the error |
 
@@ -186,7 +206,7 @@ A tag `vX.Y.Z` runs `release.yml`: validate, build the `dist` tarball and `remot
 - `onLogout` and `userLabel` are optional.
 - Images and fonts are imported, never root-relative, so they load from the remote's origin inside the shell.
 - No role names in `src/`; access is by permission.
-- Every UI string is in `src/locales/en.json`, and every key there is used.
+- Every UI string is in `src/app/configuration/locales/en.json`, and every key there is used.
 - `/healthz` returns `ok` on port 8080.
 - Coverage gate is 95% on all four metrics, enforced by `.github/scripts/coverage-gate.mjs`.
 
@@ -200,7 +220,7 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 
 | Item | Note |
 |---|---|
-| `PUBLIC_APP1_URL` | Fixed at build. Logout is an open navigation to that origin. Do not take it from the query string |
+| `auth.signInUrl` | From the environment's `runtime.json`, validated by the SDK (`https`, `http` only for local, dev and test). Logout is an open navigation to it. Never take it from the query string |
 | Theme in SDK storage | Any script in the page origin can read it. It is not a credential, and the SDK clears it on sign-out |
 | Mock data | Sample names and emails. They are not accounts |
 | Remote execution | The shell runs this bundle in the shell origin and pins `remoteEntry.js` by SRI in its manifest; this image is signed (see [VERSIONING.md](VERSIONING.md)) |
@@ -217,6 +237,10 @@ Laid out like platform-reactcommon's `test/`: `test/unit/<area>`, `test/integrat
 | Logical layout classes (`ps/pe`, `start/end`, `text-start`) | The layout follows the page's `dir`, so an RTL locale needs no separate stylesheet |
 | Custom chrome inside the remote | The shell renders only the frame; ticket navigation lives here |
 | `USER 101` | The unprivileged nginx image's uid. `USER nginx` fails Hadolint DL3066 |
+| Constitution layers (`app`, `presentation`, `application`, `domain`, `infrastructure`, `shared`), enforced by a test | Business rules independent of React and the SDK; data access behind repositories; ADR [0001](docs/adr/0001-layered-structure.md), [0004](docs/adr/0004-repositories-and-composition-root.md) |
+| Platform SDK `useApi` for server state, React state for UI state (not TanStack Query or Zustand) | One request lifecycle with the shell; small local state. ADR [0002](docs/adr/0002-server-state-platform-sdk.md), [0003](docs/adr/0003-client-state-react.md) |
+| Playwright journeys and axe WCAG 2.1 AA in CI | happy-dom has no layout or colour: a collapsed ticket layout and contrast failures had gone unnoticed. ADR [0009](docs/adr/0009-browser-tests-and-accessibility.md) |
+| Runtime configuration only | Build once, deploy everywhere. ADR [0006](docs/adr/0006-runtime-configuration-only.md) |
 | Coverage script instead of a Vitest threshold | Same gate the shell uses, overridable with `COVERAGE_THRESHOLD` |
 | Standalone build `assetPrefix: '/'`, remote left at the preset's `'auto'` | The remote is loaded from any base URL; the standalone page is always at `/`, and relative asset URLs break a reload of `/dashboard/user-management` |
 | Provenance read from the image index (`imagetools inspect`), not with `cosign download attestation` | `build-push-action` writes provenance as a BuildKit attestation, not a Cosign one; the Cosign call found nothing and failed `v0.1.0` |

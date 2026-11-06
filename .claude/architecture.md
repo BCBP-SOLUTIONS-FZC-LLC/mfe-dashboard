@@ -6,38 +6,36 @@ The narrative with diagrams is [`ARCHITECTURE.md`](../ARCHITECTURE.md); exact be
 
 ```
 mfe-dashboard/
-├── src/
-│   ├── App.tsx                    ./App: SDK user/sign-out, own BrowserRouter at workspaceBasename(), routes
-│   ├── remote.ts                  remote environment's placeholder entry
-│   ├── main.tsx                   standalone entry (#app): startStandalone(), then render
-│   ├── metrics.ts                 Tier 3 metrics portal_dashboard_* (SDK getServiceMeter); docs/observability/metrics.md
-│   ├── standalone.ts              standalone host page: initializeCore, load/set /config/runtime.json
-│   ├── i18n.ts                    APP_ID 'dashboard', registerMessages()
-│   ├── locales/en.json            every UI string
-│   ├── layouts/                   AppShellLayout (chrome, search, theme, user menu, defaultLogout), outlet context
-│   ├── pages/                     DashboardPage, UserManagementPage
-│   ├── components/                BrandLogo, ThemePicker, dashboard/{TicketRow, DashboardRightPanel, DashboardIcons}
-│   ├── assets/images/             logos (imported; emitted under assets/ with a hash)
-│   ├── hooks/                     useDashboardData (useApi), useMemberAccess
-│   ├── mocks/                     dashboardTickets (rows, ticketsForView, filter options), dashboardStats
-│   ├── theme/                     themeMode (storage('dashboard')), daisyThemes, CSS
-│   └── types/ticket.ts
+├── src/                           the constitution's layers (ADR 0001; test/unit/architecture/layers.test.ts)
+│   ├── app/                       composition root: App.tsx (./App, DependenciesProvider), routes/ (routes, basename),
+│   │                              bootstrap/ (main, remote), layouts/AppShellLayout, providers/dependencies.ts (use cases),
+│   │                              configuration/ (i18n.ts, locales/en.json), styles/index.css
+│   ├── presentation/              pages/, widgets/dashboard/, components/, features/ (useCases.*.execute via useApi),
+│   │                              theme/ (show a theme, CSS), dependencies.tsx (injected contracts)
+│   ├── application/               use-cases/ (*UseCase classes with execute()), ports/telemetry.ts
+│   ├── domain/                    entities/, value-objects/ (CalendarDay), rules/, repositories/ (contracts)
+│   ├── infrastructure/            fixtures/ (Fixture*Repository), configuration/standalone (runtime.json), storage/,
+│   │                              telemetry/metrics, auth/signIn
+│   └── shared/                    constants/app.ts (APP_ID), hooks/ (useDismiss, useFocusTrap, useNow), ui/themes.ts,
+│                                  types/appShellContext.ts, assets/images
 ├── test/
 │   ├── setup.ts                   fresh createTestPlatform per test
-│   ├── fixtures/                  platform.ts (startPlatform, permission sets), remote-build.ts (temp Rsbuild build)
-│   ├── unit/<area>/               app, authz, dashboard, components, theme, i18n, sdk, docs
+│   ├── fixtures/                  platform.ts (startPlatform, permission sets), dependencies.tsx (inject repositories), remote-build.ts
+│   ├── unit/<area>/               architecture, domain, application, app, authz, dashboard, components, theme, i18n, metrics, sdk, docs
 │   ├── integration/               remote-entry: built container via init(shareScope) / get('./App')
-│   └── e2e/                       app flows
+│   ├── e2e/                       app flows (happy-dom)
+│   └── browser/                   Playwright journeys + axe WCAG 2.1 AA (playwright.config.ts)
 ├── docs/
 │   ├── lld/mfe-dashboard-lld.md
-│   ├── architecture/mermaid/      diagram sources (embedded in ARCHITECTURE.md)
+│   ├── architecture/              constitution-assessment.md; mermaid/ diagram sources (embedded in ARCHITECTURE.md)
+│   ├── adr/                       architecture decision records 0001–0008
 │   ├── pipeline/                  CI and release map
 │   └── runbook-*.md
 ├── public/                        standalone only: favicons, config/runtime.json (default SDK runtime config)
 ├── nginx/default.conf, Dockerfile
 ├── rsbuild.config.ts              environments: remote (pluginPlatform dashboard) and standalone
 ├── config/remote-manifest-entry.mjs  post-build: dist/remote-manifest-entry.json (remoteEntry.js sha384)
-├── config/app1Url.ts              PUBLIC_APP1_URL → deprecated VITE_APP1_URL → http://localhost:5001
+├── config/runtime.local.json      the dev server's /config/runtime.json (environment local, signInUrl http://localhost:5001/)
 ├── vitest.config.ts               happy-dom; test/{unit,integration,e2e}; coverage on src/
 ├── eslint.config.js               @bcbp-solutions-fzc-llc/eslint-plugin + React hooks (as web-shell)
 └── .github/                       ci.yml, validate-test.yml, validate-quality.yml, changelog-check.yml, release.yml,
@@ -48,22 +46,24 @@ mfe-dashboard/
 
 ## Layers
 
-`App` → `AppShellLayout` → pages → components and hooks → mocks, theme, types. Any layer may import the SDK's public subpaths. Nothing imports upward; nothing in `src/` imports from `test/`.
+`app` (composition root) → `presentation` → `application` → `domain`; `infrastructure` implements the domain's repository contracts and the application's telemetry port; `shared` depends on nothing of ours. Any layer except `domain` and `application` may use the SDK's public subpaths; `presentation` never uses its storage, metrics or config directly. Nothing in `src/` imports from `test/`.
 
 ## The SDK Map
 
 | Concern | SDK | File |
 |---|---|---|
-| User, sign-out | `useCurrentUser`, `useSignOut` | `App.tsx` |
-| Basename, route template | `slugFromPath` (`/auth`), `tryGetConfig` (`/config`), `useRouteTemplate` | `App.tsx` |
-| Access | `useHasPermission`, `useReadOnly`, `useStepUp` | `DashboardPage.tsx`, `useMemberAccess.ts` |
-| Data, errors, logs | `useApi`, `isProblemError`, `problemMessage`, `getLogger` | `useDashboardData.ts`, `DashboardPage.tsx` |
-| Render errors | `MFEErrorBoundary` (page, `resetKeys` = path; standalone also around `App`) | `AppShellLayout.tsx`, `main.tsx` |
-| Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` | `i18n.ts`, components |
-| Storage | `storage('dashboard')` | `theme/themeMode.ts` |
+| User, sign-out | `useCurrentUser`, `useSignOut` | `app/App.tsx` |
+| Basename, route template | `slugFromPath` (`/auth`), `tryGetConfig` (`/config`), `useRouteTemplate` | `app/App.tsx` |
+| Access | `useHasPermission`, `useReadOnly`, `useStepUp` | `presentation/pages/DashboardPage.tsx`, `presentation/features/members/useMemberAccess.ts` |
+| Data, errors, logs | `useApi`, `isProblemError`, `problemMessage`, `getLogger` | `presentation/features/*`, `presentation/pages/DashboardPage.tsx` |
+| Render errors | `MFEErrorBoundary` (page, `resetKeys` = path; standalone also around `App`) | `app/layouts/AppShellLayout.tsx`, `app/bootstrap/main.tsx` |
+| Text, dates, numbers | `registerNamespace`, `useT`, `useLocale`, `formatDate`, `formatNumber` | `app/configuration/i18n.ts`, components |
+| Storage | `storage('dashboard')` | `infrastructure/storage/themePreference.ts` |
+| Runtime config, identity | `loadRuntimeConfig`, `initializeCore`, `setRuntimeConfig`, `tryGetConfig` | `infrastructure/configuration/standalone.ts`, `infrastructure/auth/signIn.ts` |
+| Metrics | `getServiceMeter` | `infrastructure/telemetry/metrics.ts` |
 | Tests | `createTestPlatform` | `test/fixtures/platform.ts` |
 
-Next SDK APIs to reach for: `useApiClient` (real APIs), `useFeatureFlag`, `Can`, `getServiceMeter`.
+Next SDK APIs to reach for: `useApiClient` / `createApiClient` (for `infrastructure/api/*ApiRepository`), `useFeatureFlag`, `Can`.
 
 ## Build
 

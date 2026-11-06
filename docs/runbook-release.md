@@ -10,10 +10,6 @@
 
 `extract-release-notes.sh` prints the body under `## [X.Y.Z]` until the next `## [` heading. An empty body fails the build job. Add the section, including the date (`## [X.Y.Z] - YYYY-MM-DD`), on the tagged commit. `[Unreleased]` alone is not enough once you are tagging.
 
-## `PUBLIC_APP1_URL` not set
-
-`PUBLIC_APP1_URL` is a build arg for the image and the tarball. The build job's "Verify PUBLIC_APP1_URL is set for releases" step fails unless the repository variable is an `https://` URL, so a release can no longer send logout to localhost. Set the variable (Settings → Secrets and variables → Actions → Variables) and re-run the workflow. A variable still named `VITE_APP1_URL` (the deprecated name) is accepted, with a warning, until you rename it. The value is public in the bundle.
-
 ## Image tag looks wrong
 
 The Git tag keeps the `v`. `docker/metadata-action` `{{version}}` strips it. `v1.2.3` publishes `1.2.3`, `1.2`, `1`, and `latest`. A pre-release `v1.2.3-rc.1` publishes `1.2.3-rc.1` only.
@@ -48,12 +44,12 @@ OIDC issuer: `https://token.actions.githubusercontent.com`.
 
 ## Standalone runtime config (`auth.signInUrl`)
 
-The standalone image serves `/config/runtime.json` (web-shell's defaults, no `signInUrl`). Mount the environment's file over `/usr/share/nginx/html/config/runtime.json`, with `environment` (`dev`, `test`, `staging` or `prod`; since this remote runs SDK alpha.6) and `auth.signInUrl` (an absolute `https` URL, where logout returns). The SDK validates it strictly: an unknown key or an `http` origin outside local and dev makes the page ignore the whole file.
+The standalone image serves `/config/runtime.json` (web-shell's defaults, no `signInUrl`). Mount the environment's file over `/usr/share/nginx/html/config/runtime.json`, with `environment` (`dev`, `test`, `staging` or `prod`; since this remote runs SDK alpha.6) and `auth.signInUrl` (where logout returns: an absolute `https` URL in normal form, as `new URL(x).href` writes it, so `https://app.dev.bcbpsolutions.com/` with its trailing `/`; `http` only for `localhost`). The SDK validates the file strictly: an unknown key or a URL not in normal form makes the page ignore the whole file, and logout then returns to `/`.
 
 Check after each deploy:
 
 ```bash
-curl -fsS https://<standalone-host>/config/runtime.json | jq -e '(.environment | IN("dev","test","staging","prod")) and (.auth.signInUrl | startswith("https://"))'
+curl -fsS https://<standalone-host>/config/runtime.json | jq -e '(.environment | IN("dev","test","staging","prod")) and (.auth.signInUrl | test("^https://[^/?#]+/"))'
 ```
 
 A failure in the browser shows as a console warning `[dashboard] runtime config unavailable; logout uses the build-time sign-in URL`. It comes from the SDK logger, which writes warnings to the console while logging is off; that line is the only trace, since the standalone page sends no telemetry. Without `environment` the page runs as `prod`.

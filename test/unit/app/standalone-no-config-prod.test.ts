@@ -11,7 +11,7 @@ beforeAll(async () => {
   vi.stubGlobal('fetch', async () => new Response('not found', { status: 404 }))
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   // Imported after stubbing: FALLBACK_ENVIRONMENT reads import.meta.env.DEV when the module loads.
-  const { startStandalone } = await import('../../../src/standalone')
+  const { startStandalone } = await import('../../../src/infrastructure/configuration/standalone')
   const { getIdentity } = await import('@bcbp-solutions-fzc-llc/frontend-sdk/core')
   await startStandalone()
   seen.environment = getIdentity()?.environment

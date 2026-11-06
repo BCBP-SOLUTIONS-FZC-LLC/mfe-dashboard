@@ -1,19 +1,41 @@
 flowchart TB
-    host["web-shell app1\nloadRemote: init(shareScope), get('./App')"]
-    sdk["platform SDK (shell singleton)\nuser, sign-out, permissions, step-up,\nuseApi, i18n, storage, route templates"]
-    app["src/App.tsx\nexpose ./App, BrowserRouter\nbasename /t/<slug>"]
-    shell["AppShellLayout\nsearch, theme, user menu, logout"]
-    pages["DashboardPage\nUserManagementPage"]
-    hooks["useDashboardData (useApi)\nuseMemberAccess"]
-    mocks["src/mocks\nfixture tickets, stats, users"]
-    nginx["nginx :8080\n/healthz, /, remoteEntry.js"]
+    host["web-shell (shell)\nloadRemote: init(shareScope), get('./App')\nPlatformProvider: auth, telemetry, i18n"]
+    sdk["platform SDK (shell singleton)\nuseApi, ApiClient, permissions, step-up,\ni18n, storage, logging, metrics"]
+    subgraph app["app/ (composition root)"]
+        appRoot["App.tsx: ./App; routes/DashboardRoutes\nproviders/dependencies.ts (builds use cases)\nbootstrap: main, remote"]
+        layout["layouts/AppShellLayout"]
+    end
+    subgraph presentation["presentation/"]
+        pages["pages: DashboardPage, UserManagementPage"]
+        widgets["widgets, components, theme"]
+        features["features: useDashboardData, useDashboardSummary,\nuseMembers, useMemberAccess (useCases.*.execute via useApi)"]
+    end
+    subgraph application["application/"]
+        usecases["use-cases: LoadTicketQueueUseCase, LoadDashboardSummaryUseCase,\nGetDashboardInfoUseCase, ListMembersUseCase"]
+        ports["ports: DashboardTelemetry"]
+    end
+    subgraph domain["domain/"]
+        entities["entities: Ticket, Member, DashboardInfo\nvalue-objects: CalendarDay"]
+        rules["rules: views, filters, deadline, SLA, search"]
+        repos["repositories: Ticket, DashboardInfo, Member (contracts)"]
+    end
+    subgraph infrastructure["infrastructure/"]
+        fixtures["fixtures: Fixture*Repository\n(later api: *ApiRepository on ApiClient)"]
+        infraOther["configuration: standalone (runtime.json)\nstorage: themePreference\ntelemetry: metrics\nauth: signIn"]
+    end
+    shared["shared/: constants, hooks, ui/themes, types, assets"]
 
-    host --> app
-    app --> shell
-    shell --> pages
-    pages --> hooks
-    hooks --> mocks
-    app -.-> sdk
-    pages -.-> sdk
-    hooks -.-> sdk
-    nginx --> host
+    host --> appRoot
+    appRoot --> layout
+    appRoot --> pages
+    pages --> widgets
+    pages --> features
+    features --> usecases
+    usecases --> rules
+    usecases --> repos
+    fixtures -. implements .-> repos
+    infraOther -. implements .-> ports
+    appRoot -. injects .-> fixtures
+    appRoot -. injects .-> infraOther
+    features -.-> sdk
+    infraOther -.-> sdk

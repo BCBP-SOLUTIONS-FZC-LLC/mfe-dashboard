@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useDashboardData } from '../../../src/hooks/useDashboardData'
+import { useDashboardData } from '../../../src/presentation/features/tickets/useDashboardData'
+import { withDependencies } from '../../fixtures/dependencies'
 
 const filters = { status: 'all', role: 'all', department: 'all', deadline: 'all', tender: 'all' }
 const approverFilters = { ...filters, role: 'Approver' }
@@ -15,6 +16,7 @@ describe('useDashboardData', () => {
     vi.useFakeTimers()
     const { result } = renderHook(() =>
       useDashboardData({ view: 'my-tickets', filters, canSeeAllTenders: true }),
+      { wrapper: withDependencies() },
     )
     expect(result.current.loadState).toBe('loading')
     await act(async () => {
@@ -29,6 +31,7 @@ describe('useDashboardData', () => {
         filters: approverFilters,
         canSeeAllTenders: true,
       }),
+      { wrapper: withDependencies() },
     )
     await act(async () => {
       await vi.advanceTimersByTimeAsync(700)
@@ -54,6 +57,7 @@ describe('useDashboardData', () => {
         filters: narrowedFilters,
         canSeeAllTenders: true,
       }),
+      { wrapper: withDependencies() },
     )
     await act(async () => {
       await vi.advanceTimersByTimeAsync(700)
@@ -66,6 +70,7 @@ describe('useDashboardData', () => {
     vi.useFakeTimers()
     const { result } = renderHook(() =>
       useDashboardData({ view: 'all-tenders', filters, canSeeAllTenders: false }),
+      { wrapper: withDependencies() },
     )
     await act(async () => {
       await vi.advanceTimersByTimeAsync(700)

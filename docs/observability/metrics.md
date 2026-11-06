@@ -1,6 +1,6 @@
 # Metrics
 
-The dashboard's metrics under the Enterprise Platform Observability Standard. They are defined in [`src/metrics.ts`](../../src/metrics.ts) and recorded through the platform SDK's `/metrics` (`getServiceMeter`). `test/unit/metrics/metrics.test.tsx` fails when this page, the code and the SDK's rules disagree.
+The dashboard's metrics under the Enterprise Platform Observability Standard. They are defined in [`src/infrastructure/telemetry/metrics.ts`](../../src/metrics.ts) and recorded through the platform SDK's `/metrics` (`getServiceMeter`). `test/unit/metrics/metrics.test.tsx` fails when this page, the code and the SDK's rules disagree.
 
 ## Tier
 
@@ -36,7 +36,7 @@ While tickets are fixtures (LLD §15 item 1), the duration measures the simulate
 | Prohibited labels | No registry-prohibited name or suffix (`*_id`, `email`, `user`, `path`, …); at most 8 labels |
 | Label vocabulary | Every label has a closed value set, enforced by `recordMetric`'s types; `outcome` values come from the registry's vocabulary, and the SDK drops a value outside it at run time (it also caps any other label at 100 values) |
 | SDK compliance | With the remote in the manifest, the SDK accepts every definition (its own namespace, suffix, label and registry checks) |
-| Inventory | This table matches `src/metrics.ts` |
+| Inventory | This table matches `src/infrastructure/telemetry/metrics.ts` |
 
 ## Dashboards, alerts, recording rules and SLOs (proposals)
 
@@ -74,4 +74,4 @@ Thresholds are starting points, to be set once a real ticket API is behind the l
 
 ## Changing a metric
 
-Names, labels and their values are part of the observability contract. Adding a metric or a label value: add it to `src/metrics.ts` and this table in the same PR. Renaming or removing one: emit old and new in parallel, move dashboards, alerts, recording rules and SLOs, then remove the old one after the agreed sunset (the standard's migration process), with a CHANGELOG entry at each step. A metric that other services could emit with the same meaning is proposed to the Platform Observability Registry, not added here as Tier 3.
+Names, labels and their values are part of the observability contract. Adding a metric or a label value: add it to `src/infrastructure/telemetry/metrics.ts` and this table in the same PR. Renaming or removing one: emit old and new in parallel, move dashboards, alerts, recording rules and SLOs, then remove the old one after the agreed sunset (the standard's migration process), with a CHANGELOG entry at each step. A metric that other services could emit with the same meaning is proposed to the Platform Observability Registry, not added here as Tier 3.

@@ -7,8 +7,8 @@ import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { defaultLogout } from '../../../src/layouts/AppShellLayout'
-import { startStandalone } from '../../../src/standalone'
+import { goToSignIn } from '../../../src/infrastructure/auth/signIn'
+import { startStandalone } from '../../../src/infrastructure/configuration/standalone'
 
 const shipped = JSON.parse(readFileSync(join(__dirname, '../../../public/config/runtime.json'), 'utf8')) as {
   auth: Record<string, unknown>
@@ -27,7 +27,7 @@ beforeAll(async () => {
   seen.identity = getIdentity()
   seen.signInUrl = tryGetConfig()?.auth.signInUrl
   const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
-  defaultLogout()
+  goToSignIn()
   seen.logoutTo = assign.mock.calls[0]?.[0]
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -44,7 +44,7 @@ describe('standalone page with a runtime config', () => {
     expect(seen.signInUrl).toBe('https://app.test.example.com/')
   })
 
-  it('logs out to auth.signInUrl, before the build-time PUBLIC_APP1_URL', () => {
+  it('logs out to the runtime config\'s auth.signInUrl', () => {
     expect(seen.logoutTo).toBe('https://app.test.example.com')
   })
 })

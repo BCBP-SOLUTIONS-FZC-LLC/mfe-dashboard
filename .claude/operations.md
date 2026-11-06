@@ -10,7 +10,8 @@
 | `npm test` | Vitest once: unit, integration, e2e |
 | `npm run test:unit` / `test:integration` / `test:e2e` | One suite. Integration builds the remote into a temp dir (a few seconds) |
 | `npm run test:coverage` | With the v8 report |
-| `npm run test:ci` | Coverage + the 95% gate; what CI runs |
+| `npm run test:ci` | Coverage + the 95% gate + domain >90%; what CI runs |
+| `npm run test:browser` | Build, then Playwright (Chromium) + axe WCAG 2.1 AA on the standalone page; CI job `Browser (Playwright, axe)` |
 | `npm run lint` | ESLint (platform rules, React hooks) |
 | `npx tsc --noEmit -p .` | Type check `src/` (also the first step of `npm run build`) |
 | `npm run build` | `tsc`, empty `dist/`, both Rsbuild environments |
@@ -29,6 +30,7 @@ Port 5002 may already be taken on this machine by another process; preview on an
 | `Build image (cache)` | Hadolint, then a cached `linux/amd64` build |
 | `Trivy CVE scan` | CRITICAL / HIGH / UNKNOWN unfixed fail |
 | `Smoke tests` | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, the platform SPA rule (routes → document; missing files, pass-through prefixes, dotfiles → 404) |
+| `Browser (Playwright, axe)` | Journeys in Chromium against the production build; axe WCAG 2.1 AA (light, dark, drawer). Not yet a required check; the image push waits for it |
 | `PR summary` | One comment with the results |
 | `changelog` | `CHANGELOG.md` touched when `src/`, deps, Dockerfile, nginx, `rsbuild.config.ts` or `index.html` changed |
 
@@ -43,8 +45,7 @@ Port 5002 may already be taken on this machine by another process; preview on an
 ## Release
 
 1. On a branch: move `[Unreleased]` into `## [X.Y.Z] - YYYY-MM-DD`, set `package.json` `version` (`npm version X.Y.Z --no-git-tag-version`), and update VERSIONING's table, README Status, the LLD header and `CLAUDE.md` Status. PR, merge.
-2. The repository variable `PUBLIC_APP1_URL` must be `https://` (now `https://app.dev.bcbpsolutions.com`).
-3. Tag the merge commit: `git tag -a vX.Y.Z -m vX.Y.Z <sha>` and push the tag (ask first). Watch `gh run list --workflow release.yml`.
+2. Tag the merge commit: `git tag -a vX.Y.Z -m vX.Y.Z <sha>` and push the tag (ask first). Watch `gh run list --workflow release.yml`.
 
 `release.yml` builds the image (tags without `v`), SBOM, provenance (read from the image index), Cosign signature, version tags and a GitHub Release with the `dist` tarball and `remote-manifest-entry.json`. No deploy job. The image is pushed by digest and tagged only after Trivy, provenance and the signature (`tag-signed-image.sh`). A flaky failure can be re-run; a bug in the workflow cannot (the rerun uses the tag's scripts) and ships as the next patch, never by moving the tag. Detail: [LLD §12.5](../docs/lld/mfe-dashboard-lld.md#125-release), [`docs/runbook-release.md`](../docs/runbook-release.md).
 

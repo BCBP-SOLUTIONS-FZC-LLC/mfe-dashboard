@@ -27,3 +27,7 @@ docker.local.env
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright
+test-results/
+playwright-report/

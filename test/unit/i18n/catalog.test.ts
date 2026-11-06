@@ -4,9 +4,9 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { t } from '@bcbp-solutions-fzc-llc/frontend-sdk/i18n'
 import { describe, expect, it } from 'vitest'
-import en from '../../../src/locales/en.json'
-import { APP_ID } from '../../../src/i18n'
-import type { DashboardView, SlaState } from '../../../src/types/ticket'
+import en from '../../../src/app/configuration/locales/en.json'
+import { APP_ID } from '../../../src/shared/constants/app'
+import type { DashboardView, SlaState } from '../../../src/domain/entities/ticket'
 
 const SRC = resolve(__dirname, '../../../src')
 const catalog = en as Record<string, string>

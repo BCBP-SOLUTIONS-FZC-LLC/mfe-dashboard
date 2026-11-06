@@ -10,11 +10,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from '../../../src/App'
-import { useDashboardData } from '../../../src/hooks/useDashboardData'
-import { APP_ID } from '../../../src/i18n'
-import { METRICS, METRIC_PREFIX, recordMetric } from '../../../src/metrics'
-import * as tickets from '../../../src/mocks/dashboardTickets'
+import App from '../../../src/app/App'
+import { useDashboardData } from '../../../src/presentation/features/tickets/useDashboardData'
+import { APP_ID } from '../../../src/shared/constants/app'
+import { METRICS, METRIC_PREFIX, recordMetric } from '../../../src/infrastructure/telemetry/metrics'
+import { FixtureTicketRepository } from '../../../src/infrastructure/fixtures/tickets'
+import { testDependencies, withDependencies } from '../../fixtures/dependencies'
 import { startPlatform } from '../../fixtures/platform'
 
 const ROOT = join(__dirname, '../../..')
@@ -142,7 +143,7 @@ describe('recording', () => {
   it('counts and times a finished ticket load by view, trigger and outcome', async () => {
     await inShell()
     vi.useFakeTimers()
-    const { result } = renderHook(() => useDashboardData({ view: 'delegated', filters, canSeeAllTenders: true }))
+    const { result } = renderHook(() => useDashboardData({ view: 'delegated', filters, canSeeAllTenders: true }), { wrapper: withDependencies() })
     await act(() => vi.advanceTimersByTimeAsync(700))
     expect(result.current.loadState).not.toBe('loading')
     act(() => result.current.refresh())
@@ -159,10 +160,16 @@ describe('recording', () => {
   it('records a failed load as outcome="error"', async () => {
     await inShell()
     vi.useFakeTimers()
-    vi.spyOn(tickets, 'ticketsForView').mockImplementation(() => {
-      throw new NetworkError(false, 'req-1')
+    // The ticket API answers a network error (the repository rejects after its usual delay).
+    class Failing extends FixtureTicketRepository {
+      override async list(o: Parameters<FixtureTicketRepository['list']>[0]): Promise<never> {
+        await super.list(o)
+        throw new NetworkError(false, 'req-1')
+      }
+    }
+    renderHook(() => useDashboardData({ view: 'my-tickets', filters, canSeeAllTenders: true }), {
+      wrapper: withDependencies(testDependencies({ tickets: new Failing() })),
     })
-    renderHook(() => useDashboardData({ view: 'my-tickets', filters, canSeeAllTenders: true }))
     await act(() => vi.advanceTimersByTimeAsync(700))
     expect(renderMetricInventory()).toContain(
       'portal_dashboard_ticket_loads_total{domain="portal",environment="test",outcome="error",service="dashboard",trigger="initial",view="my-tickets"}',
@@ -174,6 +181,7 @@ describe('recording', () => {
     vi.useFakeTimers()
     const { rerender } = renderHook(({ view }) => useDashboardData({ view, filters, canSeeAllTenders: true }), {
       initialProps: { view: 'my-tickets' as const as 'my-tickets' | 'delegated' },
+      wrapper: withDependencies(),
     })
     await act(() => vi.advanceTimersByTimeAsync(100))
     rerender({ view: 'delegated' })

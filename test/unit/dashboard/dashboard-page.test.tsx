@@ -3,8 +3,11 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import App from '../../../src/App'
-import { DEPARTMENT_OPTIONS } from '../../../src/mocks/dashboardTickets'
+import App from '../../../src/app/App'
+import { departmentsOf } from '../../../src/domain/rules/filters'
+import { FIXTURE_TICKETS } from '../../../src/infrastructure/fixtures/tickets'
+
+const DEPARTMENT_OPTIONS = departmentsOf(FIXTURE_TICKETS)
 
 describe('filters', () => {
   it('offers every department in the data', async () => {
@@ -12,6 +15,8 @@ describe('filters', () => {
     render(<App userLabel="Ada" />)
     await userEvent.click(await screen.findByRole('button', { name: /^Filters/ }))
     const department = screen.getByRole('combobox', { name: 'Department' })
+    // The options come with the dashboard summary (loadDashboardSummary), after its load.
+    await waitFor(() => expect(within(department).getAllByRole('option').length).toBe(DEPARTMENT_OPTIONS.length + 1))
     const options = within(department).getAllByRole('option').map((o) => o.textContent)
     expect(options).toEqual(['All Departments', ...DEPARTMENT_OPTIONS])
     expect(options).toEqual(expect.arrayContaining(['MEP', 'Compliance', 'Estimating']))
