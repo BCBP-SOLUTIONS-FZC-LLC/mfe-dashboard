@@ -50,6 +50,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # The constitution's layers as a declarative dependency graph (.dependency-cruiser.cjs, the
+      # counterpart of the Go services' .go-arch-lint.yml): what each layer may import, which layers may
+      # use packages, no cycles.
+      - name: Architecture lint
+        run: npm run arch-lint
+
       # Workflow files must use literal operators, not HTML entity encodings.
       - name: Reject HTML-escaped operators in workflow files
         run: |

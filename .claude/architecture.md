@@ -6,7 +6,7 @@ The narrative with diagrams is [`ARCHITECTURE.md`](../ARCHITECTURE.md); exact be
 
 ```
 mfe-dashboard/
-├── src/                           the constitution's layers (ADR 0001; test/unit/architecture/layers.test.ts)
+├── src/                           the constitution's layers (ADR 0001; .dependency-cruiser.cjs, layers.test.ts)
 │   ├── app/                       composition root: App.tsx (./App, DependenciesProvider), routes/ (routes, basename),
 │   │                              bootstrap/ (main, remote), layouts/AppShellLayout, providers/dependencies.ts (use cases),
 │   │                              configuration/ (i18n.ts, locales/en.json), styles/index.css
@@ -28,7 +28,7 @@ mfe-dashboard/
 ├── docs/
 │   ├── lld/mfe-dashboard-lld.md
 │   ├── architecture/              constitution-assessment.md; mermaid/ diagram sources (embedded in ARCHITECTURE.md)
-│   ├── adr/                       architecture decision records 0001–0008
+│   ├── adr/                       architecture decision records 0001–0009
 │   ├── pipeline/                  CI and release map
 │   └── runbook-*.md
 ├── public/                        standalone only: favicons, config/runtime.json (default SDK runtime config)

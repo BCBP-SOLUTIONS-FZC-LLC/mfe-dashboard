@@ -21,11 +21,14 @@ The constitution requires Clean Architecture, DDD and Feature-Sliced Design, wit
 
 Folders the constitution lists but that have no content yet (`domain/events`, `application/commands`, `application/queries`, `application/services`, `infrastructure/api`, `infrastructure/federation`, `shared/utilities`) are not created empty. Tests stay in the repository's `test/` (as in platform-reactcommon and web-shell), not in `src/tests/`. They appear when there is something to put in them, for example `infrastructure/api` with the first ApiClient repository.
 
-`test/unit/architecture/layers.test.ts` fails on:
-- a top-level folder outside the six;
-- an import against the table above;
-- React, an SDK, any package or a browser API in `domain/` or `application/`;
-- `presentation/` using the SDK's storage, metrics or config directly.
+Two checks enforce it:
+
+| Check | Fails on |
+|---|---|
+| `npm run arch-lint` (`.dependency-cruiser.cjs`, CI step `Architecture lint` in Validate / Quality) | an import against the table above (an allow-list: what is not allowed fails); any package in `domain/` or `application/`; `presentation/` importing the SDK's storage, metrics or config; an OpenTelemetry, Prometheus or web-vitals library, or TanStack Query, SWR, axios or ky; an import cycle; `src/` importing `test/`; an unresolvable import |
+| `test/unit/architecture/layers.test.ts` | a top-level folder outside the six; the same directions, framework and SDK rules (kept, so `npm test` catches them too); a browser API (`window`, `fetch`, `localStorage`, …) in `domain/` or `application/`, which an import graph cannot see |
+
+`.dependency-cruiser.cjs` is written like iam-org-membership's `.go-arch-lint.yml`: one commented component per layer, a `mayDependOn` table and the layers allowed vendor packages (`anyVendorDeps`). Tests, scripts and build config are excluded.
 
 ## Consequences
 

@@ -13,6 +13,7 @@
 | `npm run test:ci` | Coverage + the 95% gate + domain >90%; what CI runs |
 | `npm run test:browser` | Build, then Playwright (Chromium) + axe WCAG 2.1 AA on the standalone page; CI job `Browser (Playwright, axe)` |
 | `npm run lint` | ESLint (platform rules, React hooks) |
+| `npm run arch-lint` | Architecture lint (dependency-cruiser, `.dependency-cruiser.cjs`): layer allow-list, framework-free domain and application, no cycles; CI step `Architecture lint` |
 | `npx tsc --noEmit -p .` | Type check `src/` (also the first step of `npm run build`) |
 | `npm run build` | `tsc`, empty `dist/`, both Rsbuild environments |
 | `npm run preview` | Serve the production build on port 5002 |
