@@ -35,7 +35,7 @@ All notable changes to this remote are documented here. The format follows [Keep
     - a host conformance checklist and the contract lifecycle;
     - a STRIDE threat model;
     - developer tools, decisions and documentation assets.
-  - **Diagrams:** `docs/architecture/mermaid/` gains `module-dependencies`, `mount-flow`, `domain-model`, `observability` and `documentation` (8 diagrams in all), and `layer-model` and `ticket-load` are redrawn for the current code. `test/unit/docs/diagrams.test.ts` keeps each fence equal to its source, and all eight were rendered with mermaid 11.4.1 in Chromium before merging; that caught a `;` inside a sequence-diagram note, which ends the statement.
+  - **Diagrams:** `docs/architecture/mermaid/` gains `module-dependencies`, `mount-flow`, `domain-model`, `observability` and `documentation` (8 diagrams in all), and `layer-model` and `ticket-load` are redrawn for the current code. `test/unit/docs/diagrams.test.ts` keeps each fence equal to its source, and all eight were rendered with mermaid 11 in Chromium before merging; that caught a `;` inside a sequence-diagram note, which ends the statement.
   - *(Previously: 252 lines, three diagrams. After #32 it still placed `ticketsForView` and `kpiCounts` in the fixtures, and named `./src/App.tsx` as the exposed module. A comment in `rsbuild.config.ts` pointed at `src/app/bootstrap/standalone.ts`, where `src/infrastructure/configuration/standalone.ts` is meant.)*
 - **`README.md` rewritten** (#36): 190 → 625 lines.
   - **Sections:**
@@ -185,7 +185,7 @@ All notable changes to this remote are documented here. The format follows [Keep
   - `src/` has exactly the constitution's top-level folders;
   - each layer imports only what the layer table allows;
   - `domain/` and `application/` are framework-free: no React, router, SDK or browser API;
-  - presentation never imports fixtures, storage or telemetry directly.
+  - presentation never imports the SDK's storage, metrics or config (data access stays in infrastructure).
 - **Domain and use-case tests:**
   - `test/unit/domain/filters.test.ts` and `views.test.ts`, which was moved from `tickets.test.ts`;
   - `test/unit/application/use-cases.test.ts`, with in-memory repositories: "loads through the repository (passing refresh and the signal), then applies the view and filters", "combines view counts, SLA, filter options and dashboard info".
@@ -233,8 +233,8 @@ All notable changes to this remote are documented here. The format follows [Keep
   - **Calendar days** use `formatDate('YYYY-MM-DD')` in `TicketRow` and `DashboardRightPanel`, and the deadline filter compares them as day strings.
   - **The "runtime config unavailable" warning** goes through `getLogger` only.
   - **New rules in `dependency-rules.test.ts`:**
-    - "logs with getLogger only, never console";
-    - "formats calendar days with formatDate('YYYY-MM-DD')", which rejects `calendarDate(` and a `Date` built from a `YYYY-MM-DD` literal.
+    - "logs with getLogger only, never console (the SDK writes warn and error to the console while logging is off)";
+    - "formats calendar days with formatDate('YYYY-MM-DD'), never by building a Date from one", which rejects `calendarDate(` and a `Date` built from a `YYYY-MM-DD` literal.
 - **The standalone page takes its environment from `/config/runtime.json`.**
   - **Start-up order:** `startStandalone()` loads the file, with a 5 s timeout. It then calls `initializeCore(standaloneIdentity(config.environment))`, then `setRuntimeConfig`, so one build serves every environment.
   - **Fallback:** without a file, or with a file that has no `environment`, it runs as `prod` in a build and `local` on the dev server (`FALLBACK_ENVIRONMENT`).
@@ -268,6 +268,7 @@ All notable changes to this remote are documented here. The format follows [Keep
   - "does host-page start-up only on the standalone page, with the SDK, and leaves remotes and auth to the shell": no `loadRemote`, manifest, auth, flags, or starting telemetry in `src/`.
 
   An audit of every SDK export against `src/` found no reimplementation. `recordMetric` no longer repeats the SDK's run-time label checks.
+- **The remote now consumes the shell's SDK `/metrics`** as a shared subpath (`import: false`, like the others). A shell must provide it; web-shell already does.
 
 ### Fixed (2026-11-05 — second SDK audit, #28)
 
