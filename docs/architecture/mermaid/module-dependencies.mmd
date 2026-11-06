@@ -1,0 +1,97 @@
+graph LR
+    appApp(["app/App"])
+    appBootstrap(["app/bootstrap"])
+    appProviders(["app/providers"])
+    appRoutes(["app/routes"])
+    appLayouts(["app/layouts"])
+    appConfig(["app/configuration"])
+
+    pPages(["presentation/pages"])
+    pWidgets(["presentation/widgets"])
+    pComponents(["presentation/components"])
+    pFeatures(["presentation/features"])
+    pDeps(["presentation/dependencies"])
+    pTheme(["presentation/theme"])
+
+    aUseCases(["application/use-cases"])
+    aPorts(["application/ports"])
+
+    dEntities(["domain/entities"])
+    dValues(["domain/value-objects"])
+    dRules(["domain/rules"])
+    dRepos(["domain/repositories"])
+
+    iFixtures(["infrastructure/fixtures"])
+    iTelemetry(["infrastructure/telemetry"])
+    iConfig(["infrastructure/configuration"])
+    iStorage(["infrastructure/storage"])
+    iAuth(["infrastructure/auth"])
+
+    shared(["shared/*\nconstants · hooks · ui · types · assets"])
+
+    appBootstrap --> appApp
+    appBootstrap --> iConfig
+    appBootstrap --> iStorage
+    appBootstrap --> pTheme
+    appApp --> appProviders
+    appApp --> appRoutes
+    appApp --> appConfig
+    appApp --> pDeps
+    appApp --> iAuth
+    appProviders --> aUseCases
+    appProviders --> aPorts
+    appProviders --> dRepos
+    appProviders --> iFixtures
+    appProviders --> iTelemetry
+    appProviders --> pDeps
+    appRoutes --> appLayouts
+    appRoutes --> pPages
+    appRoutes --> pFeatures
+    appLayouts --> pComponents
+    appLayouts --> pFeatures
+    appLayouts --> pTheme
+    appLayouts --> iAuth
+    appLayouts --> iStorage
+
+    pPages --> pWidgets
+    pPages --> pComponents
+    pPages --> pFeatures
+    pPages --> pDeps
+    pPages --> pTheme
+    pPages --> dRules
+    pPages --> dEntities
+    pWidgets --> pComponents
+    pWidgets --> aUseCases
+    pWidgets --> dEntities
+    pComponents --> pTheme
+    pComponents --> dEntities
+    pFeatures --> pDeps
+    pFeatures --> aUseCases
+    pFeatures --> dEntities
+    pDeps --> aUseCases
+    pDeps --> aPorts
+
+    aUseCases --> dRules
+    aUseCases --> dRepos
+    aUseCases --> dEntities
+    aPorts --> dEntities
+
+    dRules --> dEntities
+    dRules --> dValues
+    dRepos --> dEntities
+
+    iFixtures --> dRepos
+    iFixtures --> dEntities
+    iFixtures --> dValues
+    iTelemetry --> aPorts
+    iTelemetry --> dEntities
+
+    appConfig --> shared
+    appLayouts --> shared
+    pPages --> shared
+    pComponents --> shared
+    pFeatures --> shared
+    pTheme --> shared
+    iConfig --> shared
+    iStorage --> shared
+    iTelemetry --> shared

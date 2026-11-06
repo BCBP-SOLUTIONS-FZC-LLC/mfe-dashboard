@@ -1,41 +1,65 @@
-flowchart TB
-    host["web-shell (shell)\nloadRemote: init(shareScope), get('./App')\nPlatformProvider: auth, telemetry, i18n"]
-    sdk["platform SDK (shell singleton)\nuseApi, ApiClient, permissions, step-up,\ni18n, storage, logging, metrics"]
-    subgraph app["app/ (composition root)"]
-        appRoot["App.tsx: ./App; routes/DashboardRoutes\nproviders/dependencies.ts (builds use cases)\nbootstrap: main, remote"]
-        layout["layouts/AppShellLayout"]
+graph TD
+    subgraph host["Host  —  web-shell (container app1) or the standalone page"]
+        shell["web-shell\nmanifest entry (SRI) → loadRemote: init(shareScope), get('./App')\nRemoteBoundary at /t/:slug/dashboard/*\nPlatformProvider: session, permissions, i18n, telemetry export (OTLP)"]
+        sdk["platform SDK 1.0.0-alpha.6 (shell singleton, import: false)\nshared subpaths: auth · config · i18n · logging · metrics · problem · react · storage\n+ react, react/jsx-runtime ^19.0.0"]
     end
-    subgraph presentation["presentation/"]
-        pages["pages: DashboardPage, UserManagementPage"]
-        widgets["widgets, components, theme"]
-        features["features: useDashboardData, useDashboardSummary,\nuseMembers, useMemberAccess (useCases.*.execute via useApi)"]
-    end
-    subgraph application["application/"]
-        usecases["use-cases: LoadTicketQueueUseCase, LoadDashboardSummaryUseCase,\nGetDashboardInfoUseCase, ListMembersUseCase"]
-        ports["ports: DashboardTelemetry"]
-    end
-    subgraph domain["domain/"]
-        entities["entities: Ticket, Member, DashboardInfo\nvalue-objects: CalendarDay"]
-        rules["rules: views, filters, deadline, SLA, search"]
-        repos["repositories: Ticket, DashboardInfo, Member (contracts)"]
-    end
-    subgraph infrastructure["infrastructure/"]
-        fixtures["fixtures: Fixture*Repository\n(later api: *ApiRepository on ApiClient)"]
-        infraOther["configuration: standalone (runtime.json)\nstorage: themePreference\ntelemetry: metrics\nauth: signIn"]
-    end
-    shared["shared/: constants, hooks, ui/themes, types, assets"]
 
-    host --> appRoot
-    appRoot --> layout
-    appRoot --> pages
+    subgraph app["Composition root  —  src/app/"]
+        appRoot["App.tsx (exposed ./App)\nprops userLabel?, onLogout? · WithDependencies\nown BrowserRouter at the workspace basename, or the host's router"]
+        bootstrap["bootstrap/\nmain.tsx: standalone entry (fonts, theme, startStandalone, MFEErrorBoundary)\nremote.ts: placeholder entry (the shell loads remoteEntry.js only)"]
+        providers["providers/dependencies.ts\ncreateDependencies(overrides): Fixture*Repository + metricsTelemetry\n→ use cases (one instance per App)"]
+        routesL["routes/DashboardRoutes.tsx · layouts/AppShellLayout.tsx\nsidebar, search, theme, user menu, logout · page MFEErrorBoundary"]
+        config["configuration/\ni18n.ts: registerNamespace('dashboard') · locales/en.json\nstyles/index.css"]
+    end
+
+    subgraph presentation["Presentation  —  src/presentation/"]
+        pages["pages/\nDashboardPage (views, KPIs, filters, load states, step-up banner)\nUserManagementPage (list, search, Invite/Edit when allowed)"]
+        widgets["widgets/dashboard/ · components/ · theme/\nTicketRow (container queries) · DashboardRightPanel\nBrandLogo · ThemePicker · DashboardIcons · Aura CSS"]
+        features["features/\nuseDashboardData (tickets: load states, refresh, telemetry)\nuseLoadable → useDashboardSummary · useDashboardInfo · useMembers\nuseMemberAccess (read:members / manage:members, read-only)"]
+        deps["dependencies.tsx\nDependenciesProvider · useDependencies()\n{ useCases, telemetry }"]
+    end
+
+    subgraph application["Application  —  src/application/ (no React, browser or SDK)"]
+        usecases["use-cases/\nLoadTicketQueueUseCase · LoadDashboardSummaryUseCase\nGetDashboardInfoUseCase · ListMembersUseCase\nclasses with execute(query), signal passed through"]
+        ports["ports/\nDashboardTelemetry: ticketLoadFinished, stepUpRequested"]
+    end
+
+    subgraph domain["Domain  —  src/domain/ (pure TypeScript, no packages)"]
+        entities["entities/ · value-objects/\nTicketItem · DashboardFilters · SlaOverview · FilterOptions\nMember · DashboardInfo · CalendarDay"]
+        rules["rules/\nviews: ticketsInView, countByView, hasPartialFailure\nfilters: applyFilters, matchesDeadline, titleHasKeyword, searchTickets\nsla: slaOverview · members: searchMembers"]
+        repos["repositories/\nTicketRepository · DashboardInfoRepository · MemberRepository\n(async, cancellable contracts)"]
+    end
+
+    subgraph infrastructure["Infrastructure  —  src/infrastructure/"]
+        fixtures["fixtures/\nFixtureTicketRepository (due days from today, abortable delay)\nFixtureDashboardInfoRepository · FixtureMemberRepository\nlater: api/*ApiRepository on the SDK's ApiClient"]
+        telemetry["telemetry/metrics.ts\nmetricsTelemetry: 3 Tier 3 portal_dashboard_* metrics via getServiceMeter"]
+        infraOther["configuration/standalone.ts: runtime.json → initializeCore → setRuntimeConfig\nstorage/themePreference.ts: storage('dashboard')\nauth/signIn.ts: goToSignIn → auth.signInUrl or /"]
+    end
+
+    shared["Shared  —  src/shared/ (nothing of ours)\nconstants/app (APP_ID) · hooks: useDismiss, useFocusTrap, useNow\nui/themes · types/appShellContext · assets/images"]
+
+    shell --> appRoot
+    bootstrap --> appRoot
+    appRoot --> providers
+    appRoot --> routesL
+    appRoot --> config
+    routesL --> pages
     pages --> widgets
     pages --> features
-    features --> usecases
+    features --> deps
+    deps --> usecases
+    deps --> ports
     usecases --> rules
     usecases --> repos
+    rules --> entities
+    repos --> entities
+    providers --> usecases
+    providers -. injects .-> fixtures
+    providers -. injects .-> telemetry
     fixtures -. implements .-> repos
-    infraOther -. implements .-> ports
-    appRoot -. injects .-> fixtures
-    appRoot -. injects .-> infraOther
-    features -.-> sdk
-    infraOther -.-> sdk
+    telemetry -. implements .-> ports
+    features -. useApi, logging .-> sdk
+    infraOther -. config, storage .-> sdk
+    telemetry -. metrics .-> sdk
+    pages --> shared
+    infraOther --> shared

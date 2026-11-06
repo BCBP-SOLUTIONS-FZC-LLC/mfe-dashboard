@@ -24,6 +24,7 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ### Changed
 
+- **ARCHITECTURE.md rewritten** in the structure of iam-org-membership's: layer model and module dependency graph (mirroring `.dependency-cruiser.cjs`), mount flow, routing, data flow, domain model, data freshness and caching, access control, concurrency, observability, failure domains with a degradation matrix, key invariants with where each is enforced, deployment, testing strategy, host conformance checklist, contract lifecycle, STRIDE threat model, developer tools, decisions and documentation assets. Five new diagram sources in `docs/architecture/mermaid/` (8 in all); stale references fixed (`ticketsForView` and `kpiCounts` in fixtures, `./src/App.tsx`).
 - Use cases are classes with `execute()`: `LoadTicketQueueUseCase`, `LoadDashboardSummaryUseCase`, `GetDashboardInfoUseCase`, `ListMembersUseCase`. The composition root builds them on the repositories, and pages call `useDependencies().useCases.<name>.execute(...)`, never a repository.
 - Routes moved to `src/app/routes/DashboardRoutes.tsx`, and the standalone runtime config to `src/infrastructure/configuration/standalone.ts`.
 - **Frontend Architecture Constitution:** `src/` is now in the constitution's layers. Behaviour and the `./App` contract are unchanged. Assessment, violations, roadmap: `docs/architecture/constitution-assessment.md`; decisions: `docs/adr/0001`–`0008`.

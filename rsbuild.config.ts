@@ -22,7 +22,7 @@ export default defineConfig({
   plugins: [pluginReact()],
   source: {
     define: {
-      // The standalone page identity's build version (src/app/bootstrap/standalone.ts); its environment comes from runtime.json.
+      // The standalone page identity's build version (src/infrastructure/configuration/standalone.ts); its environment comes from runtime.json.
       'import.meta.env.BUILD_VERSION': JSON.stringify(process.env.BUILD_VERSION || process.env.npm_package_version || ''),
     },
   },
