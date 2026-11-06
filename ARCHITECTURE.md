@@ -10,7 +10,7 @@ One build makes two environments:
 
 The platform SDK (`@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.6`, from platform-reactcommon) provides everything it covers: user, sign-out, permissions, data loading, text, dates, storage, logging and metrics. This repository does not reimplement any of it.
 
-**Status (2026-11-06):** `v0.3.0` is released, and `main` is on the alpha.6 platform packages, unreleased. The data comes from in-repo fixtures behind repository contracts; there are no backend calls yet ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items)).
+**Status (2026-11-06):** `v0.4.0` is released, on the alpha.6 platform packages (needs web-shell #44 or later); it is not deployed yet. The data comes from in-repo fixtures behind repository contracts; there are no backend calls yet ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items)).
 
 **Owns:**
 - the dashboard: views, KPIs, filters, load states, the right panel;
