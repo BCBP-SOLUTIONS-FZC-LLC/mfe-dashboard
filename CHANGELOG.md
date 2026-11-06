@@ -131,7 +131,7 @@ All notable changes to this remote are documented here. The format follows [Keep
     | on track | +5, +7 or +9 days |
 
   - **Delegation:** `FixtureDashboardInfoRepository` gives a delegation period from two days before today to two days after.
-  - **Tests:** "sample tickets are due relative to today, consistent with their SLA state" (`filters.test.ts`). The delegation-panel test pins the system date (`vi.useFakeTimers({ toFake: ['Date'] })`).
+  - **Tests:** "sample tickets > are due relative to today, consistent with their SLA state" (`filters.test.ts`). The delegation-panel test pins the system date (`vi.useFakeTimers({ toFake: ['Date'] })`).
 
 ### Changed (2026-11-06 — Frontend Architecture Constitution, #32)
 
@@ -259,7 +259,7 @@ All notable changes to this remote are documented here. The format follows [Keep
   - **Tiers:** no Tier 1 or Tier 2 metric applies, and none was invented.
   - **Standalone:** there is no manifest, so nothing is recorded; a single warning is logged.
   - **`docs/observability/metrics.md`:** the inventory, proposed recording rules, alerts and SLOs, and a runbook.
-  - **`test/unit/metrics/metrics.test.tsx`** (204 lines) checks:
+  - **`test/unit/metrics/metrics.test.tsx`** checks:
     - the definitions: Tier 3 `portal_dashboard_*`, suffixes, labels, vocabularies, and acceptance by the SDK;
     - that they equal the inventory page;
     - what the code records: success, error, superseded loads, step-up.
@@ -323,7 +323,7 @@ All notable changes to this remote are documented here. The format follows [Keep
 - **Image:** `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard`, `linux/amd64`, nginx 1.31 unprivileged, listening on 8080, `USER 101`.
   - Bases are digest-pinned: `node:26-bookworm` and `nginxinc/nginx-unprivileged:1.31-alpine` (with `apk upgrade`).
   - Releases are pushed by digest, scanned, signed and then tagged.
-- **Tests:** 30 Vitest files and 163 tests, at 99.07% statement coverage, plus 7 Playwright checks.
+- **Tests:** 30 Vitest files and 168 tests, at 99.07% statement coverage, plus 7 Playwright checks.
 - **Remotes:** the shell loads this remote; this remote loads no other remotes.
 
 ## [0.3.0] - 2026-11-05

@@ -37,7 +37,7 @@ The same code also runs as a standalone page.
 | Deploy | Not deployed yet. Ships with web-shell's first release ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). At deploy, dev manifests switch the key `app2` → `dashboard` (item 15) and each environment's standalone `runtime.json` sets `auth.signInUrl` (item 14) |
 | Platform packages | `@bcbp-solutions-fzc-llc/frontend-sdk`, `webpack-preset`, `eslint-plugin` all `1.0.0-alpha.6` |
 | Data | In-repo fixtures behind repository contracts (`src/infrastructure/fixtures/`); no backend calls yet |
-| Tests | 30 Vitest files, 163 tests (unit, integration, e2e): 99.07% statements, 97.64% branches, 100% functions, 99.37% lines. Plus 7 Playwright journeys and WCAG 2.1 AA checks |
+| Tests | 30 Vitest files, 168 tests (unit, integration, e2e): 99.07% statements, 97.64% branches, 100% functions, 99.37% lines. Plus 7 Playwright journeys and WCAG 2.1 AA checks |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
 
 ---
