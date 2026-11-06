@@ -10,7 +10,8 @@ mfe-dashboard/
 │   ├── app/                       composition root: App.tsx (./App, DependenciesProvider), routes/ (routes, basename),
 │   │                              bootstrap/ (main, remote), layouts/AppShellLayout, providers/dependencies.ts (use cases),
 │   │                              configuration/ (i18n.ts, locales/en.json), styles/index.css
-│   ├── presentation/              pages/, widgets/dashboard/, components/, features/ (useCases.*.execute via useApi),
+│   ├── presentation/              pages/, widgets/dashboard/, components/, features/ (useCases.*.execute via useApi;
+│   │                              useLoadable: failed + retry + SDK warn),
 │   │                              theme/ (show a theme, CSS), dependencies.tsx (injected contracts)
 │   ├── application/               use-cases/ (*UseCase classes with execute()), ports/telemetry.ts
 │   ├── domain/                    entities/, value-objects/ (CalendarDay), rules/, repositories/ (contracts)
@@ -25,9 +26,13 @@ mfe-dashboard/
 │   ├── integration/               remote-entry: built container via init(shareScope) / get('./App')
 │   ├── e2e/                       app flows (happy-dom)
 │   └── browser/                   Playwright journeys + axe WCAG 2.1 AA (playwright.config.ts)
+├── README.md, ARCHITECTURE.md      overview and integration; layers, diagrams, failure domains, threat model
+├── VERSIONING.md, CONTRIBUTING.md runtime contract and releases; extending each layer, PR checklist
+├── CHANGELOG.md                   per-PR changes, known gaps
 ├── docs/
 │   ├── lld/mfe-dashboard-lld.md
-│   ├── architecture/              constitution-assessment.md; mermaid/ diagram sources (embedded in ARCHITECTURE.md)
+│   ├── architecture/              constitution-assessment.md; mermaid/ 8 diagram sources (embedded in ARCHITECTURE.md)
+│   ├── observability/metrics.md   metric inventory, proposed alerts and SLOs
 │   ├── adr/                       architecture decision records 0001–0009
 │   ├── pipeline/                  CI and release map
 │   └── runbook-*.md
@@ -37,6 +42,8 @@ mfe-dashboard/
 ├── config/remote-manifest-entry.mjs  post-build: dist/remote-manifest-entry.json (remoteEntry.js sha384)
 ├── config/runtime.local.json      the dev server's /config/runtime.json (environment local, signInUrl http://localhost:5001/)
 ├── vitest.config.ts               happy-dom; test/{unit,integration,e2e}; coverage on src/
+├── playwright.config.ts           Chromium against rsbuild preview (test/browser)
+├── .dependency-cruiser.cjs        architecture lint (npm run arch-lint)
 ├── eslint.config.js               @bcbp-solutions-fzc-llc/eslint-plugin + React hooks (as web-shell)
 └── .github/                       ci.yml, validate-test.yml, validate-quality.yml, changelog-check.yml, release.yml,
                                    scripts/ (coverage gate, smoke, release: verify-*, prepare-release-asset,
@@ -53,7 +60,7 @@ mfe-dashboard/
 | Concern | SDK | File |
 |---|---|---|
 | User, sign-out | `useCurrentUser`, `useSignOut` | `app/App.tsx` |
-| Basename, route template | `slugFromPath` (`/auth`), `tryGetConfig` (`/config`), `useRouteTemplate` | `app/App.tsx` |
+| Basename, route template | `slugFromPath` (`/auth`), `tryGetConfig` (`/config`), `useRouteTemplate` | `app/routes/DashboardRoutes.tsx` |
 | Access | `useHasPermission`, `useReadOnly`, `useStepUp` | `presentation/pages/DashboardPage.tsx`, `presentation/features/members/useMemberAccess.ts` |
 | Data, errors, logs | `useApi`, `isProblemError`, `problemMessage`, `getLogger` | `presentation/features/*`, `presentation/pages/DashboardPage.tsx` |
 | Render errors | `MFEErrorBoundary` (page, `resetKeys` = path; standalone also around `App`) | `app/layouts/AppShellLayout.tsx`, `app/bootstrap/main.tsx` |

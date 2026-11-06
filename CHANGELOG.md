@@ -20,6 +20,20 @@ All notable changes to this remote are documented here. The format follows [Keep
 
 ### Changed (2026-11-06 — documentation in the structure of iam-org-membership's, #35–#39)
 
+- **LLD, README, ARCHITECTURE and `.claude` aligned with `main`** (after #40):
+  - **LLD 1.20 and 1.21:**
+    - §6.2 and §7.3 name the domain rules and use cases instead of the pre-#32 `ticketsForView` and `kpiCounts`;
+    - §6.1 `Member`;
+    - §7.4 the loading and failure rows;
+    - §12.1 `./src/app/App.tsx`;
+    - §14 the suites and today's numbers (168 tests in 30 files);
+    - §15 item 1 (`*ApiRepository` replaces the fixtures), new items 18 (docs-only PRs get no required checks) and 19 (repository settings).
+  - **CLAUDE.md:** status for `main` and See Also for the top-level docs.
+  - **operations.md:** lint and arch-lint in Validate / Quality; the docs-only PR limitation.
+  - **architecture.md:** the tree with `.dependency-cruiser.cjs`, `playwright.config.ts`, `docs/observability` and the top-level docs; the basename's real file.
+  - **README:** a troubleshooting row.
+  - **ARCHITECTURE:** a CONTRIBUTING row.
+  - **The two review-fix commits pushed to #40 after it merged:** the metrics link, the layers test title, the test count, and the quoted test names.
 - **`ARCHITECTURE.md` rewritten** (#35): 252 → 907 lines, with the sections of iam-org-membership's document, adapted to a remote.
   - **Structure:**
     - layer model and module dependency graph, taken from dependency-cruiser's view of the code (mirroring `.dependency-cruiser.cjs`);
@@ -35,7 +49,7 @@ All notable changes to this remote are documented here. The format follows [Keep
     - a host conformance checklist and the contract lifecycle;
     - a STRIDE threat model;
     - developer tools, decisions and documentation assets.
-  - **Diagrams:** `docs/architecture/mermaid/` gains `module-dependencies`, `mount-flow`, `domain-model`, `observability` and `documentation` (8 diagrams in all), and `layer-model` and `ticket-load` are redrawn for the current code. `test/unit/docs/diagrams.test.ts` keeps each fence equal to its source, and all eight were rendered with mermaid 11.4.1 in Chromium before merging; that caught a `;` inside a sequence-diagram note, which ends the statement.
+  - **Diagrams:** `docs/architecture/mermaid/` gains `module-dependencies`, `mount-flow`, `domain-model`, `observability` and `documentation` (8 diagrams in all), and `layer-model` and `ticket-load` are redrawn for the current code. `test/unit/docs/diagrams.test.ts` keeps each fence equal to its source, and all eight were rendered with mermaid 11 in Chromium before merging; that caught a `;` inside a sequence-diagram note, which ends the statement.
   - *(Previously: 252 lines, three diagrams. After #32 it still placed `ticketsForView` and `kpiCounts` in the fixtures, and named `./src/App.tsx` as the exposed module. A comment in `rsbuild.config.ts` pointed at `src/app/bootstrap/standalone.ts`, where `src/infrastructure/configuration/standalone.ts` is meant.)*
 - **`README.md` rewritten** (#36): 190 → 625 lines.
   - **Sections:**
@@ -131,7 +145,7 @@ All notable changes to this remote are documented here. The format follows [Keep
     | on track | +5, +7 or +9 days |
 
   - **Delegation:** `FixtureDashboardInfoRepository` gives a delegation period from two days before today to two days after.
-  - **Tests:** "sample tickets are due relative to today, consistent with their SLA state" (`filters.test.ts`). The delegation-panel test pins the system date (`vi.useFakeTimers({ toFake: ['Date'] })`).
+  - **Tests:** "sample tickets > are due relative to today, consistent with their SLA state" (`filters.test.ts`). The delegation-panel test pins the system date (`vi.useFakeTimers({ toFake: ['Date'] })`).
 
 ### Changed (2026-11-06 — Frontend Architecture Constitution, #32)
 
@@ -185,7 +199,7 @@ All notable changes to this remote are documented here. The format follows [Keep
   - `src/` has exactly the constitution's top-level folders;
   - each layer imports only what the layer table allows;
   - `domain/` and `application/` are framework-free: no React, router, SDK or browser API;
-  - presentation never imports fixtures, storage or telemetry directly.
+  - presentation never imports the SDK's storage, metrics or config (data access stays in infrastructure).
 - **Domain and use-case tests:**
   - `test/unit/domain/filters.test.ts` and `views.test.ts`, which was moved from `tickets.test.ts`;
   - `test/unit/application/use-cases.test.ts`, with in-memory repositories: "loads through the repository (passing refresh and the signal), then applies the view and filters", "combines view counts, SLA, filter options and dashboard info".
@@ -233,8 +247,8 @@ All notable changes to this remote are documented here. The format follows [Keep
   - **Calendar days** use `formatDate('YYYY-MM-DD')` in `TicketRow` and `DashboardRightPanel`, and the deadline filter compares them as day strings.
   - **The "runtime config unavailable" warning** goes through `getLogger` only.
   - **New rules in `dependency-rules.test.ts`:**
-    - "logs with getLogger only, never console";
-    - "formats calendar days with formatDate('YYYY-MM-DD')", which rejects `calendarDate(` and a `Date` built from a `YYYY-MM-DD` literal.
+    - "logs with getLogger only, never console (the SDK writes warn and error to the console while logging is off)";
+    - "formats calendar days with formatDate('YYYY-MM-DD'), never by building a Date from one", which rejects `calendarDate(` and a `Date` built from a `YYYY-MM-DD` literal.
 - **The standalone page takes its environment from `/config/runtime.json`.**
   - **Start-up order:** `startStandalone()` loads the file, with a 5 s timeout. It then calls `initializeCore(standaloneIdentity(config.environment))`, then `setRuntimeConfig`, so one build serves every environment.
   - **Fallback:** without a file, or with a file that has no `environment`, it runs as `prod` in a build and `local` on the dev server (`FALLBACK_ENVIRONMENT`).
@@ -259,7 +273,7 @@ All notable changes to this remote are documented here. The format follows [Keep
   - **Tiers:** no Tier 1 or Tier 2 metric applies, and none was invented.
   - **Standalone:** there is no manifest, so nothing is recorded; a single warning is logged.
   - **`docs/observability/metrics.md`:** the inventory, proposed recording rules, alerts and SLOs, and a runbook.
-  - **`test/unit/metrics/metrics.test.tsx`** (204 lines) checks:
+  - **`test/unit/metrics/metrics.test.tsx`** checks:
     - the definitions: Tier 3 `portal_dashboard_*`, suffixes, labels, vocabularies, and acceptance by the SDK;
     - that they equal the inventory page;
     - what the code records: success, error, superseded loads, step-up.
@@ -268,6 +282,7 @@ All notable changes to this remote are documented here. The format follows [Keep
   - "does host-page start-up only on the standalone page, with the SDK, and leaves remotes and auth to the shell": no `loadRemote`, manifest, auth, flags, or starting telemetry in `src/`.
 
   An audit of every SDK export against `src/` found no reimplementation. `recordMetric` no longer repeats the SDK's run-time label checks.
+- **The remote now consumes the shell's SDK `/metrics`** as a shared subpath (`import: false`, like the others). A shell must provide it; web-shell already does.
 
 ### Fixed (2026-11-05 — second SDK audit, #28)
 
@@ -322,7 +337,7 @@ All notable changes to this remote are documented here. The format follows [Keep
 - **Image:** `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard`, `linux/amd64`, nginx 1.31 unprivileged, listening on 8080, `USER 101`.
   - Bases are digest-pinned: `node:26-bookworm` and `nginxinc/nginx-unprivileged:1.31-alpine` (with `apk upgrade`).
   - Releases are pushed by digest, scanned, signed and then tagged.
-- **Tests:** 30 Vitest files and 163 tests, at 99.07% statement coverage, plus 7 Playwright checks.
+- **Tests:** 30 Vitest files and 168 tests, at 99.07% statement coverage, plus 7 Playwright checks.
 - **Remotes:** the shell loads this remote; this remote loads no other remotes.
 
 ## [0.3.0] - 2026-11-05

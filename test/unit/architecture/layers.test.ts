@@ -66,7 +66,7 @@ describe('dependency rules', () => {
     expect(offenders).toEqual([])
   })
 
-  it('keeps data access in infrastructure/: presentation/ never imports fixtures, storage or telemetry directly', () => {
+  it('keeps data access in infrastructure/: presentation/ never imports the SDK\'s storage, metrics or config', () => {
     const offenders = sources
       .filter(({ file }) => layerOf(join(ROOT, file)) === 'presentation')
       .filter(({ text }) => /from ['"]@bcbp-solutions-fzc-llc\/frontend-sdk\/(storage|metrics|config)['"]/.test(text))

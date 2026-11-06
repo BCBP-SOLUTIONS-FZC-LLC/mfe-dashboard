@@ -1,6 +1,6 @@
 # Metrics
 
-The dashboard's metrics under the Enterprise Platform Observability Standard. They are defined in [`src/infrastructure/telemetry/metrics.ts`](../../src/metrics.ts) and recorded through the platform SDK's `/metrics` (`getServiceMeter`). `test/unit/metrics/metrics.test.tsx` fails when this page, the code and the SDK's rules disagree.
+The dashboard's metrics under the Enterprise Platform Observability Standard. They are defined in [`src/infrastructure/telemetry/metrics.ts`](../../src/infrastructure/telemetry/metrics.ts) and recorded through the platform SDK's `/metrics` (`getServiceMeter`). `test/unit/metrics/metrics.test.tsx` fails when this page, the code and the SDK's rules disagree.
 
 ## Tier
 
