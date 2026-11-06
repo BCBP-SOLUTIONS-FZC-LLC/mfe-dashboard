@@ -69,7 +69,7 @@ describe('the SDK is used, not reimplemented', () => {
     expect(offenders(/location\.(assign|replace|href\s*=)/, { 'src/infrastructure/auth/signIn.ts': 'goToSignIn, no shell' })).toEqual([])
   })
 
-  it('records metrics with frontend-sdk/metrics in src/metrics.ts only, never OpenTelemetry or a Prometheus client directly', () => {
+  it('records metrics with frontend-sdk/metrics in src/infrastructure/telemetry/metrics.ts only, never OpenTelemetry or a Prometheus client directly', () => {
     expect(offenders(/from ['"](@opentelemetry\/[^'"]+|prom-client|web-vitals)['"]/)).toEqual([])
     expect(offenders(/\b(getServiceMeter|getDomainMeter)\b/, { 'src/infrastructure/telemetry/metrics.ts': 'the one place metrics are defined' })).toEqual([])
     // The shell starts exporting and records Core Web Vitals for the whole page.
