@@ -118,7 +118,7 @@ Guards that keep it clean:
 | Phase | Work | Owner | Status |
 |---|---|---|---|
 | 1 | Layers, domain rules and value objects, use-case classes, repositories, composition root, runtime config only, guards, ADRs | mfe-dashboard | **Done** (this branch) |
-| 2 | Deploy standalone `runtime.json` with `environment` and `auth.signInUrl`; delete the unused `PUBLIC_APP1_URL` repository variable | platform deployment, maintainers | Next |
+| 2 | Deploy standalone `runtime.json` with `environment` and `auth.signInUrl` | platform deployment, maintainers | Next |
 | 3 | `infrastructure/api/*ApiRepository` on the SDK `ApiClient` for tickets, notifications and members (IAM P-4/P-6), plus contract tests against their OpenAPI schemas (as platform-reactcommon does for PUB-1/P-35) | mfe-dashboard, API owners | When the APIs exist (LLD §15 item 1) |
 | 4 | Playwright journeys in this repo (views, filters, search, nested routes, logout) | mfe-dashboard | **Done** (ADR 0009) |
 | 5 | Accessibility: axe-core WCAG 2.1 AA in the Playwright run, with the contrast fixes; next, the remaining daisyUI themes from the theme picker | mfe-dashboard | **Done** for Aura light and dark; daisyUI themes next |

@@ -18,5 +18,5 @@ The constitution requires "build once, deploy everywhere" and forbids `PUBLIC_AP
 
 - One image and one tarball serve every environment.
 - Each deployed standalone `runtime.json` must set `environment` and `auth.signInUrl`; the runbook has the check.
-- The repository variable `PUBLIC_APP1_URL` is now unused and can be deleted.
+- The repository variable `PUBLIC_APP1_URL` became unused and was deleted on 2026-11-06.
 - Inside web-shell nothing changes: the shell signs out.

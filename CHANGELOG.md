@@ -232,7 +232,7 @@ All notable changes to this remote are documented here. The format follows [Keep
     - the Rsbuild `define`;
     - the Dockerfile `ARG`s;
     - the CI and release build args, and the release's `https://` check.
-  - **Effect:** the `PUBLIC_APP1_URL` repository variable is now unused, and can be deleted.
+  - **Effect:** the `PUBLIC_APP1_URL` repository variable became unused; it was deleted on 2026-11-06.
   - *(Previously: the standalone logout target, compiled into each build, so every environment needed its own build.)*
 - **`PLATFORM_ENVIRONMENT`** (#31), from `rsbuild.config.ts`, `src/env.d.ts` and the Dockerfile `ARG`. The standalone page's environment now comes from `runtime.json`.
 - **`calendarDate()`** (`src/lib/dates.ts`, with `test/unit/dashboard/dates.test.ts`) and **the standalone page's `console.warn`** (#31). SDK alpha.6 covers both: `formatDate('YYYY-MM-DD')`, and warnings reaching the console while logging is off.
@@ -323,7 +323,6 @@ All notable changes to this remote are documented here. The format follows [Keep
 - **Alerts and SLOs are proposals.** `docs/observability/metrics.md` proposes recording rules, alerts and SLOs; no environment runs them yet.
 - **Dev-only advisories are outside the CI audit gate** (`npm audit --omit=dev --audit-level=high`). The image is scanned by Trivy.
 - **Repository housekeeping open on 2026-11-06:**
-  - delete the unused `PUBLIC_APP1_URL` repository variable;
   - create the Dependabot secret `PACKAGES_READ_TOKEN`;
   - make the Browser check required.
 
