@@ -1,0 +1,38 @@
+graph LR
+    subgraph sources["Documentation sources"]
+        mmd["docs/architecture/mermaid/\n8 × .mmd source diagrams"]
+        arch["ARCHITECTURE.md\nembeds the mermaid blocks + prose"]
+        claude[".claude/CLAUDE.md + siblings\narchitecture.md · operations.md"]
+        readme["README.md\nwhat it is · commands · onboarding"]
+        lld["docs/lld/mfe-dashboard-lld.md\ncontract, flows, open items"]
+        adr["docs/adr/\nADR 0001–0009"]
+        obsdocs["docs/observability/metrics.md\nmetric inventory, alerts, runbook"]
+        pipeline["docs/pipeline/ + docs/runbook-*.md\nCI and release map, runbooks"]
+        archlint[".dependency-cruiser.cjs\nlayer rules as code"]
+    end
+
+    subgraph checks["Kept in step by"]
+        diagrams["test/unit/docs/diagrams.test.ts\nfence = .mmd"]
+        metricsTest["test/unit/metrics\ninventory = code"]
+        archlintRun["npm run arch-lint\nimports = rules"]
+    end
+
+    subgraph rendered["Read in"]
+        github["GitHub\nMarkdown + Mermaid"]
+        live["mermaid.live / IDE preview"]
+        claudeCode["Claude Code"]
+    end
+
+    mmd -->|"embedded as\nfenced blocks"| arch
+    mmd --> diagrams
+    arch --> diagrams
+    obsdocs --> metricsTest
+    archlint --> archlintRun
+    arch --> github
+    readme --> github
+    lld --> github
+    adr --> github
+    pipeline --> github
+    mmd --> live
+    claude --> claudeCode
+    lld --> claudeCode

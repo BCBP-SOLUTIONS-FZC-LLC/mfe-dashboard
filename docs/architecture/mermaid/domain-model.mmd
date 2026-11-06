@@ -1,0 +1,66 @@
+classDiagram
+    class TicketItem {
+        id: string
+        tenderTitle, client, stage, deliverable, section: string
+        department, roleLevel: string
+        dueDate: YYYY-MM-DD
+        slaState: on_track | warning | breached
+        status: open | review | approval
+        restricted?, evidenceGrade?, delegatedFrom?
+        unreadComments: number
+        tenderDetailsUnavailable?
+    }
+    class DashboardFilters {
+        status, role, department, deadline, tender
+    }
+    class CalendarDay {
+        iso: string
+        parse(iso)$
+        fromLocalDate(d)$
+        addDays(n)
+        isBefore(other)
+    }
+    class Member {
+        id, name, email, role, department
+        status: Active | Invited | Disabled
+    }
+    class DashboardInfo {
+        unreadNotifications: number
+        delegation: coveredBy, from, to
+    }
+    class TicketRepository {
+        <<interface>>
+        list(signal, refresh?)
+        filterReference(signal)
+    }
+    class DashboardInfoRepository {
+        <<interface>>
+        get(signal)
+    }
+    class MemberRepository {
+        <<interface>>
+        list(signal)
+    }
+    class LoadTicketQueueUseCase {
+        execute(query) TicketQueue
+    }
+    class LoadDashboardSummaryUseCase {
+        execute(query) DashboardSummary
+    }
+    class GetDashboardInfoUseCase {
+        execute(query) DashboardInfo
+    }
+    class ListMembersUseCase {
+        execute(query) Member[]
+    }
+
+    TicketRepository ..> TicketItem
+    DashboardInfoRepository ..> DashboardInfo
+    MemberRepository ..> Member
+    TicketItem ..> CalendarDay : dueDate
+    LoadTicketQueueUseCase --> TicketRepository
+    LoadTicketQueueUseCase ..> DashboardFilters
+    LoadDashboardSummaryUseCase --> TicketRepository
+    LoadDashboardSummaryUseCase --> DashboardInfoRepository
+    GetDashboardInfoUseCase --> DashboardInfoRepository
+    ListMembersUseCase --> MemberRepository
