@@ -18,6 +18,8 @@
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-04 | First LLD, written from `main` after #11–#16 (dependencies, platform SDK adoption, member access, step-up, SDK `1.0.0-alpha.3`) and #17 (test layout, integration and rule suites) |
+| 1.21 | 2026-11-06 | Aligned with `main` after #35–#40 (ARCHITECTURE, README, VERSIONING, CONTRIBUTING and CHANGELOG rewritten in iam-org-membership's structure): §6.1 `Member`, §6.2 and §7.3 name the domain rules and use cases (`ticketsInView`, `applyFilters`, `countByView`, `LoadTicketQueueUseCase`) instead of the pre-#32 `ticketsForView` / `kpiCounts`, §7.4 loading and failure rows, §12.1 `./src/app/App.tsx`, §12.5 arch-lint, §14 suites and today's numbers, §15 items 1, 18 and 19 |
+| 1.20 | 2026-11-06 | #33: architecture lint (`npm run arch-lint`, `.dependency-cruiser.cjs`; §3); tender filter by whole words (`titleHasKeyword`; §6.2); `useLoadable` failure and loading states for the summary, members and shell info (§6.3, §11); sample due days relative to today (§6.3) |
 | 1.19 | 2026-11-06 | Use-case classes injected by the composition root; `app/routes`; runtime config in `infrastructure/configuration`; `CalendarDay` value object (§3). Playwright journeys and axe WCAG 2.1 AA in CI (§14, ADR 0009), with the fixes they found: ticket-row layout, contrast tokens, notifications label, catch-all route, the dev `runtime.json` sign-in URL in normal form |
 | 1.18 | 2026-11-06 | Frontend Architecture Constitution: layered `src/` (§3), repositories and use cases, runtime configuration only (`PUBLIC_APP1_URL` removed; §7.2, §7.6, §11, §12.3, §12.4, §12.5), ADRs 0001–0008 |
 | 1.17 | 2026-11-06 | Platform packages `1.0.0-alpha.6` (after web-shell #44): `formatDate('YYYY-MM-DD')` replaces `calendarDate()`, the SDK logger replaces the standalone `console.warn`, and the standalone page takes its environment from `runtime.json` (`PLATFORM_ENVIRONMENT` removed) (§5, §6.1, §7.2, §11, §12.3, §12.4; open items 14, 16) |
@@ -227,9 +229,9 @@ Standalone, with no shell, every SDK API answers with its anonymous defaults (de
 | `TicketItem` | `id`, `tenderTitle`, `client`, `stage`, `deliverable`, `section`, `department`, `roleLevel`, `dueDate` (ISO), `slaState`, `restricted?`, `evidenceGrade?`, `delegatedFrom?`, `unreadComments`, `tenderDetailsUnavailable?`, `status` |
 | `DashboardFilters` | `status`, `role`, `department`, `deadline`, `tender` (each `'all'` or a value) |
 | Calendar dates | `dueDate` and the delegation period are `YYYY-MM-DD` days: `formatDate('YYYY-MM-DD')` (SDK alpha.6) shows that day in every time zone, and the deadline filter compares them as day strings with the local today (`matchesDeadline`). No `Date` is built from a calendar day |
-| `ManagedUser` (page-local) | `id`, `name`, `email`, `role`, `department`, `status: 'Active' \| 'Invited' \| 'Disabled'` |
+| `Member` (`src/domain/entities/member.ts`) | `id`, `name`, `email`, `role`, `department`, `status: 'Active' \| 'Invited' \| 'Disabled'` |
 
-### 6.2 Views (`ticketsForView`, `src/infrastructure/fixtures/tickets.ts`)
+### 6.2 Views (`ticketsInView`, `src/domain/rules/views.ts`)
 
 | View | Rows | Visible to |
 |---|---|---|
@@ -239,9 +241,9 @@ Standalone, with no shell, every SDK API answers with its anonymous defaults (de
 | `delegated` | `delegatedFrom` set | everyone |
 | `all-tenders` | every row when `canSeeAllTenders`, otherwise `[]` | `read:tender` |
 
-Filter options come from the data: `DEPARTMENT_OPTIONS` (distinct departments), `ROLE_OPTIONS`, `TENDER_OPTIONS`. Status, department, role (`roleLevel.includes`) and tender (whole words of the title, case-insensitive: `titleHasKeyword`, so "IT" does not match "Hospital") are applied in `useDashboardData`. Deadline is applied by local calendar day (`matchesDeadline`): `overdue` is before today, `week` is today and the next six days. The header search then filters title, client and department.
+Filter options come from `LoadDashboardSummaryUseCase`: departments from the tickets (`departmentsOf`), role levels and tender keywords from `TicketRepository.filterReference` (reference data that will come from IAM and the tender service). `LoadTicketQueueUseCase` applies status, department, role (`roleLevel.includes`) and tender (whole words of the title, case-insensitive: `titleHasKeyword`, so "IT" does not match "Hospital") through `applyFilters`. Deadline is applied by local calendar day (`matchesDeadline`): `overdue` is before today, `week` is today and the next six days. The header search then filters title, client and department.
 
-KPI numbers are `kpiCounts()`: each view's row count before filters, from the same fixtures the list shows. The list heading shows the rows actually listed (after filters and search). The SLA overview counts `my-tickets` rows by `slaState`, and its total is their sum.
+KPI numbers are `countByView()`: each view's row count before filters, from the same tickets the list shows. The list heading shows the rows actually listed (after filters and search). The SLA overview counts `my-tickets` rows by `slaState`, and its total is their sum.
 
 ### 6.3 Load states (`useDashboardData`)
 
@@ -273,11 +275,11 @@ The other loads (`useDashboardSummary`, `useMembers`, `useDashboardInfo`) go thr
 
 ### 7.3 Ticket load and refresh
 
-`DashboardPage` → `useDashboardData({ view, filters, canSeeAllTenders })` → `useApi` loader → `ticketsForView` + filters → load state (§6.3) → search filter → `TicketRow` list. Refresh sets a ref so the next load uses the 400 ms delay, then calls `reload()`. The "Last updated" label uses the `lastUpdated.ago` plural with whole minutes since `cachedAt` (at least 1), and keeps counting: `useNow` refreshes it every 30 s. On `error` the page shows an alert (`role="alert"`) "Tickets could not be loaded.", followed by `problemMessage(error)` for a `ProblemError` (never the server's `detail`), and a Retry button that calls `refresh()`.
+`DashboardPage` → `useDashboardData({ view, filters, canSeeAllTenders })` → `useApi` loader → `useCases.loadTicketQueue.execute(...)` (`TicketRepository.list`, then `ticketsInView` → `applyFilters` → `hasPartialFailure`) → load state (§6.3) → search filter → `TicketRow` list. Refresh sets a ref so the next load uses the 400 ms delay, then calls `reload()`. The "Last updated" label uses the `lastUpdated.ago` plural with whole minutes since `cachedAt` (at least 1), and keeps counting: `useNow` refreshes it every 30 s. On `error` the page shows an alert (`role="alert"`) "Tickets could not be loaded.", followed by `problemMessage(error)` for a `ProblemError` (never the server's `detail`), and a Retry button that calls `refresh()`.
 
 ### 7.4 User management access
 
-`useMemberAccess()` returns `canView = read:members || manage:members` and `canManage = manage:members && !useReadOnly()`. The sidebar link renders on `canView`; `UserManagementRoute` renders the page on `canView`, otherwise `<Navigate to=".." relative="path" replace />` back to the dashboard. Invite, the Actions column and Edit render on `canManage`; the empty-row `colSpan` is 6 with actions and 5 without.
+`useMemberAccess()` returns `canView = read:members || manage:members` and `canManage = manage:members && !useReadOnly()`. The sidebar link renders on `canView`; `UserManagementRoute` renders the page on `canView`, otherwise `<Navigate to=".." relative="path" replace />` back to the dashboard. Invite, the Actions column and Edit render on `canManage`; the full-width rows (`colSpan` 6 with actions, 5 without) are "Loading users…" while `useMembers()` loads (the table `aria-busy`), "Users could not be loaded." with Retry when it fails, and "No users match your search." when the search matches nobody.
 
 ### 7.5 Approval step-up
 
@@ -361,7 +363,7 @@ One `rsbuild build` makes two environments into `dist/` (`npm run build` runs `t
 
 | Environment | Entry | Output | SDK |
 |---|---|---|---|
-| `remote` | `src/app/bootstrap/remote.ts` (placeholder) + `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/App.tsx' } })` | `remoteEntry.js`, chunks next to it, CSS under `assets/` | from the shell (`import: false`) |
+| `remote` | `src/app/bootstrap/remote.ts` (placeholder) + `pluginPlatform({ role: 'remote', name: 'dashboard', exposes: { './App': './src/app/App.tsx' } })` | `remoteEntry.js`, chunks next to it, CSS under `assets/` | from the shell (`import: false`) |
 | `standalone` | `src/app/bootstrap/main.tsx`, `index.html` | `index.html`, `assets/` | bundled |
 
 The preset's `SdkVersionPlugin` (since `1.0.0-alpha.4`) fails the build when the installed `frontend-sdk` is not the preset's own version, so the three platform packages move together. Because the container global (§4.1) and the shared range come from that version, a platform upgrade ships as one release with web-shell: a remote built with the alpha.3 preset does not load in an alpha.4 shell, and the reverse.
@@ -418,7 +420,7 @@ A tag `vX.Y.Z` (or a manual run with a tag input) runs `.github/workflows/releas
 
 | Job | Does | Fails when |
 |---|---|---|
-| `validate-test`, `validate-quality` | Same as CI | Tests, the 95% gate, lint, audit |
+| `validate-test`, `validate-quality` | Same as CI | Tests, the 95% and domain gates, the build, lint, arch-lint, audit |
 | `build` | `verify-release-tag.sh` (tag equals the checked-out HEAD), `verify-changelog-entry.sh`, `prepare-release-asset.sh` (`dist` tarball, checksum, `remote-manifest-entry.json`) | The tag is not HEAD; no `## [X.Y.Z]` section |
 | `docker` | `build-push-action` pushes **by digest only** (`push-by-digest=true`, `provenance: mode=max`, `sbom: true`); Trivy CRITICAL/HIGH and the CycloneDX SBOM on that digest; `export-image-provenance.sh`; Cosign keyless sign and verify; then `tag-signed-image.sh` adds `X.Y.Z`, `X.Y`, `X` and `latest` (no `-` in the tag) with `docker buildx imagetools create` and checks that each resolves to the signed digest | Trivy finds a fixable CRITICAL/HIGH; no provenance in the image index; signing fails; a tag resolves to another digest |
 | `publish` | `extract-release-notes.sh` (the CHANGELOG section plus image and digest), then `create-github-release.sh` | Any asset missing |
@@ -449,19 +451,19 @@ Laid out like platform-reactcommon's `test/` ([test/README.md](../../test/README
 
 | Suite | Command | Covers |
 |---|---|---|
-| `test/unit/<area>` (`app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `sdk`) | `npm run test:unit` | One area of `src/` each; the catalog and SDK-rule checks |
+| `test/unit/<area>` (`architecture`, `domain`, `application`, `app`, `authz`, `dashboard`, `components`, `theme`, `i18n`, `metrics`, `sdk`, `docs`) | `npm run test:unit` | One area of `src/` each; the layer, catalog, SDK-rule, metrics and diagram checks |
 | `test/integration` | `npm run test:integration` | The built `remoteEntry.js` (temp Rsbuild build of the `remote` environment) loaded through `init(shareScope)` / `get('./App')` and rendered with the shell's React and SDK |
 | `test/e2e` | `npm run test:e2e` | User flows through the whole `App` |
 | `test/browser` | `npm run test:browser` (CI `Browser (Playwright, axe)`) | Chromium against the production build of the standalone page: views, filters (Escape, focus return), clear and search, nested-route reload and the catch-all, logout to `auth.signInUrl`; axe-core WCAG 2.1 A/AA on the dashboard, the open drawer and the dark theme (ADR 0009) |
 | Image smoke | CI `smoke` job (`.github/scripts/smoke-tests.sh`) | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, the platform SPA rule (8 cases), security headers, no nginx version, gzip |
 
-Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.0% / 97.8% / 100% / 99.3% with 153 tests in 28 files; every `src/domain/` file above 90%.
+Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/coverage-gate.mjs`); today 99.07% / 97.64% / 100% / 99.37% with 168 tests in 30 files; every `src/domain/` file above 90%. `npm run arch-lint` (`.dependency-cruiser.cjs`) checks the layer rules in CI as well.
 
 ## 15. Open Items
 
 | # | Item | Owner |
 |---|---|---|
-| 1 | Tickets, KPI counts, notifications, delegation and users are fixtures. Replace the `useDashboardData` loader with `ApiClient` calls when the ticket, notification and membership APIs exist (IAM P-4/P-6 for members) | mfe-dashboard, with the API owners |
+| 1 | Tickets, KPI counts, notifications, delegation and users are fixtures. When the ticket, notification and membership APIs exist (IAM P-4/P-6 for members), `infrastructure/api/*ApiRepository` classes on the SDK's `ApiClient` replace the `Fixture*Repository` classes in `app/providers/dependencies.ts`; nothing above infrastructure changes | mfe-dashboard, with the API owners |
 | 3 | Eight controls have no action yet (Invite user, Edit, View details ×2, View all, View Ticket, Notifications, Available) and ticket rows open nothing: they need the ticket, notification and membership APIs and product flows | mfe-dashboard, product |
 | 4 | Only an English catalog | mfe-dashboard, when locales are agreed |
 | 5 | `tender_admin`'s tender permissions in web-shell's map await Tender Service confirmation | web-shell, Tender Service |
@@ -475,3 +477,5 @@ Gate: 95% statements, branches, functions and lines on `src/` (`.github/scripts/
 | 15 | Rename `app2` → `dashboard`: done in both repos (this repo #26, web-shell #35) and released in `v0.3.0`. Left: each dev environment's `/remotes/manifest.json` switches its key to `dashboard` (entry and integrity from `mfe-dashboard_v0.3.0_remote-manifest-entry.json`), the files are served under `/remotes/dashboard/<version>/`, and any kill-switch entry says `dashboard`; deploy together with web-shell | platform deployment |
 | 16 | Platform packages `1.0.0-alpha.6`: web-shell moved first (web-shell #44); this remote follows here. Release, then deploy both together | mfe-dashboard |
 | 17 | Constitution follow-ups (`docs/architecture/constitution-assessment.md` §6): contract tests with the first API repository; axe on the daisyUI themes in the theme picker (Aura light and dark pass); `platform-design-system` components when published; revisiting ADR 0002/0003 when the APIs arrive | mfe-dashboard, platform |
+| 18 | Markdown-only pull requests cannot satisfy `main`'s required checks: `ci.yml` has `paths-ignore: ['**.md']`, so its checks never report and the PR needs an override. Options: required checks that pass on docs-only changes, or a docs path in `ci.yml` | repository admins, mfe-dashboard |
+| 19 | Repository settings: make `Browser (Playwright, axe)` a required check; delete the unused `PUBLIC_APP1_URL` repository variable; create the Dependabot secret `PACKAGES_READ_TOKEN`. `package.json` `version` is not checked against the release tag (VERSIONING.md) | repository admins |

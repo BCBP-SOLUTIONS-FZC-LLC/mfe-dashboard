@@ -379,6 +379,7 @@ npx playwright test -g "dark theme"
 | The theme resets on reload standalone | Expected: SDK storage writes nothing while anonymous | — |
 | `npm run test:browser` fails to launch | Chromium not installed | `npx playwright install chromium` |
 | `npm run arch-lint` reports `not-in-allowed` | An import against the layer table | Move the code to the right layer, or inject it through `app/providers/dependencies.ts` |
+| A docs-only pull request shows no checks and cannot merge | `ci.yml` ignores Markdown-only changes, so `main`'s required checks never report | A maintainer merges it with an override ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 18) |
 
 ---
 

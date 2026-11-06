@@ -20,6 +20,20 @@ All notable changes to this remote are documented here. The format follows [Keep
 
 ### Changed (2026-11-06 — documentation in the structure of iam-org-membership's, #35–#39)
 
+- **LLD, README, ARCHITECTURE and `.claude` aligned with `main`** (after #40):
+  - **LLD 1.20 and 1.21:**
+    - §6.2 and §7.3 name the domain rules and use cases instead of the pre-#32 `ticketsForView` and `kpiCounts`;
+    - §6.1 `Member`;
+    - §7.4 the loading and failure rows;
+    - §12.1 `./src/app/App.tsx`;
+    - §14 the suites and today's numbers (168 tests in 30 files);
+    - §15 item 1 (`*ApiRepository` replaces the fixtures), new items 18 (docs-only PRs get no required checks) and 19 (repository settings).
+  - **CLAUDE.md:** status for `main` and See Also for the top-level docs.
+  - **operations.md:** lint and arch-lint in Validate / Quality; the docs-only PR limitation.
+  - **architecture.md:** the tree with `.dependency-cruiser.cjs`, `playwright.config.ts`, `docs/observability` and the top-level docs; the basename's real file.
+  - **README:** a troubleshooting row.
+  - **ARCHITECTURE:** a CONTRIBUTING row.
+  - **The two review-fix commits pushed to #40 after it merged:** the metrics link, the layers test title, the test count, and the quoted test names.
 - **`ARCHITECTURE.md` rewritten** (#35): 252 → 907 lines, with the sections of iam-org-membership's document, adapted to a remote.
   - **Structure:**
     - layer model and module dependency graph, taken from dependency-cruiser's view of the code (mirroring `.dependency-cruiser.cjs`);

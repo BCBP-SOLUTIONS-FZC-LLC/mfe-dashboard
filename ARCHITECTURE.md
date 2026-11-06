@@ -902,6 +902,7 @@ graph LR
 | [docs/pipeline/README.md](docs/pipeline/README.md), `docs/runbook-*.md` | CI and release map; release, image-scan and coverage-gate runbooks |
 | [test/README.md](test/README.md) | What each test folder covers |
 | [.claude/CLAUDE.md](.claude/CLAUDE.md), [architecture.md](.claude/architecture.md), [operations.md](.claude/operations.md) | Rules and commands for Claude Code |
-| [CHANGELOG.md](CHANGELOG.md), [VERSIONING.md](VERSIONING.md) | Releases and the versioning policy |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to extend each layer, testing requirements, guardrails, the PR checklist |
+| [CHANGELOG.md](CHANGELOG.md), [VERSIONING.md](VERSIONING.md) | Releases, known gaps; the runtime contract and versioning policy |
 
 To render a diagram locally, open its `.mmd` file in a Mermaid-aware IDE or paste it into [mermaid.live](https://mermaid.live).

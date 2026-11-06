@@ -26,8 +26,8 @@ Port 5002 may already be taken on this machine by another process; preview on an
 
 | Job (required check) | Gate |
 |---|---|
-| `Validate / Test / test` | `npm ci`, `npm run test:coverage`, the 95% gate, `npm run build` |
-| `Validate / Quality / quality` | Workflow hygiene, digest-pinned `FROM`, `npm audit --omit=dev --audit-level=high` |
+| `Validate / Test / test` | `npm ci`, `npm run test:coverage`, the 95% and domain >90% gate (`coverage-gate.mjs`), `npm run build` |
+| `Validate / Quality / quality` | `npm run lint`, `npm run arch-lint`, workflow hygiene (HTML entities, CRLF), digest-pinned `FROM`, `.dockerignore`, `npm audit --omit=dev --audit-level=high` |
 | `Build image (cache)` | Hadolint, then a cached `linux/amd64` build |
 | `Trivy CVE scan` | CRITICAL / HIGH / UNKNOWN unfixed fail |
 | `Smoke tests` | Size ≤ 200 MB, `/healthz`, `/`, `remoteEntry.js` starts with `var __platform_mfe_dashboard`, no `.map` files, `/config/runtime.json` served as JSON, the platform SPA rule (routes → document; missing files, pass-through prefixes, dotfiles → 404) |
@@ -35,11 +35,12 @@ Port 5002 may already be taken on this machine by another process; preview on an
 | `PR summary` | One comment with the results |
 | `changelog` | `CHANGELOG.md` touched when `src/`, deps, Dockerfile, nginx, `rsbuild.config.ts` or `index.html` changed |
 
-`Push image → GHCR` runs on `main` only (GHCR + Cosign). Markdown-only changes skip `ci.yml`. The repository needs Actions read access on the `frontend-sdk`, `webpack-preset` and `eslint-plugin` packages (package settings → Manage Actions access). Map and runbooks: [`docs/pipeline/README.md`](../docs/pipeline/README.md), `docs/runbook-*.md`.
+`Push image → GHCR` runs on `main` only (GHCR + Cosign). Markdown-only changes skip `ci.yml`, so a docs-only PR never gets its required checks and merges only with the user's override (LLD §15 item 18); a PR that also touches a test or source file runs normally. The repository needs Actions read access on the `frontend-sdk`, `webpack-preset` and `eslint-plugin` packages (package settings → Manage Actions access). Map and runbooks: [`docs/pipeline/README.md`](../docs/pipeline/README.md), `docs/runbook-*.md`.
 
 ## Pull Requests
 
 - Target `main`; squash merge; delete the branch after merge.
+- Check a PR's state before pushing more commits to it: a commit pushed after the merge does not reach `main` (the two review fixes for #40 had to be carried into a new PR).
 - `main`'s ruleset: one approving code-owner review, last-push approval, resolved threads, the required checks above, linear history. A merge without approval needs `--admin`: only with the user's explicit yes.
 - For a stack, retarget each PR to `main` before merging it; after a squash merge, rebase the next branch onto `main` (`git rebase --onto origin/main <old-base-commit>`).
 
