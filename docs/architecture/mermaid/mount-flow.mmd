@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant B as Browser
+    participant S as web-shell (app1)
+    participant N as dashboard image (nginx :8080)
+    participant C as container __platform_mfe_dashboard
+    participant A as ./App
+    participant D as DashboardRoutes
+
+    B->>S: GET /t/acme/dashboard
+    S->>S: manifest entry for dashboard (version, integrity, ownerDomain portal)
+    S->>N: GET remoteEntry.js (no-cache, CORS *, SRI sha384)
+    N-->>S: remoteEntry.js
+    Note over S,C: defines var __platform_mfe_dashboard synchronously
+    S->>C: init(shareScope): react, react/jsx-runtime, 8 SDK subpaths (strict singletons)
+    S->>C: get('./App')
+    C->>N: GET hashed chunks (immutable, CORS *)
+    C-->>S: factory → App
+    Note over A: importing ./App runs registerNamespace('dashboard') and loads index.css
+    S->>A: render inside RemoteBoundary (props optional)
+    A->>A: WithDependencies: createDependencies() once
+    A->>A: useCurrentUser, useSignOut (SDK)
+    alt host shares a router
+        A->>D: relative routes
+    else web-shell (own router)
+        A->>D: BrowserRouter basename /t/acme (workspacePathPrefix + slugFromPath)
+    end
+    D->>D: AppShellLayout → DashboardPage or UserManagementPage

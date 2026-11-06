@@ -2,15 +2,21 @@ sequenceDiagram
     participant Page as DashboardPage
     participant Hook as useDashboardData
     participant Api as SDK useApi
-    participant Mock as ticketsForView
+    participant UC as LoadTicketQueueUseCase
+    participant Repo as TicketRepository (FixtureTicketRepository)
+    participant Tel as DashboardTelemetry (metricsTelemetry)
 
     Page->>Hook: view, filters, canSeeAllTenders (read:tender)
     Hook->>Api: loader, deps [query key]
     Api-->>Page: loading (no data for this key)
-    Note over Api: abortable delay: 700 ms, 400 ms on refresh
-    Api->>Mock: ticketsForView(view) + filters
-    Mock-->>Api: rows
+    Api->>UC: execute({ view, filters, canSeeAllTenders, now, refresh, signal })
+    UC->>Repo: list({ signal, refresh })
+    Note over Repo: abortable delay: 700 ms, 400 ms on refresh, due days from today
+    Repo-->>UC: tickets
+    UC->>UC: ticketsInView → applyFilters → hasPartialFailure (domain rules)
+    UC-->>Api: { tickets, partialFailure }
+    Api->>Tel: ticketLoadFinished in the loader (skipped when aborted)
     Api-->>Hook: { key, tickets, partialFailure, cachedAt }
-    Hook-->>Page: ready, empty, or partial_failure
-    Page->>Page: header search filters the rows again
+    Hook-->>Page: ready, empty, partial_failure, or error
+    Page->>Page: header search: searchTickets (no reload)
     Page->>Api: refresh → reload() (rows stay while refreshing)

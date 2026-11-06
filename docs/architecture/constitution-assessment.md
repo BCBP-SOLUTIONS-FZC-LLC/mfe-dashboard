@@ -58,7 +58,7 @@ The refactor that resolves the violations is on branch `refactor/constitution-la
 
 ## 3. Target architecture
 
-The diagram is in [ARCHITECTURE.md](../../ARCHITECTURE.md#layers); its source is `docs/architecture/mermaid/layer-model.mmd`. In short:
+The diagram is in [ARCHITECTURE.md](../../ARCHITECTURE.md#layer-model); its source is `docs/architecture/mermaid/layer-model.mmd`. In short:
 
 ```text
 app (composition root) ──► presentation ──► application ──► domain

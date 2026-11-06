@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph remote["dashboard remote"]
+        hook["useDashboardData\nticket load finished (not superseded)"]
+        banner["DashboardPage\nRe-authenticate clicked"]
+        loadable["useLoadable / useDashboardData\nAPI error"]
+        boundary["page MFEErrorBoundary\n(AppShellLayout)"]
+        tel["infrastructure/telemetry/metrics.ts\nmetricsTelemetry · recordMetric"]
+    end
+
+    subgraph sdk["platform SDK (shell singleton)"]
+        meter["getServiceMeter({ mfe: 'dashboard' })\nscope portal_dashboard_ · injects domain, service, environment\nvalidates names, labels, vocabularies"]
+        logger["getLogger({ mfe: 'dashboard' })\nredacts, tags the remote"]
+    end
+
+    subgraph shellx["web-shell"]
+        export["telemetry export (consent-gated)\nOTLP → /otel"]
+    end
+
+    hook --> tel
+    banner --> tel
+    tel -->|"ticket_loads_total\nticket_load_duration_seconds\nstep_up_requests_total"| meter
+    loadable -->|"warn: … failed to load"| logger
+    boundary -->|"error"| logger
+    meter --> export
+    logger --> export
