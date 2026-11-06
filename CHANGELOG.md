@@ -6,16 +6,32 @@ Each Git tag `vX.Y.Z` has a dated `## [X.Y.Z]` section here, and `package.json` 
 
 ## [Unreleased]
 
+### Added
+
+- `test/unit/architecture/layers.test.ts` fails on a misplaced top-level folder, a wrong-way import, React, an SDK or a browser API in `domain/` or `application/`, and the SDK's storage, metrics or config in `presentation/`.
+- Domain and use-case tests (`test/unit/domain`, `test/unit/application`).
+- The coverage gate also holds every `src/domain/` file above 90% (the constitution's domain target).
+- `test/fixtures/dependencies.tsx`: inject repositories into tests instead of mocking modules.
+- An integration test proves no environment-specific value is compiled in.
+- Metrics per the Enterprise Platform Observability Standard, through the SDK's `/metrics` (`getServiceMeter`), exported by the shell. There are three Tier 3 metrics: `portal_dashboard_ticket_loads_total` (`view`, `trigger`, `outcome`), `portal_dashboard_ticket_load_duration_seconds` (`view`, `outcome`) and `portal_dashboard_step_up_requests_total`. Every label has a closed value set (typed), and the SDK injects `domain`, `service` and `environment` and validates every point. No Tier 1 or Tier 2 metric applies, and none was invented. `test/unit/metrics` enforces the standard in CI (namespace, suffixes, required and prohibited labels, vocabularies, SDK acceptance) against the inventory in `docs/observability/metrics.md`, which also proposes recording rules, alerts and SLOs and has a runbook. The remote now also consumes the shell's SDK `/metrics` (web-shell already provides it).
+- `dependency-rules.test.ts` guards more SDK territory: metrics only through `frontend-sdk/metrics` in `src/metrics.ts` (no OpenTelemetry, Prometheus client or web-vitals library), host-page start-up only in `src/standalone.ts`, no shell-only SDK APIs (manifest, `loadRemote`, auth, flags, telemetry start) in `src/`, and no `console` except the standalone config warning. An audit of every SDK export against `src/` found no reimplementation; `recordMetric` no longer repeats the SDK's run-time label checks.
+
 ### Changed
 
+- **Frontend Architecture Constitution:** `src/` is now in the constitution's layers. Behaviour and the `./App` contract are unchanged. Assessment, violations, roadmap: `docs/architecture/constitution-assessment.md`; decisions: `docs/adr/0001`–`0008`.
+  - `app/`: the composition root (App, bootstrap, layouts, providers, configuration).
+  - `presentation/`: pages, widgets, components, features, theme.
+  - `application/`: use cases and the telemetry port, with no React.
+  - `domain/`: entities, rules and repository contracts, as pure TypeScript.
+  - `infrastructure/`: fixture repositories, storage, telemetry, sign-in.
+  - `shared/`.
+- Business rules moved out of the sample data and the React hook into `domain/rules`: view queues, SLA ordering, the deadline filter, KPI counts, the SLA overview, ticket and member search.
+- Pages reach data only through use cases and repository contracts (`TicketRepository`, `DashboardInfoRepository`, `MemberRepository`), injected by `app/providers/dependencies.ts`. As with a real API, KPI counts, filter options, the right panel, the notification count and the member list now appear once loaded.
+- Server state stays on the platform SDK's `useApi`, not TanStack Query (ADR 0002), and UI state stays in React state, not Zustand (ADR 0003). Both are approved deviations from the constitution.
+- **Build once, deploy everywhere (ADR 0006):** `PUBLIC_APP1_URL` and `VITE_APP1_URL` are removed: `config/app1Url.ts`, the Rsbuild define, the Dockerfile `ARG`s, and the CI and release build args and check. Logout without a shell goes to the runtime config's `auth.signInUrl`, else `/`. The dev server serves `config/runtime.local.json` at `/config/runtime.json`. The `PUBLIC_APP1_URL` repository variable is unused.
 - **Platform packages `1.0.0-alpha.6`** (`frontend-sdk`, `webpack-preset`, `eslint-plugin`, pinned exactly; peer `^1.0.0-alpha.6`). A remote built on alpha.6 needs the shell's SDK `^1.0.0-alpha.6`; web-shell moved first (web-shell #44). Release and deploy both together.
 - The two workarounds from the SDK audit are gone, now that alpha.6 covers them. Calendar days use `formatDate('YYYY-MM-DD')` instead of the `calendarDate()` helper (`src/lib/dates.ts`, removed), and the deadline filter compares them as day strings. The standalone page's "runtime config unavailable" warning goes through `getLogger` only, which the SDK writes to the console while logging is off; the `console.warn` is removed. `dependency-rules.test.ts` now rejects any `console` call, `calendarDate(` and a `Date` built from a `YYYY-MM-DD` literal.
 - The standalone page takes its environment from `/config/runtime.json` (alpha.6). It loads the file, calls `initializeCore` with its `environment`, then `setRuntimeConfig`, so one build serves every environment. Without a file, or a file without `environment`, it runs as `prod` in a build and `local` on the dev server. `PLATFORM_ENVIRONMENT` is removed (`rsbuild.config.ts`, Dockerfile `ARG`).
-
-### Added
-
-- Metrics per the Enterprise Platform Observability Standard, through the SDK's `/metrics` (`getServiceMeter`), exported by the shell. There are three Tier 3 metrics: `portal_dashboard_ticket_loads_total` (`view`, `trigger`, `outcome`), `portal_dashboard_ticket_load_duration_seconds` (`view`, `outcome`) and `portal_dashboard_step_up_requests_total`. Every label has a closed value set (typed), and the SDK injects `domain`, `service` and `environment` and validates every point. No Tier 1 or Tier 2 metric applies, and none was invented. `test/unit/metrics` enforces the standard in CI (namespace, suffixes, required and prohibited labels, vocabularies, SDK acceptance) against the inventory in `docs/observability/metrics.md`, which also proposes recording rules, alerts and SLOs and has a runbook. The remote now also consumes the shell's SDK `/metrics` (web-shell already provides it).
-- `dependency-rules.test.ts` guards more SDK territory: metrics only through `frontend-sdk/metrics` in `src/metrics.ts` (no OpenTelemetry, Prometheus client or web-vitals library), host-page start-up only in `src/standalone.ts`, no shell-only SDK APIs (manifest, `loadRemote`, auth, flags, telemetry start) in `src/`, and no `console` except the standalone config warning. An audit of every SDK export against `src/` found no reimplementation; `recordMetric` no longer repeats the SDK's run-time label checks.
 
 ### Fixed
 

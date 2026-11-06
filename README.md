@@ -11,8 +11,8 @@ Ticket and user-management remote for the BCBP shell. Module Federation name **`
 | Release | [`v0.3.0`](https://github.com/BCBP-SOLUTIONS-FZC-LLC/mfe-dashboard/releases/tag/v0.3.0) (2026-11-05): image `ghcr.io/bcbp-solutions-fzc-llc/mfe-dashboard:0.3.0`, signed, with SBOM and provenance. Remote named `dashboard` (was `app2` up to `v0.2.0`), platform packages alpha.5: needs web-shell #35 or later. See [CHANGELOG.md](CHANGELOG.md) |
 | Deploy | Not deployed yet. Ships with web-shell's first release (on alpha.6 since web-shell #44, loading `dashboard` since web-shell #35), which is waiting on web-shell's own blockers ([LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) item 12). At deploy, dev manifests switch the key `app2` → `dashboard` (item 15); then each environment's standalone `runtime.json` can set `auth.signInUrl` (item 14) |
 | Platform SDK | `@bcbp-solutions-fzc-llc/frontend-sdk` `1.0.0-alpha.6` (same as web-shell, since web-shell #44); `webpack-preset` and `eslint-plugin` `1.0.0-alpha.6`. Released from `v0.2.0` |
-| Data | Fixtures (`src/mocks/`, `UserManagementPage`); no backend calls yet |
-| Tests | 26 files, 142 tests (unit, integration, e2e); coverage 99.2% statements, 98.0% branches, 100% functions, 99.3% lines (gate 95%) |
+| Data | Fixtures (`src/infrastructure/fixtures/`, `UserManagementPage`); no backend calls yet |
+| Tests | 28 files, 153 tests (unit incl. architecture, domain and use cases; integration; e2e); coverage 99.0% statements, 97.8% branches, 100% functions, 99.3% lines (gate 95%) |
 | Open items | [LLD §15](docs/lld/mfe-dashboard-lld.md#15-open-items) |
 
 Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, flows, failure handling) and [ARCHITECTURE.md](ARCHITECTURE.md) (diagrams, decisions). Claude Code guidance: [.claude/CLAUDE.md](.claude/CLAUDE.md).
@@ -21,14 +21,14 @@ Design detail: the [LLD](docs/lld/mfe-dashboard-lld.md) (contract, SDK usage, fl
 
 | Piece | Role |
 |---|---|
-| `src/App.tsx` | Exposed module, and the standalone page's root. User and sign-out from the SDK (`useCurrentUser`, `useSignOut`). Renders relative routes when a router already exists, otherwise its own `BrowserRouter` under the shell's workspace prefix (`workspaceBasename`: `workspacePathPrefix` + `slugFromPath`) |
-| `src/i18n.ts`, `src/locales/` | The `dashboard` message namespace (`registerNamespace`, `useT`). Every UI string is in `src/locales/en.json`; mock data (tickets, users), brand names and theme names are not |
-| `src/layouts/AppShellLayout.tsx` | Sidebar, search, theme, user menu, logout |
-| `src/pages/DashboardPage.tsx` | Ticket views, filters, KPI cards, the approval step-up banner (`useStepUp`). "All Tenders In Flight" needs `read:tender` |
-| `src/hooks/useDashboardData.ts` | Tickets through the SDK's `useApi` (fixture loader: 700 ms load, 400 ms refresh, aborted when superseded) |
-| `src/pages/UserManagementPage.tsx` | Mock user table filtered by the shell search box |
-| `src/hooks/useMemberAccess.ts` | `canView` (`read:members` or `manage:members`) and `canManage` (`manage:members`, not read-only) |
-| `src/theme/` | Aura light/dark and daisyUI themes, stored with the SDK's `storage('dashboard')` |
+| `src/app/App.tsx` | Exposed module, and the standalone page's root. User and sign-out from the SDK (`useCurrentUser`, `useSignOut`). Renders relative routes when a router already exists, otherwise its own `BrowserRouter` under the shell's workspace prefix (`workspaceBasename`: `workspacePathPrefix` + `slugFromPath`) |
+| `src/app/configuration/i18n.ts`, `src/locales/` | The `dashboard` message namespace (`registerNamespace`, `useT`). Every UI string is in `src/app/configuration/locales/en.json`; mock data (tickets, users), brand names and theme names are not |
+| `src/app/layouts/AppShellLayout.tsx` | Sidebar, search, theme, user menu, logout |
+| `src/presentation/pages/DashboardPage.tsx` | Ticket views, filters, KPI cards, the approval step-up banner (`useStepUp`). "All Tenders In Flight" needs `read:tender` |
+| `src/presentation/features/tickets/useDashboardData.ts` | Tickets through the SDK's `useApi` (fixture loader: 700 ms load, 400 ms refresh, aborted when superseded) |
+| `src/presentation/pages/UserManagementPage.tsx` | Mock user table filtered by the shell search box |
+| `src/presentation/features/members/useMemberAccess.ts` | `canView` (`read:members` or `manage:members`) and `canManage` (`manage:members`, not read-only) |
+| `src/presentation/theme/` | Aura light/dark and daisyUI themes, stored with the SDK's `storage('dashboard')` |
 | `nginx/default.conf` | Static host for the production image |
 
 Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell needs to pass nothing. Props, when passed, override the SDK:
@@ -36,9 +36,9 @@ Inside the shell, `./App` takes the user and sign-out from the SDK, so the shell
 | Prop | Meaning |
 |---|---|
 | `userLabel` | Display name or email. Initials are derived from it. Default: the SDK user's email, then name, then `User` |
-| `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to `PUBLIC_APP1_URL` |
+| `onLogout` | Called from the sidebar and the user menu. Default: the SDK's global sign-out; if the shell provides none, the browser goes to the runtime config's `auth.signInUrl` (else `/`) |
 
-`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.6`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.6`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload. The standalone page is its own host page: before rendering, `src/standalone.ts` loads `/config/runtime.json` through the SDK, sets the page identity (`mfe-dashboard`, `portal`, the file's `environment`), so logout can use that environment's `auth.signInUrl`.
+`@bcbp-solutions-fzc-llc/frontend-sdk` is a peer dependency (`^1.0.0-alpha.6`) and a dev dependency pinned to web-shell's version (`1.0.0-alpha.6`) for types and tests. In the remote build it is never bundled (`import: false`): the shell provides it. The standalone page bundles it, and with no shell every SDK API answers with its anonymous defaults (design doc §C2): no user, `denyAll` (so "All Tenders In Flight" is hidden), the default locale, and `storage()` writes nothing, so the theme resets on reload. The standalone page is its own host page: before rendering, `src/app/bootstrap/standalone.ts` loads `/config/runtime.json` through the SDK, sets the page identity (`mfe-dashboard`, `portal`, the file's `environment`), so logout can use that environment's `auth.signInUrl`.
 
 Use the SDK for anything it covers (storage, dates and numbers, messages, permissions, data loading, navigation) instead of writing it here. `npm run lint` runs the platform's ESLint rules, which reject raw `localStorage`/`sessionStorage`, unsanitised HTML and SDK deep imports.
 
@@ -50,7 +50,7 @@ Use the SDK for anything it covers (storage, dates and numbers, messages, permis
 | Inside a host that shares `react-router-dom` (a router is already mounted) | index → dashboard, `user-management` → user table, relative to the host's route |
 | Alone (`npm run dev` or the image) | `/` and any unknown path redirect to `/dashboard`. `/dashboard/user-management` is the user table |
 
-User management follows IAM's rules (iam-org-membership LLD §10.4): anyone with `read:members` (every active member) or `manage:members` sees the page and its sidebar link; only `manage:members` (`tenant_admin`, `tenant_owner`) gets Invite and Edit, and not in a read-only tenant (SDK `useReadOnly`) (`src/hooks/useMemberAccess.ts`). Without either, the link is hidden and the route goes back to the dashboard. The role → permission map is web-shell's (`src/platform/permissions.ts`). Standalone the SDK grants nothing, so the page is hidden there.
+User management follows IAM's rules (iam-org-membership LLD §10.4): anyone with `read:members` (every active member) or `manage:members` sees the page and its sidebar link; only `manage:members` (`tenant_admin`, `tenant_owner`) gets Invite and Edit, and not in a read-only tenant (SDK `useReadOnly`) (`src/presentation/features/members/useMemberAccess.ts`). Without either, the link is hidden and the route goes back to the dashboard. The role → permission map is web-shell's (`src/platform/permissions.ts`). Standalone the SDK grants nothing, so the page is hidden there.
 
 One `rsbuild` run makes two builds into `dist/` (`rsbuild.config.ts` environments): **remote** (`remoteEntry.js` and its chunks, SDK from the shell) and **standalone** (`index.html` and `assets/`, SDK bundled). Dev server: `http://localhost:5002` (`strictPort`) serves both. The image listens on **8080**.
 
@@ -76,31 +76,32 @@ Every build writes this remote's entry to `dist/remote-manifest-entry.json` (ser
 | `GET /remoteEntry.js` | `Cache-Control: no-cache`, `Access-Control-Allow-Origin: *` |
 | `/<name>.<16-hex hash>.js`, `.css` (chunks next to the entry) | immutable, 1 year, CORS |
 | `/assets/*` | immutable, 1 year, CORS |
-| anything else | `try_files` back to `index.html` |
+| `/config/runtime.json` | the environment's runtime config, `no-cache`; `404` when absent |
+| a missing file with a static extension, `/api`, `/otel`, `/csp-report`, `/config`, `/remotes`, dotfiles | `404` (the platform SPA rule, `spa-rewrite.js`) |
+| any other path (an app route) | `index.html` |
 
 ## Repository layout
 
+`src/` follows the Frontend Architecture Constitution's layers ([ADR 0001](docs/adr/0001-layered-structure.md), enforced by `test/unit/architecture/layers.test.ts`):
+
 ```
-src/App.tsx                      exposed remote and standalone root (platform SDK)
-src/remote.ts                    remote build's placeholder entry (the shell loads remoteEntry.js)
-src/main.tsx                     standalone entry (#app)
-src/i18n.ts, src/locales/        dashboard messages
-src/layouts/                     shell chrome and outlet context
-src/pages/                       dashboard and user management
-src/components/                  logo, theme picker, ticket row, right panel, icons
-src/hooks/                       useDashboardData (useApi), useMemberAccess
-src/mocks/                       ticket, stats and filter fixtures
-src/theme/                       theme, in SDK storage
-src/types/                       ticket, view, SLA and filter types
+src/app/                         composition root: App.tsx (./App), bootstrap/ (main, standalone, remote), layouts/,
+                                 providers/dependencies.ts, configuration/ (i18n, locales/en.json), styles/
+src/presentation/                pages/, widgets/dashboard/, components/, features/ (hooks running use cases), theme/
+src/application/                 use-cases/ (loadTicketQueue, loadDashboardSummary, listMembers), ports/
+src/domain/                      entities/, rules/ (views, filters, deadline, SLA, search), repositories/ (contracts)
+src/infrastructure/              fixtures/ (Fixture*Repository), storage/, telemetry/ (metrics), auth/ (sign-in)
+src/shared/                      constants/, hooks/, ui/, types/, assets/
 rsbuild.config.ts                Rsbuild + platform plugin (remote dashboard, standalone)
-config/app1Url.ts                build-time logout target (PUBLIC_APP1_URL, deprecated VITE_APP1_URL)
+config/runtime.local.json        the dev server's /config/runtime.json (environment local, sign-in http://localhost:5001)
 nginx/default.conf
 Dockerfile
 .github/                         CI, release, coverage gate
 test/                            unit/<area>, integration, e2e, fixtures (test/README.md)
 docs/lld/                        low-level design
-docs/architecture/mermaid/       diagram sources embedded in ARCHITECTURE.md
-docs/                            pipeline map and runbooks
+docs/adr/                        architecture decision records
+docs/architecture/               constitution assessment; mermaid/ diagram sources embedded in ARCHITECTURE.md
+docs/                            pipeline map, observability, runbooks
 .claude/                         Claude Code guidance, settings and hooks
 ```
 
@@ -113,7 +114,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5002`. You land on `/dashboard`. Logout without an `onLogout` prop navigates to `http://localhost:5001` unless you set `PUBLIC_APP1_URL`.
+Open `http://localhost:5002`. You land on `/dashboard`. Logout without an `onLogout` prop navigates to `http://localhost:5001`, the `auth.signInUrl` of the dev server's `config/runtime.local.json`.
 
 The shell, when you want them together, is a separate repo and expects this dev server on port 5002.
 
@@ -146,12 +147,10 @@ The gate requires **95%** statements, branches, functions, and lines on `src/**/
 
 | Variable | When | Default |
 |---|---|---|
-| `auth.signInUrl` in `/config/runtime.json` | Run time, per environment. Standalone logout target; wins over `PUBLIC_APP1_URL`. Mount the environment's file over the image's default (`/usr/share/nginx/html/config/runtime.json`; the default, `public/config/runtime.json`, is web-shell's and has no `signInUrl`). The SDK validates the file strictly (unknown keys are rejected). Deploy check: [runbook](docs/runbook-release.md#standalone-runtime-config-authsigninurl) | none |
-| `PUBLIC_APP1_URL` | Build time. Logout target when no shell signs the user out and the runtime config has no `signInUrl` (`config/app1Url.ts`). Dockerfile `ARG`, CI repository variable | `http://localhost:5001` |
+| `auth.signInUrl` in `/config/runtime.json` | Run time, per environment. Standalone logout target (else `/`). Mount the environment's file over the image's default (`/usr/share/nginx/html/config/runtime.json`; the default, `public/config/runtime.json`, is web-shell's and has no `signInUrl`). The SDK validates the file strictly (unknown keys are rejected). Deploy check: [runbook](docs/runbook-release.md#standalone-runtime-config-authsigninurl) | none |
 | `environment` in `/config/runtime.json` | Run time, per environment (SDK alpha.6). The standalone page's identity environment (`local`, `dev`, `test`, `staging`, `prod`), so one build serves every environment. `http` origins in the runtime config are accepted only for `local`, `dev` and `test` | none: `prod` in a build, `local` on the dev server |
-| `VITE_APP1_URL` | **Deprecated** (Vite-era name). Read only when `PUBLIC_APP1_URL` is unset or empty; the build prints a warning. Will be removed in a major release | — |
 
-Set the GitHub Actions variable of the same name for any image that should return to a real shell. The value is compiled into the bundle and is public. A repository variable still named `VITE_APP1_URL` works until it is renamed (CI and releases fall back to it; releases warn).
+Nothing environment-specific is compiled in (ADR [0006](docs/adr/0006-runtime-configuration-only.md)): one image serves every environment, and `runtime.json` is public.
 
 ## Image
 

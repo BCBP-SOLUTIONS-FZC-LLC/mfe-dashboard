@@ -36,6 +36,6 @@ We follow responsible disclosure. Reporters will be credited in release notes un
 
 Areas of particular sensitivity in this remote:
 
-- **Host origin** — `PUBLIC_APP1_URL` is where logout sends the browser. It is fixed at build time.
+- **Sign-in origin** — `auth.signInUrl` in the environment's `/config/runtime.json` is where standalone logout sends the browser (validated by the SDK: `https`, or `http` only for local, dev and test). Nothing environment-specific is compiled in.
 - **Module Federation** — this build exposes `./App` as `dashboard`. The host executes that module in the host origin.
 - **Build-time configuration** — `PUBLIC_*` values are compiled into the static bundle and are public in the browser.

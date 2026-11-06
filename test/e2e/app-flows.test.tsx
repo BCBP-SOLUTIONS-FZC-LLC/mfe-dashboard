@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from '../../src/App'
+import App from '../../src/app/App'
 
 describe('dashboard flows', () => {
   afterEach(() => {
@@ -119,7 +119,8 @@ describe('dashboard flows', () => {
 
     expect(screen.getByRole('heading', { name: 'User management' })).toBeInTheDocument()
     expect(screen.getByText('AD')).toBeInTheDocument()
-    expect(screen.getByText('Invited')).toBeInTheDocument()
+    // Members load through the MemberRepository (listMembers).
+    expect(await screen.findByText('Invited')).toBeInTheDocument()
     expect(screen.getByText('Disabled')).toBeInTheDocument()
 
     await user.type(screen.getByRole('searchbox'), 'priya.n')
@@ -142,12 +143,8 @@ describe('dashboard flows', () => {
     await user.clear(screen.getByRole('searchbox'))
     await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
     await user.click(screen.getByRole('button', { name: 'Logout' }))
-    expect(assign).toHaveBeenCalledWith('http://localhost:5001')
-
-    assign.mockClear()
-    vi.stubEnv('PUBLIC_APP1_URL', 'http://127.0.0.1:5001/')
-    await user.click(screen.getByRole('button', { name: 'Logout' }))
-    expect(assign).toHaveBeenCalledWith('http://127.0.0.1:5001')
+    // Standalone with no auth.signInUrl in the runtime config: back to the page root.
+    expect(assign).toHaveBeenCalledWith('/')
   })
 
   it('redirects a standalone visit onto the dashboard routes', async () => {

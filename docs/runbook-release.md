@@ -10,10 +10,6 @@
 
 `extract-release-notes.sh` prints the body under `## [X.Y.Z]` until the next `## [` heading. An empty body fails the build job. Add the section, including the date (`## [X.Y.Z] - YYYY-MM-DD`), on the tagged commit. `[Unreleased]` alone is not enough once you are tagging.
 
-## `PUBLIC_APP1_URL` not set
-
-`PUBLIC_APP1_URL` is a build arg for the image and the tarball. The build job's "Verify PUBLIC_APP1_URL is set for releases" step fails unless the repository variable is an `https://` URL, so a release can no longer send logout to localhost. Set the variable (Settings → Secrets and variables → Actions → Variables) and re-run the workflow. A variable still named `VITE_APP1_URL` (the deprecated name) is accepted, with a warning, until you rename it. The value is public in the bundle.
-
 ## Image tag looks wrong
 
 The Git tag keeps the `v`. `docker/metadata-action` `{{version}}` strips it. `v1.2.3` publishes `1.2.3`, `1.2`, `1`, and `latest`. A pre-release `v1.2.3-rc.1` publishes `1.2.3-rc.1` only.

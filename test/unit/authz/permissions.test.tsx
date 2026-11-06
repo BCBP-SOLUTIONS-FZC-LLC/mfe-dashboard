@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import App from '../../../src/App'
+import App from '../../../src/app/App'
 import { MANAGE_ONLY, MANAGER, NO_MEMBER_ACCESS, VIEWER, startPlatform } from '../../fixtures/platform'
 
 function openUserManagement(permissions: readonly `${string}:${string}`[]) {

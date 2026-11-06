@@ -26,7 +26,7 @@ import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { buildRemote, type RemoteBuild } from '../fixtures/remote-build'
 import { startPlatform } from '../fixtures/platform'
-import { APP_ID } from '../../src/i18n'
+import { APP_ID } from '../../src/shared/constants/app'
 
 type Container = { init(scope: ShareScope): Promise<void> | void; get(module: string): Promise<() => unknown> }
 type ShareScope = Record<string, Record<string, { get: () => Promise<() => unknown>; from: string; loaded?: number; eager?: boolean }>>
@@ -190,19 +190,18 @@ describe('./App loaded through the container', () => {
   })
 })
 
-describe('build-time logout target', () => {
-  it.each([
-    [{}, 'http://localhost:5001'],
-    [{ PUBLIC_APP1_URL: 'https://login.example.com' }, 'https://login.example.com'],
-    [{ VITE_APP1_URL: 'https://legacy.example.com' }, 'https://legacy.example.com'],
-  ])('%j is compiled into the remote as %s', (env, url) => {
-    const out = Object.keys(env).length === 0 ? build : buildRemote(env)
+describe('build once, deploy everywhere', () => {
+  it('compiles in no environment-specific value: the old PUBLIC_APP1_URL / VITE_APP1_URL are ignored', () => {
+    // The sign-in URL and the environment come from each environment's runtime.json (ADR 0006).
+    const out = buildRemote({ PUBLIC_APP1_URL: 'https://login.example.com', VITE_APP1_URL: 'https://legacy.example.com' })
     try {
       const js = out.files().filter((f) => f.endsWith('.js')).map((f) => out.read(f)).join('\n')
-      expect(js).toContain(JSON.stringify(url))
+      expect(js).not.toContain('login.example.com')
+      expect(js).not.toContain('legacy.example.com')
+      expect(js).not.toContain('localhost:5001')
       expect(js).not.toContain('import.meta.env')
     } finally {
-      if (out !== build) out.remove()
+      out.remove()
     }
   }, 120_000)
 })

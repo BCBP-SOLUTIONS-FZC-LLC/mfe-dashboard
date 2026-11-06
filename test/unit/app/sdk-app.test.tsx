@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { PlatformProvider, type ShellContextValue } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
 import { startPlatform } from '../../fixtures/platform'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from '../../../src/App'
+import App from '../../../src/app/App'
 
 const user = { sub: 'u-1', name: 'Ada Lovelace', email: 'ada.lovelace@example.com' }
 
@@ -57,7 +57,8 @@ describe('App mounted by the shell (platform SDK)', () => {
     const assign = vi.spyOn(window.location, 'assign').mockImplementation(() => {})
     render(<App />, { wrapper: shellWith(undefined) })
     await logout()
-    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith('http://localhost:5001'))
+    // No auth.signInUrl in the test platform's runtime config: the page root.
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith('/'))
   })
 
   it('lets props from the shell override the SDK', async () => {

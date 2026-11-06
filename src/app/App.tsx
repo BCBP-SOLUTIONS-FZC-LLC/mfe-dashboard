@@ -1,0 +1,90 @@
+// The module the shell mounts (./App), and the page the standalone build renders (src/main.tsx).
+// The signed-in user, sign-out, the workspace and the route templates come from the platform SDK:
+// the shell's singleton inside web-shell, the SDK's anonymous defaults standalone. Props the shell
+// passes still win, so a shell that sends userLabel/onLogout keeps working unchanged.
+import { useCallback, useState, type ReactNode } from 'react'
+import { BrowserRouter, Navigate, Route, Routes, useInRouterContext } from 'react-router-dom'
+import { slugFromPath } from '@bcbp-solutions-fzc-llc/frontend-sdk/auth'
+import { tryGetConfig } from '@bcbp-solutions-fzc-llc/frontend-sdk/config'
+import { useCurrentUser, useRouteTemplate, useSignOut } from '@bcbp-solutions-fzc-llc/frontend-sdk/react'
+import { useMemberAccess } from '../presentation/features/members/useMemberAccess'
+import { goToSignIn } from '../infrastructure/auth/signIn'
+import { DependenciesProvider, useProvidedDependencies } from '../presentation/dependencies'
+import AppShellLayout from './layouts/AppShellLayout'
+import { createDependencies } from './providers/dependencies'
+import DashboardPage from '../presentation/pages/DashboardPage'
+import UserManagementPage from '../presentation/pages/UserManagementPage'
+import './configuration/i18n'
+import './styles/index.css'
+
+export type DashboardAppProps = {
+  userLabel?: string
+  onLogout?: () => void
+}
+
+function UserManagementRoute() {
+  // The shell registers /t/:slug/dashboard; the nested page is this remote's to name.
+  useRouteTemplate('/t/:slug/dashboard/user-management')
+  const { canView } = useMemberAccess()
+  return canView ? <UserManagementPage /> : <Navigate to=".." relative="path" replace />
+}
+
+function DashboardRoutes({ userLabel, onLogout }: DashboardAppProps) {
+  return (
+    <Routes>
+      <Route element={<AppShellLayout userLabel={userLabel} onLogout={onLogout} />}>
+        <Route index element={<DashboardPage />} />
+        <Route path="user-management" element={<UserManagementRoute />} />
+      </Route>
+    </Routes>
+  )
+}
+
+/** The shell's router basename for `pathname`: '<workspacePathPrefix><slug>', or '' outside a workspace. */
+export function workspaceBasename(pathname: string): string {
+  const auth = tryGetConfig()?.auth
+  const slug = auth && slugFromPath(pathname, auth)
+  return slug ? `${auth.workspacePathPrefix}${slug}` : ''
+}
+
+/** The composition root's implementations, unless an outer provider (a test) supplies its own. */
+function WithDependencies({ children }: { children: ReactNode }) {
+  const provided = useProvidedDependencies()
+  const [own] = useState(createDependencies)
+  return <DependenciesProvider value={provided ?? own}>{children}</DependenciesProvider>
+}
+
+export default function App(props: DashboardAppProps) {
+  return (
+    <WithDependencies>
+      <AppRoutes {...props} />
+    </WithDependencies>
+  )
+}
+
+function AppRoutes({ userLabel, onLogout }: DashboardAppProps) {
+  const user = useCurrentUser()
+  const signOut = useSignOut()
+  // Global sign-out (the identity provider's session ends too). useSignOut rejects when no shell
+  // provides signOut (standalone); fall back to the shell's sign-in page then.
+  const sdkLogout = useCallback(() => {
+    signOut().catch(goToSignIn)
+  }, [signOut])
+  const props = { userLabel: userLabel ?? user?.email ?? user?.name, onLogout: onLogout ?? sdkLogout }
+
+  if (useInRouterContext()) {
+    return <DashboardRoutes {...props} />
+  }
+
+  // The SDK does not share react-router-dom, so the remote runs its own router under the shell's
+  // workspace prefix, worked out as the shell does (bootstrap.tsx). Standalone there is no config.
+  const basename = workspaceBasename(window.location.pathname)
+  return (
+    <BrowserRouter {...(basename ? { basename } : {})}>
+      <Routes>
+        <Route path="/dashboard/*" element={<DashboardRoutes {...props} />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}

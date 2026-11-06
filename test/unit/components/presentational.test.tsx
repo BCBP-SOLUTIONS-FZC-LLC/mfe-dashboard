@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { BrandLogo } from '../../../src/components/BrandLogo'
-import { FilterSelect } from '../../../src/pages/DashboardPage'
+import { BrandLogo } from '../../../src/presentation/components/BrandLogo'
+import { FilterSelect } from '../../../src/presentation/pages/DashboardPage'
 import {
   IconAlertCircle,
   IconAlertTriangle,
@@ -37,11 +37,14 @@ import {
   IconUsers,
   KpiViewIcon,
   TicketTypeIcon,
-} from '../../../src/components/dashboard/DashboardIcons'
-import { TicketRow } from '../../../src/components/dashboard/TicketRow'
-import { ThemePicker } from '../../../src/components/ThemePicker'
-import { ticketsForView } from '../../../src/mocks/dashboardTickets'
-import type { TicketItem } from '../../../src/types/ticket'
+} from '../../../src/presentation/components/DashboardIcons'
+import { TicketRow } from '../../../src/presentation/widgets/dashboard/TicketRow'
+import { ThemePicker } from '../../../src/presentation/components/ThemePicker'
+import { ticketsInView } from '../../../src/domain/rules/views'
+import { FIXTURE_TICKETS } from '../../../src/infrastructure/fixtures/tickets'
+
+const ticketsForView = (view: string, canSeeAllTenders: boolean) => ticketsInView(FIXTURE_TICKETS, view, canSeeAllTenders)
+import type { TicketItem } from '../../../src/domain/entities/ticket'
 
 const views = ['my-tickets', 'awaiting-review', 'awaiting-approval', 'delegated', 'all-tenders'] as const
 

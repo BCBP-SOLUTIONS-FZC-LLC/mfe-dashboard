@@ -3,7 +3,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import App from '../../../src/App'
+import App from '../../../src/app/App'
 
 function mount() {
   window.history.replaceState({}, '', '/t/acme/dashboard')

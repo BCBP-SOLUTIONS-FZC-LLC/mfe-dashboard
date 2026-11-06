@@ -55,21 +55,6 @@ jobs:
       - name: Verify release tag matches checkout
         run: bash .github/scripts/verify-release-tag.sh
 
-      # A release built without the repository variable would send standalone logout to localhost.
-      # VITE_APP1_URL is the deprecated name, accepted when PUBLIC_APP1_URL is not set.
-      - name: Verify PUBLIC_APP1_URL is set for releases
-        env:
-          PUBLIC_APP1_URL: ${{ vars.PUBLIC_APP1_URL || vars.VITE_APP1_URL }}
-          DEPRECATED_ONLY: ${{ vars.PUBLIC_APP1_URL == '' && vars.VITE_APP1_URL != '' }}
-        run: |
-          if [ "${DEPRECATED_ONLY}" = "true" ]; then
-            echo "::warning title=VITE_APP1_URL::The repository variable VITE_APP1_URL is deprecated; rename it to PUBLIC_APP1_URL"
-          fi
-          case "${PUBLIC_APP1_URL}" in
-            https://*) echo "PUBLIC_APP1_URL=${PUBLIC_APP1_URL}" ;;
-            *) echo "::error title=PUBLIC_APP1_URL::Set the repository variable PUBLIC_APP1_URL to the sign-in app's https:// origin before releasing (now: '${PUBLIC_APP1_URL}')"; exit 1 ;;
-          esac
-
       - name: Set up Node
         uses: actions/setup-node@v7.1.0
         with:
@@ -83,7 +68,6 @@ jobs:
         run: bash .github/scripts/prepare-release-asset.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLIC_APP1_URL: ${{ vars.PUBLIC_APP1_URL || vars.VITE_APP1_URL }}
 
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v7.0.2
@@ -160,7 +144,6 @@ jobs:
           build-args: |
             BUILD_VERSION=${{ env.RELEASE_TAG }}
             SOURCE_DATE_EPOCH=${{ steps.sde.outputs.SOURCE_DATE_EPOCH }}
-            PUBLIC_APP1_URL=${{ vars.PUBLIC_APP1_URL || vars.VITE_APP1_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

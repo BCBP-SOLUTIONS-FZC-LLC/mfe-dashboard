@@ -32,4 +32,21 @@ if (failed.length > 0) {
   process.exit(1)
 }
 
+// The constitution's "Domain Layer > 90%": every file under src/domain/, on all four metrics, is
+// held to its own bar as well (it is pure logic, so it should be near 100%).
+const DOMAIN_THRESHOLD = Number(process.env.DOMAIN_COVERAGE_THRESHOLD ?? 90)
+const domainFiles = Object.entries(summary).filter(([file]) => file.includes('/src/domain/'))
+if (domainFiles.length === 0) {
+  console.error('::error title=Coverage gate::no src/domain/ files in the coverage summary')
+  process.exit(1)
+}
+const domainFailures = domainFiles.flatMap(([file, m]) =>
+  metrics.filter((metric) => Number(m[metric].pct) <= DOMAIN_THRESHOLD).map((metric) => `${file.split('/src/')[1]} ${metric} ${m[metric].pct}%`),
+)
+if (domainFailures.length > 0) {
+  console.error(`::error title=Coverage gate::Domain layer at or below ${DOMAIN_THRESHOLD}% (${domainFailures.join(', ')}).`)
+  process.exit(1)
+}
+console.log(`Domain layer: ${domainFiles.length} files above ${DOMAIN_THRESHOLD}%`)
+
 console.log(`Total statement coverage: ${pct}%`)

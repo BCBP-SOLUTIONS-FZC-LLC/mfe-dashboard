@@ -2,9 +2,14 @@
 // same rows the list shows.
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { matchesDeadline, useDashboardData } from '../../../src/hooks/useDashboardData'
-import { kpiCounts, slaOverviewForMyTickets } from '../../../src/mocks/dashboardStats'
-import { ticketsForView } from '../../../src/mocks/dashboardTickets'
+import { matchesDeadline } from '../../../src/domain/rules/filters'
+import { slaOverview } from '../../../src/domain/rules/sla'
+import { countByView, ticketsInView } from '../../../src/domain/rules/views'
+import { useDashboardData } from '../../../src/presentation/features/tickets/useDashboardData'
+import { withDependencies } from '../../fixtures/dependencies'
+import { FIXTURE_TICKETS } from '../../../src/infrastructure/fixtures/tickets'
+
+const ticketsForView = (view: string, canSeeAllTenders: boolean) => ticketsInView(FIXTURE_TICKETS, view, canSeeAllTenders)
 
 const filters = { status: 'all', role: 'all', department: 'all', deadline: 'all', tender: 'all' }
 
@@ -42,7 +47,7 @@ describe('deadline filter in useDashboardData', () => {
     vi.setSystemTime(new Date(2026, 9, 20, 9))
     const all = ticketsForView('all-tenders', true)
     const load = async (deadline: string) => {
-      const { result } = renderHook(() => useDashboardData({ view: 'all-tenders', filters: { ...filters, deadline }, canSeeAllTenders: true }))
+      const { result } = renderHook(() => useDashboardData({ view: 'all-tenders', filters: { ...filters, deadline }, canSeeAllTenders: true }), { wrapper: withDependencies() })
       await act(async () => {
         await vi.advanceTimersByTimeAsync(700)
       })
@@ -58,17 +63,17 @@ describe('deadline filter in useDashboardData', () => {
   })
 })
 
-describe('KPI counts', () => {
+describe('KPI counts and SLA overview (domain rules)', () => {
   it('count the rows each view lists', () => {
-    const counts = kpiCounts(true)
+    const counts = countByView(FIXTURE_TICKETS, true)
     for (const view of ['my-tickets', 'awaiting-review', 'awaiting-approval', 'delegated', 'all-tenders'] as const) {
       expect(counts[view], view).toBe(ticketsForView(view, true).length)
     }
-    expect(kpiCounts(false)['all-tenders']).toBe(0)
+    expect(countByView(FIXTURE_TICKETS, false)['all-tenders']).toBe(0)
   })
 
   it('give the SLA overview a total equal to its parts', () => {
-    const sla = slaOverviewForMyTickets()
+    const sla = slaOverview(ticketsForView('my-tickets', true))
     expect(sla.total).toBe(sla.onTrack + sla.warning + sla.breached)
   })
 })
